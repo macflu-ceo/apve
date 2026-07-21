@@ -5,15 +5,17 @@
   "description": "돈버는 명품샵 — 고도몰 기반 어필리에이트 플랫폼",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && prisma db push --accept-data-loss && next build",
     "start": "next start",
     "lint": "next lint",
+    "postinstall": "prisma generate",
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
+    "@vercel/blob": "^2.6.1",
     "next": "^14.2.35",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
