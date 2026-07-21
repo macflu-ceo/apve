@@ -2,19 +2,19 @@
 import crypto from "crypto";
 import { cookies } from "next/headers";
 
-const SECRET = process.env.AUTH_SECRET || "dev-secret-change-me";
+const SECRET = process.env.AUTH_SECRET || "donbeon-admin-secret-jprimo";
 const COOKIE = "admin_session";
-const ADMIN_USER = process.env.ADMIN_USER || "admin";
+// 1차 고정 계정 (환경변수로 덮어쓸 수 있음)
+const ADMIN_USER = process.env.ADMIN_USER || "jprimo";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "jprimo0603!!";
 
 function sign(v: string) {
   return crypto.createHmac("sha256", SECRET).update(v).digest("hex");
 }
 
-/** 아이디/비밀번호 검증 (ADMIN_PASSWORD 미설정 시 항상 실패) */
+/** 아이디/비밀번호 검증 */
 export function checkAdmin(user: string, pw: string): boolean {
-  const pass = process.env.ADMIN_PASSWORD;
-  if (!pass) return false;
-  return user.trim() === ADMIN_USER && pw === pass;
+  return user.trim() === ADMIN_USER && pw === ADMIN_PASSWORD;
 }
 
 export function setAdminSession() {
