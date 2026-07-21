@@ -1,0 +1,17 @@
+node_modules
+.next
+out
+*.log
+
+# env & db
+.env
+.env.local
+prisma/dev.db
+prisma/dev.db-journal
+
+# os
+.DS_Store
+
+# uploads (런타임 저장 이미지)
+/public/uploads/*
+!/public/uploads/.gitkeep

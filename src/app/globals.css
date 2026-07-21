@@ -1,0 +1,51 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Pretendard (국문 산세리프) */
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css");
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body {
+  @apply bg-white text-ink antialiased;
+  letter-spacing: -0.015em;
+}
+
+/* 버튼 */
+.btn-primary {
+  @apply inline-flex items-center justify-center gap-2 rounded-xl bg-ink px-4 py-3.5 text-sm font-bold text-white transition active:scale-[0.99];
+}
+.btn-brand {
+  @apply inline-flex items-center justify-center gap-2 rounded-xl bg-brand px-4 py-3.5 text-sm font-bold text-white transition active:scale-[0.99];
+}
+.btn-line {
+  @apply inline-flex items-center justify-center gap-2 rounded-xl border border-ink/20 px-4 py-3.5 text-sm font-bold text-ink transition hover:border-ink;
+}
+
+/* 입력 */
+.field {
+  @apply w-full rounded-xl border border-line bg-[#f7f7f7] px-4 py-3 text-sm outline-none focus:border-brand focus:bg-white;
+}
+
+/* 카드 */
+.card {
+  @apply rounded-xl2 border border-line bg-white;
+}
+
+/* 상품 카드 이미지 hover */
+.prod-img {
+  @apply h-full w-full object-cover transition duration-300 group-hover:scale-[1.04];
+}
+
+/* 가로 스크롤 스크롤바 숨김 */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
