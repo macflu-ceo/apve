@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { isAdmin } from "@/lib/admin";
 
 const ADMIN_MENU = [
   { href: "/admin", label: "대시보드" },
@@ -14,6 +16,9 @@ const ADMIN_MENU = [
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  // 로그인 안 된 경우 로그인 페이지로
+  if (!isAdmin()) redirect("/admin-login");
+
   return (
     <div className="min-h-screen bg-[#f7f6f4]">
       {/* 백오피스 전용 헤더 (쇼핑몰과 분리) */}
@@ -23,9 +28,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <span className="text-lg font-black">돈버는명품샵</span>
             <span className="rounded bg-white/15 px-2 py-0.5 text-xs font-bold">ADMIN</span>
           </div>
-          <Link href="/" className="text-xs text-white/70 hover:text-white" target="_blank">
-            쇼핑몰 보기 ↗
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link href="/" className="text-xs text-white/70 hover:text-white" target="_blank">
+              쇼핑몰 보기 ↗
+            </Link>
+            <a href="/admin-login/logout" className="text-xs text-white/70 hover:text-white">
+              로그아웃
+            </a>
+          </div>
         </div>
       </header>
 
