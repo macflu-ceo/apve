@@ -17,10 +17,17 @@ export async function POST(req: Request) {
     const ext = (file.name.split(".").pop() || "png").toLowerCase().replace(/[^a-z0-9]/g, "") || "png";
     const name = `${crypto.randomUUID()}.${ext}`;
 
-    // 운영(Vercel): Blob 저장소 사용 — 토큰이 있으면 토큰, 없으면 OIDC 자동 사용
-    const onVercel = !!process.env.VERCEL || !!process.env.BLOB_STORE_ID || !!process.env.BLOB_READ_WRITE_TOKEN;
+    // 운영(Vercel): Blob 저장소 사용
+    // Vercel 연결 시 접두어가 소문자(blob_)로 생성되는 경우가 있어 둘 다 인식한다.
+    const blobToken = process.env.BLOB_READ_WRITE_TOKEN || process.env.blob_READ_WRITE_TOKEN;
+    const onVercel =
+      !!process.env.VERCEL || !!blobToken || !!process.env.BLOB_STORE_ID || !!process.env.blob_STORE_ID;
     if (onVercel) {
-      const blob = await put(`uploads/${name}`, file, { access: "public", contentType: file.type });
+      const blob = await put(`uploads/${name}`, file, {
+        access: "public",
+        contentType: file.type,
+        ...(blobToken ? { token: blobToken } : {}),
+      });
       return NextResponse.json({ url: blob.url });
     }
 
