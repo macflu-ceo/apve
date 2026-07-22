@@ -76,7 +76,6 @@ async function main() {
         brand: d.brand,
         listPrice: d.listPrice,
         salePrice: d.salePrice,
-        commissionRate: 10,
         stock: 3,
         sizesJson: JSON.stringify(d.sizes),
         material: "울 / 캐시미어 혼방",

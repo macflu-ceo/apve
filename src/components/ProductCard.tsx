@@ -7,18 +7,28 @@ type P = {
   brand: string | null;
   listPrice: number | null;
   salePrice: number | null;
-  commissionRate: number;
   imagesJson: string | null;
+  tagsJson?: string | null;
 };
 
-export default function ProductCard({ product, rank }: { product: P; rank?: number }) {
+export default function ProductCard({
+  product,
+  rank,
+  percent,
+}: {
+  product: P;
+  rank?: number;
+  /** 보는 사람의 등급 수수료율(%) */
+  percent: number;
+}) {
   const img = parseList(product.imagesJson)[0];
+  const tags = parseList(product.tagsJson);
   const discount =
     product.listPrice && product.salePrice && product.listPrice > product.salePrice
       ? Math.round(((product.listPrice - product.salePrice) / product.listPrice) * 100)
       : 0;
   const commission =
-    product.salePrice != null ? Math.round((product.salePrice * (product.commissionRate ?? 0)) / 100) : 0;
+    product.salePrice != null ? Math.round((product.salePrice * percent) / 100) : 0;
 
   return (
     <Link href={`/goods/${product.goodsNo}`} className="group block">
@@ -34,7 +44,18 @@ export default function ProductCard({ product, rank }: { product: P; rank?: numb
             {rank}
           </span>
         )}
-        {/* 찜 하트 */}
+
+        {/* 상품 태그 (좌측 하단) */}
+        {tags.length > 0 && (
+          <div className="absolute bottom-2 left-2 flex flex-wrap gap-1">
+            {tags.slice(0, 2).map((t, i) => (
+              <span key={i} className="rounded-[4px] bg-ink/85 px-1.5 py-0.5 text-[11px] font-bold text-white">
+                {t}
+              </span>
+            ))}
+          </div>
+        )}
+
         <button className="absolute bottom-2 right-2 text-white/90 drop-shadow" aria-label="찜">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
             <path d="M12 21s-7-4.5-9.5-8.5A5 5 0 0112 6a5 5 0 019.5 6.5C19 16.5 12 21 12 21z" />

@@ -6,6 +6,7 @@
 //    확인 후 fetchRawSales()를 실제 구현으로 교체. 지금은 수동 업로드/더미로 동작.
 
 import { prisma } from "@/lib/db";
+import { getPartnerGrade } from "@/lib/grade";
 
 export interface RawSale {
   code: string;          // 유입 파트너 코드
@@ -32,7 +33,9 @@ export async function ingestSales(rows: RawSale[]) {
     const product = await prisma.product.findUnique({ where: { goodsNo: row.goodsNo } });
     if (!product) continue; // 플랫폼에 등록되지 않은 상품은 스킵
     const partner = await prisma.partner.findUnique({ where: { code: row.code } });
-    const commission = Math.round((row.amount * (product.commissionRate ?? 0)) / 100);
+    // 수수료율은 파트너의 '등급'에 귀속
+    const grade = partner ? await getPartnerGrade(partner.id) : null;
+    const commission = Math.round((row.amount * (grade?.percent ?? 0)) / 100);
 
     await prisma.sale.create({
       data: {

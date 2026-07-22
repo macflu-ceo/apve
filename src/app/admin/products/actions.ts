@@ -4,9 +4,16 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { scrapeProduct } from "@/lib/godomall/scrape";
 
-/** 상품 수수료율/노출 수정 */
-export async function updateProduct(id: string, data: { commissionRate?: number; active?: boolean }) {
-  await prisma.product.update({ where: { id }, data });
+/** 상품 노출/원산지/태그 수정 (수수료율은 회원 등급에 귀속) */
+export async function updateProduct(
+  id: string,
+  data: { active?: boolean; origin?: string | null; tags?: string[] }
+) {
+  const { tags, ...rest } = data;
+  await prisma.product.update({
+    where: { id },
+    data: { ...rest, ...(tags ? { tagsJson: JSON.stringify(tags) } : {}) },
+  });
   revalidatePath("/admin/products");
   revalidatePath("/");
 }
@@ -26,7 +33,6 @@ export async function deleteProduct(id: string) {
 /** 어드민 상품 등록 — 고도몰 URL을 스크래핑해 상품을 생성/갱신 */
 export async function importProduct(formData: FormData) {
   const url = String(formData.get("url") ?? "").trim();
-  const commissionRate = Number(formData.get("commissionRate") ?? 10);
   if (!url) return { ok: false, message: "URL을 입력하세요." };
 
   try {
@@ -45,7 +51,6 @@ export async function importProduct(formData: FormData) {
         imagesJson: JSON.stringify(s.images),
         detailHtml: s.detailHtml,
         sourceUrl: s.sourceUrl,
-        commissionRate,
       },
       create: {
         goodsNo: s.goodsNo,
@@ -60,7 +65,6 @@ export async function importProduct(formData: FormData) {
         imagesJson: JSON.stringify(s.images),
         detailHtml: s.detailHtml,
         sourceUrl: s.sourceUrl,
-        commissionRate,
       },
     });
     revalidatePath("/admin/products");

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import ProductCard from "@/components/ProductCard";
 import BannerCarousel from "@/components/BannerCarousel";
 import { getSiteSetting } from "@/lib/settings";
+import { getViewerRate } from "@/lib/grade";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +30,7 @@ export default async function HomePage() {
     }),
     getSiteSetting(),
   ]);
+  const rate = await getViewerRate();
 
   const banners = dbBanners.length > 0 ? dbBanners : DEFAULT_BANNERS;
   const categories = dbCategories.length > 0 ? dbCategories : DEFAULT_CHIPS;
@@ -80,7 +82,12 @@ export default async function HomePage() {
           ) : (
             <div className="grid grid-cols-2 gap-x-3 gap-y-6 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
               {sec.products.map((p, idx) => (
-                <ProductCard key={p.id} product={p} rank={i === 0 && idx < 3 ? idx + 1 : undefined} />
+                <ProductCard
+                  key={p.id}
+                  product={p}
+                  percent={rate.percent}
+                  rank={i === 0 && idx < 3 ? idx + 1 : undefined}
+                />
               ))}
             </div>
           )}

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { won } from "@/lib/format";
 import { getCurrentPartner } from "@/lib/session";
+import { getPartnerGrade } from "@/lib/grade";
 import LoginPromptButton from "@/components/auth/LoginPromptButton";
 
 export const dynamic = "force-dynamic";
@@ -19,7 +20,8 @@ export default async function MyPage() {
   }
 
   const isApproved = partner.status === "approved";
-  const grade = isApproved ? "어필리에이터" : "승인대기중";
+  const myGrade = isApproved ? await getPartnerGrade(partner.id) : null;
+  const grade = isApproved ? myGrade?.name ?? "어필리에이터" : "승인대기중";
 
   const [links, sales] = await Promise.all([
     prisma.issuedLink.findMany({ where: { partnerId: partner.id }, include: { product: true }, orderBy: { createdAt: "desc" } }),
@@ -44,6 +46,11 @@ export default async function MyPage() {
         </div>
         <p className="mt-1 text-sm text-ink/60">
           {partner.name} 님
+          {myGrade && (
+            <>
+              {" "}· 수수료율 <b className="text-brand">{myGrade.percent}%</b>
+            </>
+          )}
           {isApproved && partner.code && (
             <>
               {" "}· 내 코드 <code className="rounded bg-brandsoft px-1.5 py-0.5 text-xs">{partner.code}</code>

@@ -32,8 +32,8 @@ export default async function AdminProducts() {
               <th>정가</th>
               <th>할인율</th>
               <th>판매가</th>
-              <th>수수료</th>
-              <th>예상수익</th>
+              <th>원산지</th>
+              <th>태그</th>
               <th>노출</th>
               <th></th>
             </tr>
@@ -49,7 +49,8 @@ export default async function AdminProducts() {
                   brand: p.brand,
                   listPrice: p.listPrice,
                   salePrice: p.salePrice,
-                  commissionRate: p.commissionRate,
+                  origin: p.origin,
+                  tags: parseList(p.tagsJson),
                   active: p.active,
                   image: parseList(p.imagesJson)[0] ?? null,
                 }}

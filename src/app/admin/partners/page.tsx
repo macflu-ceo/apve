@@ -1,14 +1,22 @@
 import { prisma } from "@/lib/db";
 import { won } from "@/lib/format";
+import { listGrades } from "@/lib/grade";
 import PendingRow from "./PendingRow";
+import GradeSelect from "./GradeSelect";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminPartners() {
-  const partners = await prisma.partner.findMany({
-    orderBy: { createdAt: "desc" },
-    include: { _count: { select: { sales: true, links: true } }, sales: true },
-  });
+  const [partners, grades] = await Promise.all([
+    prisma.partner.findMany({
+      orderBy: { createdAt: "desc" },
+      include: { _count: { select: { sales: true, links: true } }, sales: true },
+    }),
+    listGrades(),
+  ]);
+  const gradeOptions = grades.map((g) => ({ id: g.id, name: g.name, percent: g.percent }));
+  const firstName = grades.find((g) => g.systemKey === "first")?.name ?? "첫구매";
+  const normalName = grades.find((g) => g.systemKey === "normal")?.name ?? "일반";
 
   const pending = partners.filter((p) => p.status === "pending");
   const approved = partners.filter((p) => p.status === "approved");
@@ -47,6 +55,7 @@ export default async function AdminPartners() {
                 <th className="py-2">이름</th>
                 <th>아이디</th>
                 <th>코드</th>
+                <th>등급</th>
                 <th>링크</th>
                 <th>판매</th>
                 <th>누적 수수료</th>
@@ -61,6 +70,14 @@ export default async function AdminPartners() {
                     <td className="text-sub">@{p.username}</td>
                     <td>
                       <code className="rounded bg-brandsoft px-1.5 py-0.5 text-xs">{p.code}</code>
+                    </td>
+                    <td>
+                      <GradeSelect
+                        partnerId={p.id}
+                        gradeId={p.gradeId}
+                        autoName={p._count.sales > 0 ? normalName : firstName}
+                        grades={gradeOptions}
+                      />
                     </td>
                     <td>{p._count.links}건</td>
                     <td>{p._count.sales}건</td>

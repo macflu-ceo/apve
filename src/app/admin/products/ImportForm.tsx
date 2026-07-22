@@ -38,17 +38,6 @@ export default function ImportForm() {
         </p>
       </div>
       <div className="flex items-end gap-3">
-        <div>
-          <label className="text-sm font-medium">수수료율(%)</label>
-          <input
-            name="commissionRate"
-            type="number"
-            defaultValue={10}
-            min={0}
-            step={0.5}
-            className="mt-1 w-28 rounded-md border border-black/15 px-3 py-2 text-sm"
-          />
-        </div>
         <button className="btn-brand" disabled={pending}>
           {pending ? "가져오는 중…" : "상품 등록"}
         </button>

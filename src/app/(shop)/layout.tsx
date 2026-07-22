@@ -6,7 +6,8 @@ import AuthNav from "@/components/auth/AuthNav";
 
 const TABS = [
   { href: "/", label: "추천상품" },
-  { href: "/board", label: "공지/가이드" },
+  { href: "/board?category=공지", label: "공지" },
+  { href: "/board?category=가이드", label: "가이드" },
   { href: "/concierge", label: "멤버십 업그레이드" },
 ];
 
@@ -110,17 +111,46 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
         </div>
       </nav>
 
-      <footer className="mt-16 border-t border-line pb-20 md:pb-0">
-        <div className="mx-auto max-w-shell px-4 py-10 text-xs leading-relaxed text-sub">
-          <div className="mb-2 text-base font-black text-brand">{setting.siteName}</div>
-          {setting.companyName}
-          {setting.businessNo ? ` · 사업자 ${setting.businessNo}` : ""} · {setting.footerNote}
-          {setting.contact ? (
-            <>
-              <br />
-              {setting.contact}
-            </>
-          ) : null}
+      <footer className="mt-16 border-t border-line bg-[#faf9f8] pb-24 md:pb-0">
+        <div className="mx-auto max-w-shell px-4 py-10">
+          <div className="grid gap-8 md:grid-cols-[1.4fr_1fr_1fr]">
+            {/* 브랜드 */}
+            <div>
+              <div className="text-lg font-black text-brand">{setting.siteName}</div>
+              <p className="mt-2 text-xs leading-relaxed text-sub">
+                이탈리아 부티크 직계약 정품 명품을
+                <br />
+                코드 하나로 판매하는 어필리에이트 플랫폼
+              </p>
+            </div>
+
+            {/* 바로가기 */}
+            <div>
+              <div className="mb-2 text-sm font-bold">바로가기</div>
+              <ul className="space-y-1.5 text-xs text-sub">
+                <li><Link href="/" className="hover:text-ink">추천상품</Link></li>
+                <li><Link href="/board?category=공지" className="hover:text-ink">공지사항</Link></li>
+                <li><Link href="/board?category=가이드" className="hover:text-ink">이용 가이드</Link></li>
+                <li><Link href="/concierge" className="hover:text-ink">멤버십 업그레이드</Link></li>
+                <li><Link href="/me" className="hover:text-ink">내정보</Link></li>
+              </ul>
+            </div>
+
+            {/* 사업자 정보 */}
+            <div>
+              <div className="mb-2 text-sm font-bold">사업자 정보</div>
+              <ul className="space-y-1.5 text-xs leading-relaxed text-sub">
+                <li>{setting.companyName}</li>
+                {setting.businessNo && <li>사업자등록번호 {setting.businessNo}</li>}
+                {setting.contact && <li>{setting.contact}</li>}
+                <li>{setting.footerNote}</li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="mt-8 border-t border-line pt-4 text-[11px] text-sub">
+            © {new Date().getFullYear()} {setting.companyName}. All rights reserved.
+          </div>
         </div>
       </footer>
     </AuthModalProvider>

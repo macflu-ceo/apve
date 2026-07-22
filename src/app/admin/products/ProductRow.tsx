@@ -13,7 +13,8 @@ type P = {
   brand: string | null;
   listPrice: number | null;
   salePrice: number | null;
-  commissionRate: number;
+  origin: string | null;
+  tags: string[];
   active: boolean;
   image: string | null;
 };
@@ -21,17 +22,21 @@ type P = {
 export default function ProductRow({ p }: { p: P }) {
   const router = useRouter();
   const [pending, start] = useTransition();
-  const [rate, setRate] = useState(String(p.commissionRate));
+  const [origin, setOrigin] = useState(p.origin ?? "");
+  const [tags, setTags] = useState(p.tags.join(","));
 
   const discount =
     p.listPrice && p.salePrice && p.listPrice > p.salePrice
       ? Math.round(((p.listPrice - p.salePrice) / p.listPrice) * 100)
       : 0;
-  const expected = p.salePrice != null ? Math.round((p.salePrice * Number(rate || 0)) / 100) : null;
 
-  function saveRate() {
-    if (Number(rate) === p.commissionRate) return;
-    start(async () => { await updateProduct(p.id, { commissionRate: Number(rate) }); router.refresh(); });
+  function save() {
+    const nextTags = tags.split(/[,/]+/).map((s) => s.trim()).filter(Boolean);
+    if (origin === (p.origin ?? "") && nextTags.join(",") === p.tags.join(",")) return;
+    start(async () => {
+      await updateProduct(p.id, { origin: origin || null, tags: nextTags });
+      router.refresh();
+    });
   }
 
   return (
@@ -49,30 +54,30 @@ export default function ProductRow({ p }: { p: P }) {
         <div className="truncate font-medium">{p.name}</div>
         <div className="text-xs text-sub">#{p.goodsNo}</div>
       </td>
-      {/* 정가 */}
       <td className="text-sub line-through">{won(p.listPrice)}</td>
-      {/* 할인율 */}
       <td className="font-bold text-deal">{discount > 0 ? `${discount}%` : "-"}</td>
-      {/* 판매가 */}
       <td className="font-bold">{won(p.salePrice)}</td>
-      {/* 수수료율 (수정) */}
+      {/* 원산지 */}
       <td>
-        <div className="flex items-center gap-1">
-          <input
-            type="number"
-            value={rate}
-            step={0.5}
-            min={0}
-            onChange={(e) => setRate(e.target.value)}
-            onBlur={saveRate}
-            className="w-16 rounded-md border border-line px-2 py-1 text-sm"
-          />
-          <span className="text-xs text-sub">%</span>
-        </div>
+        <input
+          value={origin}
+          onChange={(e) => setOrigin(e.target.value)}
+          onBlur={save}
+          placeholder="이탈리아"
+          className="w-24 rounded-md border border-line px-2 py-1 text-sm"
+        />
       </td>
-      {/* 예상 수익 */}
-      <td className="font-semibold text-brand">{won(expected)}</td>
-      {/* 노출 토글 */}
+      {/* 태그 */}
+      <td>
+        <input
+          value={tags}
+          onChange={(e) => setTags(e.target.value)}
+          onBlur={save}
+          placeholder="신상,단독"
+          className="w-28 rounded-md border border-line px-2 py-1 text-sm"
+        />
+      </td>
+      {/* 노출 */}
       <td>
         <button
           onClick={() => start(async () => { await updateProduct(p.id, { active: !p.active }); router.refresh(); })}
@@ -82,7 +87,6 @@ export default function ProductRow({ p }: { p: P }) {
           {p.active ? "노출중" : "숨김"}
         </button>
       </td>
-      {/* 액션 */}
       <td>
         <div className="flex items-center gap-2 text-xs">
           <Link href={`/goods/${p.goodsNo}`} target="_blank" className="text-brand underline">

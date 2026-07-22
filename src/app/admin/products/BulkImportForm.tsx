@@ -39,7 +39,7 @@ export default function BulkImportForm() {
       <div className="mb-1 text-sm font-bold">엑셀로 일괄 등록</div>
       <p className="mb-3 text-xs text-sub">
         양식(엑셀)을 내려받아 <b>A열부터 순서대로</b> 채운 뒤 업로드하세요. 컬럼: 상품링크 · 상품명 · 브랜드 · 카테고리 · 사이즈 · 재고 ·
-        리테일가격 · 공급가 · 이미지URL · 수수료율(%). (상품링크의 goodsNo 기준으로 등록/갱신)
+        리테일가격 · 공급가 · 이미지URL · 원산지 · 태그. (상품링크의 goodsNo 기준으로 등록/갱신)
       </p>
       <div className="flex flex-wrap items-center gap-3">
         <a href="/api/admin/products/template" className="btn-line px-3 py-2 text-xs" download>

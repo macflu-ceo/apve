@@ -43,17 +43,21 @@ export async function POST(req: Request) {
         .map((s) => s.trim())
         .filter(Boolean);
       const img = String(row["이미지URL"] ?? "").trim();
-      const rate = int(row["수수료율(%)"]);
+      const tags = String(row["태그"] ?? "")
+        .split(/[,/]+/)
+        .map((s) => s.trim())
+        .filter(Boolean);
 
       const data = {
         name: String(row["상품명"] ?? "").trim() || `상품 ${goodsNo}`,
         brand: str(row["브랜드"]),
         category: str(row["카테고리"]),
+        origin: str(row["원산지"]),
+        tagsJson: JSON.stringify(tags),
         sizesJson: JSON.stringify(sizes),
         stock: int(row["재고"]),
         listPrice: int(row["리테일가격"]),
         salePrice: int(row["공급가"]),
-        commissionRate: rate ?? 10,
         sourceUrl: productUrl(goodsNo),
         ...(img ? { imagesJson: JSON.stringify([img]) } : {}),
       };

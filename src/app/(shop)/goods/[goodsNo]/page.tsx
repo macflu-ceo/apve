@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { won, parseList } from "@/lib/format";
+import { getViewerRate } from "@/lib/grade";
+import SizeGuideModal from "@/components/SizeGuideModal";
 import CodeButton from "./CodeButton";
 import TryOnButton from "./TryOnButton";
 
@@ -12,70 +14,86 @@ export default async function GoodsPage({ params }: { params: { goodsNo: string 
 
   const images = parseList(product.imagesJson);
   const sizes = parseList(product.sizesJson);
+  const tags = parseList(product.tagsJson);
+  const rate = await getViewerRate();
   const expectedCommission =
-    product.salePrice != null
-      ? Math.round((product.salePrice * (product.commissionRate ?? 0)) / 100)
-      : null;
+    product.salePrice != null ? Math.round((product.salePrice * rate.percent) / 100) : null;
 
   return (
-    <div className="grid gap-8 md:grid-cols-2">
-      {/* 이미지 */}
+    <div className="grid gap-8 px-4 pb-12 pt-8 md:grid-cols-2 md:pt-12">
+      {/* 이미지 (대표 1장만) */}
       <div>
-        <div className="card aspect-[3/4] overflow-hidden bg-black/5">
+        <div className="relative aspect-[3/4] overflow-hidden rounded-xl2 bg-[#f5f4f2]">
           {images[0] ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={images[0]} alt={product.name} className="h-full w-full object-cover" />
           ) : (
-            <div className="flex h-full items-center justify-center text-ink/30">No Image</div>
+            <div className="flex h-full items-center justify-center text-sub">No Image</div>
+          )}
+          {tags.length > 0 && (
+            <div className="absolute bottom-3 left-3 flex flex-wrap gap-1">
+              {tags.map((t, i) => (
+                <span key={i} className="rounded-[4px] bg-ink/85 px-2 py-1 text-xs font-bold text-white">
+                  {t}
+                </span>
+              ))}
+            </div>
           )}
         </div>
-        {images.length > 1 && (
-          <div className="mt-3 grid grid-cols-4 gap-2">
-            {images.slice(1, 5).map((src, i) => (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img key={i} src={src} alt="" className="aspect-square w-full rounded object-cover" />
-            ))}
-          </div>
-        )}
       </div>
 
       {/* 정보 */}
       <div>
-        {product.brand && <div className="text-sm text-brand">{product.brand}</div>}
-        <h1 className="mt-1 text-2xl font-bold">{product.name}</h1>
+        {product.brand && <div className="text-sm font-bold text-brand">{product.brand}</div>}
+        <h1 className="mt-1 text-2xl font-bold leading-snug">{product.name}</h1>
 
         <div className="mt-4 flex items-baseline gap-3">
-          <span className="text-2xl font-semibold">{won(product.salePrice)}</span>
+          <span className="text-2xl font-extrabold">{won(product.salePrice)}</span>
           {product.listPrice && product.salePrice && product.listPrice > product.salePrice && (
-            <span className="text-sm text-ink/40 line-through">{won(product.listPrice)}</span>
+            <span className="text-sm text-sub line-through">{won(product.listPrice)}</span>
           )}
         </div>
 
-        {/* 예상 수익 */}
-        <div className="card mt-4 flex items-center justify-between p-4">
-          <span className="text-sm text-ink/70">예상 수익 (수수료 {product.commissionRate}%)</span>
-          <span className="text-lg font-bold text-brand">{won(expectedCommission)}</span>
+        {/* 예상 수익 (등급별) */}
+        <div className="mt-4 flex items-center justify-between rounded-xl2 bg-brandsoft p-4">
+          <span className="text-sm text-ink/70">
+            예상 수익
+            <span className="ml-1 text-xs text-sub">
+              ({rate.isMine ? `${rate.gradeName} ${rate.percent}%` : `최대 ${rate.percent}%`})
+            </span>
+          </span>
+          <span className="text-lg font-extrabold text-brand">{won(expectedCommission)}</span>
         </div>
 
-        <dl className="mt-5 space-y-2 text-sm">
-          {sizes.length > 0 && (
-            <div className="flex gap-3">
-              <dt className="w-20 text-ink/50">사이즈</dt>
-              <dd>{sizes.join(", ")}</dd>
-            </div>
-          )}
+        {/* 상품 정보 */}
+        <dl className="mt-5 space-y-2 border-t border-line pt-5 text-sm">
+          <div className="flex gap-3">
+            <dt className="w-20 shrink-0 text-sub">브랜드</dt>
+            <dd>{product.brand ?? "-"}</dd>
+          </div>
+          <div className="flex gap-3">
+            <dt className="w-20 shrink-0 text-sub">원산지</dt>
+            <dd>{product.origin ?? "-"}</dd>
+          </div>
+          <div className="flex gap-3">
+            <dt className="w-20 shrink-0 text-sub">사이즈</dt>
+            <dd className="flex flex-wrap items-center gap-2">
+              <span>{sizes.length > 0 ? sizes.join(", ") : "-"}</span>
+              <SizeGuideModal category={product.category} productName={product.name} />
+            </dd>
+          </div>
           {product.material && (
             <div className="flex gap-3">
-              <dt className="w-20 text-ink/50">소재</dt>
+              <dt className="w-20 shrink-0 text-sub">소재</dt>
               <dd>{product.material}</dd>
             </div>
           )}
           <div className="flex gap-3">
-            <dt className="w-20 text-ink/50">재고</dt>
+            <dt className="w-20 shrink-0 text-sub">재고</dt>
             <dd>{product.stock != null ? `${product.stock}개` : "-"}</dd>
           </div>
           <div className="flex gap-3">
-            <dt className="w-20 text-ink/50">상품번호</dt>
+            <dt className="w-20 shrink-0 text-sub">상품번호</dt>
             <dd>{product.goodsNo}</dd>
           </div>
         </dl>
@@ -87,7 +105,7 @@ export default async function GoodsPage({ params }: { params: { goodsNo: string 
         <TryOnButton goodsNo={product.goodsNo} />
 
         {product.sourceUrl && (
-          <a href={product.sourceUrl} target="_blank" className="mt-3 block text-center text-xs text-ink/40 underline">
+          <a href={product.sourceUrl} target="_blank" className="mt-3 block text-center text-xs text-sub underline">
             원본 상품 페이지 보기
           </a>
         )}

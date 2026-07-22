@@ -25,6 +25,13 @@ export async function rejectPartner(id: string) {
   return { ok: true, message: "반려되었습니다." };
 }
 
+/** 회원 등급 수동 지정 (null이면 실적 기반 자동 판정으로 되돌림) */
+export async function setPartnerGrade(id: string, gradeId: string | null) {
+  await prisma.partner.update({ where: { id }, data: { gradeId } });
+  revalidatePath("/admin/partners");
+  revalidatePath("/me");
+}
+
 /** 파트너 활성/비활성 토글 */
 export async function togglePartnerActive(id: string, active: boolean) {
   await prisma.partner.update({ where: { id }, data: { active } });
