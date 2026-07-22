@@ -37,8 +37,19 @@ function AuthModal({ mode, setMode, close }: { mode: Mode; setMode: (m: Mode) =>
   const [lpw, setLpw] = useState("");
 
   // 회원가입
-  const [s, setS] = useState({ username: "", password: "", name: "", phone: "" });
+  const [s, setS] = useState({ username: "", password: "", name: "", email: "", phone: "" });
   const [ci, setCi] = useState<string | null>(null);
+  const [agree, setAgree] = useState({
+    service: false,
+    privacy: false,
+    partnerPolicy: false,
+    age14: false,
+    marketing: false,
+  });
+  const allRequired = agree.service && agree.privacy && agree.partnerPolicy && agree.age14;
+  const allChecked = allRequired && agree.marketing;
+  const toggleAll = (v: boolean) =>
+    setAgree({ service: v, privacy: v, partnerPolicy: v, age14: v, marketing: v });
 
   function doLogin() {
     start(async () => {
@@ -65,7 +76,15 @@ function AuthModal({ mode, setMode, close }: { mode: Mode; setMode: (m: Mode) =>
 
   function doSignup() {
     start(async () => {
-      const r = await signup({ ...s, ci });
+      const r = await signup({
+        ...s,
+        ci,
+        agreeService: agree.service,
+        agreePrivacy: agree.privacy,
+        agreePartnerPolicy: agree.partnerPolicy,
+        agreeAge14: agree.age14,
+        agreeMarketing: agree.marketing,
+      });
       setMsg({ ok: r.ok, text: r.message });
       if (r.ok) {
         // 가입 즉시 로그인됨 → 새로고침 후 닫기
@@ -114,6 +133,7 @@ function AuthModal({ mode, setMode, close }: { mode: Mode; setMode: (m: Mode) =>
             <input className="field" placeholder="아이디 (영문/숫자 4~20자)" value={s.username} onChange={(e) => setS({ ...s, username: e.target.value })} />
             <input className="field" type="password" placeholder="비밀번호 (6자 이상)" value={s.password} onChange={(e) => setS({ ...s, password: e.target.value })} />
             <input className="field" placeholder="이름(실명)" value={s.name} onChange={(e) => setS({ ...s, name: e.target.value })} />
+            <input className="field" type="email" placeholder="이메일" value={s.email} onChange={(e) => setS({ ...s, email: e.target.value })} />
             <div className="flex gap-2">
               <input className="field flex-1" placeholder="휴대폰번호" value={s.phone} onChange={(e) => setS({ ...s, phone: e.target.value })} />
               <button
@@ -124,7 +144,39 @@ function AuthModal({ mode, setMode, close }: { mode: Mode; setMode: (m: Mode) =>
                 {ci ? "인증완료 ✓" : "본인인증"}
               </button>
             </div>
-            <button className="btn-brand w-full" onClick={doSignup} disabled={pending || !ci}>
+
+            {/* 약관 동의 */}
+            <div className="rounded-xl border border-line p-3">
+              <label className="flex items-center gap-2 border-b border-line pb-2 text-sm font-bold">
+                <input type="checkbox" checked={allChecked} onChange={(e) => toggleAll(e.target.checked)} />
+                전체 동의
+              </label>
+              <div className="mt-2 space-y-1.5 text-xs">
+                {[
+                  { k: "service" as const, label: "[필수] 서비스 이용약관", doc: "service" },
+                  { k: "privacy" as const, label: "[필수] 개인정보 수집·이용 (가입)", doc: "privacy_signup" },
+                  { k: "partnerPolicy" as const, label: "[필수] 파트너 운영정책·대가성 표시 서약", doc: "partner_policy" },
+                  { k: "age14" as const, label: "[필수] 만 14세 이상입니다", doc: "age14" },
+                  { k: "marketing" as const, label: "[선택] 마케팅 정보 수신 동의", doc: "marketing" },
+                ].map((row) => (
+                  <div key={row.k} className="flex items-center justify-between gap-2">
+                    <label className="flex flex-1 items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={agree[row.k]}
+                        onChange={(e) => setAgree({ ...agree, [row.k]: e.target.checked })}
+                      />
+                      {row.label}
+                    </label>
+                    <a href={`/terms?doc=${row.doc}`} target="_blank" className="shrink-0 text-sub underline">
+                      보기
+                    </a>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <button className="btn-brand w-full" onClick={doSignup} disabled={pending || !ci || !allRequired}>
               {pending ? "처리 중…" : "가입 신청"}
             </button>
             <p className="text-center text-xs text-sub">가입 신청 후 관리자 승인이 완료되면 이용할 수 있어요.</p>

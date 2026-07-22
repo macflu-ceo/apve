@@ -55,6 +55,21 @@ model Partner {
   docsStatus  String  @default("none")
   /// 어필리에이트 약관 동의 시각
   termsAgreedAt DateTime?
+  /// 마케팅 정보 수신 동의(선택)
+  marketingAgreed Boolean @default(false)
+  /// 동의 이력 (JSON: 항목별 동의여부·시각·버전)
+  agreementsJson  String?
+
+  /// ── 2단계: 정산 정보 (최소 지급액 도달 시 수집) ──
+  /// none | submitted | verified
+  settlementStatus String  @default("none")
+  /// 주민등록번호 (AES-256-GCM 암호화 저장)
+  residentNoEnc    String?
+  address          String?
+  bankName         String?
+  bankAccount      String?
+  accountHolder    String?
+  settlementAgreedAt DateTime?
 
   links IssuedLink[]
   sales Sale[]

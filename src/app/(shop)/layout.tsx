@@ -122,6 +122,7 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
                 <li><Link href="/board?category=가이드" className="hover:text-ink">이용 가이드</Link></li>
                 <li><Link href="/concierge" className="hover:text-ink">멤버십 업그레이드</Link></li>
                 <li><Link href="/me" className="hover:text-ink">내정보</Link></li>
+                <li><Link href="/terms" className="font-semibold hover:text-ink">약관 및 정책</Link></li>
               </ul>
             </div>
 

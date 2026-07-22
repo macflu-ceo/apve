@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/db";
 import { hashPassword, verifyPassword, setSession, clearSession } from "@/lib/auth";
 import { verifyIdentity } from "@/lib/identity";
+import { TERMS_VERSION } from "@/lib/terms";
 
 /** 본인인증 (모달의 '본인인증' 버튼) */
 export async function requestIdentity(name: string, phone: string) {
@@ -15,8 +16,14 @@ export async function signup(input: {
   username: string;
   password: string;
   name: string;
+  email: string;
   phone: string;
   ci: string | null;
+  agreeService: boolean;
+  agreePrivacy: boolean;
+  agreePartnerPolicy: boolean;
+  agreeAge14: boolean;
+  agreeMarketing: boolean;
 }) {
   const username = input.username.trim();
   if (!/^[a-zA-Z0-9_]{4,20}$/.test(username))
@@ -24,20 +31,37 @@ export async function signup(input: {
   if (input.password.length < 6) return { ok: false, message: "비밀번호는 6자 이상이어야 합니다." };
   if (!input.name.trim() || !input.phone.trim())
     return { ok: false, message: "이름과 휴대폰번호를 입력하세요." };
-  if (!input.ci) return { ok: false, message: "본인인증을 먼저 완료하세요." };
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.email.trim()))
+    return { ok: false, message: "이메일을 정확히 입력하세요." };
+  if (!input.ci) return { ok: false, message: "휴대폰 본인인증을 먼저 완료하세요." };
+  if (!input.agreeService || !input.agreePrivacy || !input.agreePartnerPolicy || !input.agreeAge14)
+    return { ok: false, message: "필수 약관에 모두 동의해야 가입할 수 있습니다." };
 
   const dup = await prisma.partner.findUnique({ where: { username } });
   if (dup) return { ok: false, message: "이미 사용 중인 아이디입니다." };
 
+  const now = new Date();
   const created = await prisma.partner.create({
     data: {
       username,
       passwordHash: hashPassword(input.password),
       name: input.name.trim(),
+      email: input.email.trim(),
       phone: input.phone.trim(),
       verified: true,
       ci: input.ci,
       status: "pending",
+      termsAgreedAt: now,
+      marketingAgreed: input.agreeMarketing,
+      agreementsJson: JSON.stringify({
+        version: TERMS_VERSION,
+        agreedAt: now.toISOString(),
+        service: input.agreeService,
+        privacy: input.agreePrivacy,
+        partnerPolicy: input.agreePartnerPolicy,
+        age14: input.agreeAge14,
+        marketing: input.agreeMarketing,
+      }),
     },
   });
   // 가입 즉시 로그인 (상태는 승인대기중)
