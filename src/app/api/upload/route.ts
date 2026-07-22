@@ -5,8 +5,7 @@ import crypto from "crypto";
 import { put } from "@vercel/blob";
 
 // POST /api/upload (multipart: file) → { url }
-// Vercel Blob 저장소가 연결돼 있으면(BLOB_READ_WRITE_TOKEN) Blob에 저장,
-// 아니면 로컬 public/uploads 에 저장한다.
+// Vercel 위에서 실행되면 Vercel Blob(OIDC 또는 토큰)에 저장, 로컬에서는 public/uploads 에 저장.
 export async function POST(req: Request) {
   try {
     const form = await req.formData();
@@ -18,8 +17,9 @@ export async function POST(req: Request) {
     const ext = (file.name.split(".").pop() || "png").toLowerCase().replace(/[^a-z0-9]/g, "") || "png";
     const name = `${crypto.randomUUID()}.${ext}`;
 
-    // 운영(Vercel): Blob 저장소
-    if (process.env.BLOB_READ_WRITE_TOKEN) {
+    // 운영(Vercel): Blob 저장소 사용 — 토큰이 있으면 토큰, 없으면 OIDC 자동 사용
+    const onVercel = !!process.env.VERCEL || !!process.env.BLOB_STORE_ID || !!process.env.BLOB_READ_WRITE_TOKEN;
+    if (onVercel) {
       const blob = await put(`uploads/${name}`, file, { access: "public", contentType: file.type });
       return NextResponse.json({ url: blob.url });
     }
