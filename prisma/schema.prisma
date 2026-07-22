@@ -212,6 +212,35 @@ model Banner {
   createdAt DateTime @default(now())
 }
 
+/// 컨시어지 신청 폼의 추가 문항 (어드민에서 커스텀)
+model ConciergeQuestion {
+  id          String  @id @default(cuid())
+  label       String
+  /// text | textarea | select
+  type        String  @default("text")
+  /// select 일 때 보기 (JSON 배열)
+  optionsJson String?
+  required    Boolean @default(false)
+  sort        Int     @default(0)
+  active      Boolean @default(true)
+}
+
+/// 컨시어지 가입 신청 접수
+model ConciergeApplication {
+  id          String   @id @default(cuid())
+  name        String
+  phone       String
+  job         String?
+  region      String?
+  age         String?
+  /// 추가 문항 답변 (JSON: {문항라벨: 답변})
+  answersJson String?
+  /// new | contacted | done | rejected
+  status      String   @default("new")
+  memo        String?
+  createdAt   DateTime @default(now())
+}
+
 /// 검색 자동완성용 카테고리 (어드민 관리) — 예: 가방, 지갑, 신발
 model SearchCategory {
   id     String  @id @default(cuid())

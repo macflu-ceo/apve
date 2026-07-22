@@ -1,4 +1,7 @@
 import { getCurrentPartner } from "@/lib/session";
+import { listActiveQuestions } from "@/lib/concierge";
+import { parseList } from "@/lib/format";
+import ApplyModal from "./ApplyModal";
 
 export const dynamic = "force-dynamic";
 
@@ -9,6 +12,13 @@ const TIERS = [
 
 export default async function ConciergePage() {
   const partner = await getCurrentPartner();
+  const questions = (await listActiveQuestions()).map((q) => ({
+    id: q.id,
+    label: q.label,
+    type: q.type,
+    options: parseList(q.optionsJson),
+    required: q.required,
+  }));
   const grade = !partner ? null : partner.status === "approved" ? "어필리에이터" : "승인대기중";
 
   return (
@@ -41,14 +51,7 @@ export default async function ConciergePage() {
         <p className="mt-1 text-sm text-ink/70">
           무재고·소자본으로 시작하는 럭셔리 판매. 소싱·물류 전 과정을 본사가 처리하고, 세일즈 자료와 교육을 지원합니다.
         </p>
-        <a
-          href="https://viaelite.kr"
-          target="_blank"
-          className="btn-brand mt-4 w-full"
-        >
-          컨시어지 가입 상담 신청
-        </a>
-        <p className="mt-2 text-center text-xs text-sub">신청 폼/상담 연결은 추후 연동 예정입니다.</p>
+        <ApplyModal questions={questions} />
       </div>
     </div>
   );

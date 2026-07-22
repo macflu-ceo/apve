@@ -3,6 +3,7 @@ import { getSiteSetting } from "@/lib/settings";
 import { getSessionPartner } from "@/lib/auth";
 import AuthModalProvider from "@/components/auth/AuthModalProvider";
 import AuthNav from "@/components/auth/AuthNav";
+import SearchBox from "@/components/SearchBox";
 
 const TABS = [
   { href: "/", label: "추천상품" },
@@ -10,18 +11,6 @@ const TABS = [
   { href: "/board?category=가이드", label: "가이드" },
   { href: "/concierge", label: "멤버십 업그레이드" },
 ];
-
-function SearchBar() {
-  return (
-    <div className="flex items-center gap-2 rounded-full bg-[#f5f3f0] px-4 py-2.5">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="shrink-0 text-sub">
-        <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
-        <path d="m20 20-3-3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-      </svg>
-      <input placeholder="브랜드, 상품 검색" className="w-full bg-transparent text-sm outline-none placeholder:text-sub" />
-    </div>
-  );
-}
 
 function TopIcon({ path, label, href }: { path: string; label: string; href: string }) {
   return (
@@ -71,7 +60,7 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
           </nav>
 
           <div className="ml-auto hidden min-w-[240px] flex-1 md:block lg:max-w-sm">
-            <SearchBar />
+            <SearchBox />
           </div>
 
           <div className="ml-auto flex items-center gap-4 md:ml-0">
@@ -82,7 +71,7 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
 
         {/* 검색 (모바일) */}
         <div className="px-4 pb-2 md:hidden">
-          <SearchBar />
+          <SearchBox />
         </div>
 
         {/* 탭 (모바일/태블릿) */}
