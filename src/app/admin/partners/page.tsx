@@ -3,6 +3,8 @@ import { won } from "@/lib/format";
 import { listGrades } from "@/lib/grade";
 import PendingRow from "./PendingRow";
 import GradeSelect from "./GradeSelect";
+import SettlementCell from "./SettlementCell";
+import { decryptSensitive, maskResidentNo, maskAccount } from "@/lib/crypto";
 
 export const dynamic = "force-dynamic";
 
@@ -56,6 +58,7 @@ export default async function AdminPartners() {
                 <th>아이디</th>
                 <th>코드</th>
                 <th>등급</th>
+                <th>정산정보</th>
                 <th>링크</th>
                 <th>판매</th>
                 <th>누적 수수료</th>
@@ -77,6 +80,19 @@ export default async function AdminPartners() {
                         gradeId={p.gradeId}
                         autoName={p._count.sales > 0 ? normalName : firstName}
                         grades={gradeOptions}
+                      />
+                    </td>
+                    <td>
+                      <SettlementCell
+                        partnerId={p.id}
+                        status={p.settlementStatus}
+                        residentMasked={maskResidentNo(decryptSensitive(p.residentNoEnc))}
+                        address={p.address}
+                        bank={p.bankName}
+                        accountMasked={maskAccount(p.bankAccount)}
+                        holder={p.accountHolder}
+                        idCardPath={p.idCardUrl}
+                        bankbookPath={p.bankbookUrl}
                       />
                     </td>
                     <td>{p._count.links}건</td>

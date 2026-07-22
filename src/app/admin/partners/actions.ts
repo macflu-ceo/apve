@@ -32,6 +32,16 @@ export async function setPartnerGrade(id: string, gradeId: string | null) {
   revalidatePath("/me");
 }
 
+/** 정산 정보 확인 완료 처리 */
+export async function verifySettlement(id: string, verified: boolean) {
+  await prisma.partner.update({
+    where: { id },
+    data: { settlementStatus: verified ? "verified" : "submitted", docsStatus: verified ? "approved" : "submitted" },
+  });
+  revalidatePath("/admin/partners");
+  revalidatePath("/me");
+}
+
 /** 파트너 활성/비활성 토글 */
 export async function togglePartnerActive(id: string, active: boolean) {
   await prisma.partner.update({ where: { id }, data: { active } });

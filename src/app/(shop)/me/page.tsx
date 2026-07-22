@@ -4,6 +4,8 @@ import { won } from "@/lib/format";
 import { getCurrentPartner } from "@/lib/session";
 import { getPartnerGrade } from "@/lib/grade";
 import LoginPromptButton from "@/components/auth/LoginPromptButton";
+import SettlementForm from "./SettlementForm";
+import { SETTLEMENT_POLICY } from "@/lib/terms";
 
 export const dynamic = "force-dynamic";
 
@@ -96,6 +98,9 @@ export default async function MyPage() {
               <div className="mt-1 text-lg font-bold text-brand">{won(totalCommission)}</div>
             </div>
           </div>
+
+          {/* 정산 정보 (2단계) */}
+          <SettlementForm status={partner.settlementStatus} minPayout={SETTLEMENT_POLICY.minPayout} />
 
           {/* 판매내역 */}
           <section>
