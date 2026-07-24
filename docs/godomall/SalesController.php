@@ -1,7 +1,6 @@
 <?php
 namespace Controller\Api\Concierge;
 
-use Component\Moacoms\McSalesAgentStatistics;
 use Request;
 
 /**
@@ -10,10 +9,12 @@ use Request;
  *
  * 파일 : module/Controller/Api/Concierge/SalesController.php
  * URL  : https://api.viaelite.co.kr/concierge/sales
- *        ?from=2026-07-01&to=2026-07-31[&code=cd001ws][&limit=500]
+ *        ?key=인증키&from=2026-07-01&to=2026-07-31[&code=cd001ws][&limit=500][&scope=all]
  * 인증 : 헤더 X-API-KEY 또는 파라미터 key
  *
- * 관리자 [영업사원 통계 > 상세 내역] 과 동일한 모듈을 그대로 사용한다.
+ * 관리자 [영업사원 통계 > 상세 내역] 과 동일한 조건으로 조회한다.
+ * (McSalesAgentStatistics::getAllDetailStatistics 와 같은 쿼리 + 상품번호 등 추가 컬럼)
+ * 기존 모듈을 고치지 않고 별도로 조회하므로 관리자 화면에 영향이 없다.
  *
  * @package Controller\Api\Concierge
  */
@@ -42,7 +43,7 @@ class SalesController extends \Controller\Api\Controller
             $this->json(['error' => 'unauthorized']);
         }
 
-        // 2) 파라미터 검증 — 형식이 어긋나면 조회 자체를 하지 않는다
+        // 2) 파라미터 검증
         $from = isset($req['from']) ? $req['from'] : date('Y-m-d', strtotime('-30 days'));
         $to = isset($req['to']) ? $req['to'] : date('Y-m-d');
         if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $from) !== 1 || preg_match('/^\d{4}-\d{2}-\d{2}$/', $to) !== 1) {
@@ -59,9 +60,44 @@ class SalesController extends \Controller\Api\Controller
             $limit = 500;
         }
 
-        // 3) 관리자 통계 화면과 동일한 모듈 호출 (상세 내역)
-        $statistics = new McSalesAgentStatistics();
-        $rows = $statistics->getAllDetailStatistics($from, $to, $code, $limit);
+        // scope=all 이면 취소/반품/교환/환불까지 전부 (정산 차감 확인용)
+        $scope = (isset($req['scope']) === true && $req['scope'] === 'all') ? 'all' : 'valid';
+
+        // 3) 조회
+        $db = \App::load('DB');
+
+        $strSQL = '
+            SELECT s.orderNo, s.salesAgentCode, s.regDt, og.*
+            FROM mc_sales_agent_statistics s
+            INNER JOIN ' . DB_ORDER . ' o ON s.orderNo = o.orderNo AND s.salesAgentCode = o.salesAgentCode
+            INNER JOIN ' . DB_ORDER_GOODS . ' og ON s.orderNo = og.orderNo
+            WHERE DATE(s.regDt) BETWEEN ? AND ?
+        ';
+
+        $arrBind = [];
+        $db->bind_param_push($arrBind, 's', $from);
+        $db->bind_param_push($arrBind, 's', $to);
+
+        if ($scope === 'valid') {
+            // 관리자 통계 화면과 동일한 제외 조건 (주문대기 o / 환불 f / 취소 c / 반품 r / 교환 b)
+            $strSQL .= "
+                AND og.orderStatus NOT LIKE 'o%'
+                AND og.orderStatus NOT LIKE 'f%'
+                AND og.orderStatus NOT LIKE 'c%'
+                AND og.orderStatus NOT LIKE 'r%'
+                AND og.orderStatus NOT LIKE 'b%'
+            ";
+        }
+
+        if ($code !== '') {
+            $strSQL .= ' AND s.salesAgentCode = ?';
+            $db->bind_param_push($arrBind, 's', $code);
+        }
+
+        $strSQL .= ' ORDER BY s.regDt DESC LIMIT ?';
+        $db->bind_param_push($arrBind, 'i', $limit);
+
+        $rows = $db->query_fetch($strSQL, $arrBind);
         if (empty($rows) === true) {
             $rows = [];
         }
@@ -71,6 +107,7 @@ class SalesController extends \Controller\Api\Controller
             'from' => $from,
             'to' => $to,
             'code' => $code,
+            'scope' => $scope,
             'total' => count($rows),
             'list' => $rows,
         ]);
