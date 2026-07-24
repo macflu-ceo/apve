@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { adminLogin } from "./actions";
+import Logo from "@/components/Logo";
 
 export default function LoginForm() {
   const router = useRouter();
@@ -26,7 +27,10 @@ export default function LoginForm() {
 
   return (
     <form onSubmit={submit} className="w-full max-w-sm space-y-3 rounded-xl2 border border-line bg-white p-6">
-      <div className="text-center text-lg font-black text-brand">돈버는명품샵 · 어드민</div>
+      <div className="flex items-center justify-center gap-2 pb-1">
+        <Logo height={20} />
+        <span className="text-sm font-bold text-sub">· 어드민</span>
+      </div>
       <input className="field" placeholder="아이디" value={user} onChange={(e) => setUser(e.target.value)} />
       <input className="field" type="password" placeholder="비밀번호" value={pw} onChange={(e) => setPw(e.target.value)} />
       <button className="btn-brand w-full" disabled={pending}>

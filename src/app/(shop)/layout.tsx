@@ -4,6 +4,7 @@ import { getSessionPartner } from "@/lib/auth";
 import AuthModalProvider from "@/components/auth/AuthModalProvider";
 import AuthNav from "@/components/auth/AuthNav";
 import SearchBox from "@/components/SearchBox";
+import Logo from "@/components/Logo";
 
 const TABS = [
   { href: "/", label: "추천상품" },
@@ -40,8 +41,8 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
     <AuthModalProvider>
       <header className="sticky top-0 z-40 border-b border-line bg-white">
         <div className="mx-auto flex max-w-shell items-center gap-6 px-4 py-3">
-          <Link href="/" className="shrink-0">
-            <span className="text-[22px] font-black tracking-tight text-brand md:text-[24px]">{setting.siteName}</span>
+          <Link href="/" className="shrink-0" aria-label={setting.siteName}>
+            <Logo height={22} />
           </Link>
 
           <nav className="hidden lg:block">
@@ -105,8 +106,8 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
           <div className="grid gap-8 md:grid-cols-[1.4fr_1fr_1fr]">
             {/* 브랜드 */}
             <div>
-              <div className="text-lg font-black text-brand">{setting.siteName}</div>
-              <p className="mt-2 text-xs leading-relaxed text-sub">
+              <Logo height={20} />
+              <p className="mt-3 text-xs leading-relaxed text-sub">
                 이탈리아 부티크 직계약 정품 명품을
                 <br />
                 코드 하나로 판매하는 어필리에이트 플랫폼

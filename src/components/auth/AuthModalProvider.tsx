@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { login, signup, requestIdentity } from "@/lib/auth-actions";
+import Logo from "@/components/Logo";
 
 type Mode = "login" | "signup";
 type Ctx = { open: (mode?: Mode) => void; close: () => void };
@@ -101,7 +102,7 @@ function AuthModal({ mode, setMode, close }: { mode: Mode; setMode: (m: Mode) =>
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
-          <div className="text-xl font-black text-brand">돈버는명품샵</div>
+          <Logo height={22} />
           <button onClick={close} className="text-2xl leading-none text-sub">
             ×
           </button>

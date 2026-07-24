@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { isAdmin } from "@/lib/admin";
+import Logo from "@/components/Logo";
 
 const ADMIN_MENU = [
   { href: "/admin", label: "대시보드" },
@@ -29,7 +30,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <header className="sticky top-0 z-40 bg-ink text-white">
         <div className="mx-auto flex max-w-shell items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
-            <span className="text-lg font-black">돈버는명품샵</span>
+            <Logo height={18} light />
             <span className="rounded bg-white/15 px-2 py-0.5 text-xs font-bold">ADMIN</span>
           </div>
           <div className="flex items-center gap-4">
