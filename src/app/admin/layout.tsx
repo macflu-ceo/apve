@@ -14,6 +14,7 @@ const ADMIN_MENU = [
   { href: "/admin/grades", label: "등급/수수료율" },
   { href: "/admin/search", label: "검색 설정/통계" },
   { href: "/admin/concierge", label: "컨시어지 신청" },
+  { href: "/admin/ai-images", label: "AI 생성 이미지" },
   { href: "/admin/sales", label: "판매내역" },
   { href: "/admin/settings", label: "계정정보/설정" },
 ];

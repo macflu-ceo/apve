@@ -73,6 +73,7 @@ model Partner {
 
   links IssuedLink[]
   sales Sale[]
+  aiImages TryOnImage[]
 }
 
 /// 플랫폼에 노출되는 상품 (원천: 고도몰 상품)
@@ -303,13 +304,19 @@ model SiteSetting {
   updatedAt   DateTime @updatedAt
 }
 
-/// AI 착용샷 이미지
+/// AI 생성 이미지 (회원 다운로드용 — 쇼핑몰에 노출되지 않음)
 model TryOnImage {
   id        String   @id @default(cuid())
   product   Product  @relation(fields: [productId], references: [id])
   productId String
+  /// 생성한 회원 (어드민 조회·사용량 제한용)
+  partner   Partner? @relation(fields: [partnerId], references: [id])
+  partnerId String?
   imageUrl  String
+  /// 선택 옵션 요약 (성별/연령/배경/컷)
   prompt    String?
   provider  String?
   createdAt DateTime @default(now())
+
+  @@index([partnerId, createdAt])
 }

@@ -45,7 +45,7 @@ export default function AiImageStudio({ goodsNo }: { goodsNo: string }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [img, setImg] = useState<string | null>(null);
-  const [savedMsg, setSavedMsg] = useState<string | null>(null);
+  const [quota, setQuota] = useState<{ used: number; limit: number; remaining: number; message: string } | null>(null);
 
   const [opt, setOpt] = useState({
     gender: "여성",
@@ -55,27 +55,23 @@ export default function AiImageStudio({ goodsNo }: { goodsNo: string }) {
   });
   const isCloseUp = opt.shot === "제품 클로즈업";
 
-  async function generate(save: boolean) {
+  async function generate() {
     setBusy(true);
     setErr(null);
-    setSavedMsg(null);
     try {
       const res = await fetch("/api/ai/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ goodsNo, ...opt, save }),
+        body: JSON.stringify({ goodsNo, ...opt }),
       });
       if (res.status === 401) {
         open("login");
         return;
       }
       const data = await res.json();
+      if (data.quota) setQuota(data.quota);
       if (!res.ok) throw new Error(data.error || "생성 실패");
       setImg(data.url);
-      if (data.saved) {
-        setSavedMsg("상품 이미지로 저장되었습니다.");
-        router.refresh();
-      }
     } catch (e) {
       setErr(e instanceof Error ? e.message : "생성 실패");
     } finally {
@@ -96,35 +92,34 @@ export default function AiImageStudio({ goodsNo }: { goodsNo: string }) {
           <Chips label="연령대" options={CHOICES.age} value={opt.age} onChange={(v) => setOpt({ ...opt, age: v })} disabled={isCloseUp} />
           <Chips label="배경" options={CHOICES.background} value={opt.background} onChange={(v) => setOpt({ ...opt, background: v })} />
 
-          <div className="flex gap-2">
-            <button onClick={() => generate(false)} disabled={busy} className="btn-brand flex-1">
-              {busy ? "생성 중… (최대 30초)" : "이미지 생성"}
-            </button>
-            <button onClick={() => generate(true)} disabled={busy} className="btn-line shrink-0 px-3 text-xs">
-              생성 + 상품저장
-            </button>
-          </div>
+          <button onClick={generate} disabled={busy} className="btn-brand w-full">
+            {busy ? "생성 중… (최대 30초)" : "이미지 생성"}
+          </button>
 
+          {quota && (
+            <p className="text-center text-xs text-sub">
+              오늘 {quota.used}/{quota.limit}장 사용
+              {quota.remaining > 0 ? ` · ${quota.remaining}장 남음` : ""}
+            </p>
+          )}
           {err && <p className="text-sm text-red-600">{err}</p>}
-          {savedMsg && <p className="text-sm text-green-700">{savedMsg}</p>}
 
           {img && (
             <div className="overflow-hidden rounded-xl border border-line">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={img} alt="AI 생성 이미지" className="w-full" />
-              <div className="flex gap-2 p-2">
-                <a href={img} download={`ai-${goodsNo}.png`} target="_blank" className="btn-line flex-1 text-center text-xs">
-                  ⬇ 다운로드
+              <div className="p-2">
+                <a href={img} download={`ai-${goodsNo}.png`} target="_blank" className="btn-line block w-full text-center text-xs">
+                  ⬇ 이미지 다운로드
                 </a>
-                <button onClick={() => generate(true)} disabled={busy} className="btn-brand flex-1 text-xs">
-                  상품 이미지로 저장
-                </button>
               </div>
             </div>
           )}
 
-          <p className="text-[11px] text-sub">
-            생성된 이미지는 영업·홍보용으로 사용하실 수 있습니다. 실제 상품과 색상·질감이 다를 수 있으니 참고용으로 활용해주세요.
+          <p className="text-[11px] leading-relaxed text-sub">
+            생성된 이미지는 <b>본인 영업·홍보용</b>으로만 사용하실 수 있으며, 쇼핑몰에는 노출되지 않습니다.
+            <br />
+            하루 {"5"}장까지 생성 가능하며 매일 자정에 초기화됩니다. (실제 상품과 색상·질감이 다를 수 있어요)
           </p>
         </div>
       )}
