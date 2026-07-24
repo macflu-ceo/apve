@@ -14,6 +14,15 @@ export default async function GoodsPage({ params }: { params: { goodsNo: string 
 
   const images = parseList(product.imagesJson);
   const sizes = parseList(product.sizesJson);
+  // 사이즈별 재고 {"L":3,"M":2}
+  const sizeStock: Record<string, number> = (() => {
+    try {
+      const v = JSON.parse(product.sizeStockJson ?? "{}");
+      return v && typeof v === "object" ? v : {};
+    } catch {
+      return {};
+    }
+  })();
   const tags = parseList(product.tagsJson);
   const rate = await getViewerRate();
   const expectedCommission =
@@ -77,8 +86,25 @@ export default async function GoodsPage({ params }: { params: { goodsNo: string 
           </div>
           <div className="flex gap-3">
             <dt className="w-20 shrink-0 text-sub">사이즈</dt>
-            <dd className="flex flex-wrap items-center gap-2">
-              <span>{sizes.length > 0 ? sizes.join(", ") : "-"}</span>
+            <dd className="flex flex-wrap items-center gap-1.5">
+              {sizes.length === 0 && <span>-</span>}
+              {sizes.map((s) => {
+                const n = sizeStock[s] ?? 0;
+                return (
+                  <span
+                    key={s}
+                    title={n > 0 ? `재고 ${n}개` : "품절"}
+                    className={`rounded-[4px] border px-2 py-1 text-xs font-bold ${
+                      n > 0
+                        ? "border-line text-ink"
+                        : "border-line/60 text-sub line-through decoration-sub/60"
+                    }`}
+                  >
+                    {s}
+                    {n > 0 && <span className="ml-1 font-semibold text-brand">{n}</span>}
+                  </span>
+                );
+              })}
               <SizeGuideModal category={product.category} productName={product.name} />
             </dd>
           </div>

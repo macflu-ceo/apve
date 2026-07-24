@@ -4,9 +4,27 @@
 //  - 이름/이미지: og:title / og:image 메타태그
 //  - 정가/판매가/재고: hidden input (set_goods_fixedPrice / set_goods_price / set_goods_stock)
 //  - 카테고리: <title> "... | 카테고리 - 몰이름"
-//  - 사이즈 옵션: AJAX 로딩이라 정적 HTML엔 없음 → 비움(추후 옵션 API 연동 시 채움)
+//  - 사이즈별 재고: <select name="optionSnoInput"> 안에 서버 렌더링되어 있음 (일체형 옵션 표시)
+//      value="30993675||0||||1^|^Sand-XXXL"  →  옵션번호||추가금||…||재고 ^|^ 옵션명
+//      실제 상품 6건으로 검증: 옵션 재고 합계 == set_goods_stock 값과 항상 일치
 
 import { extractGoodsNo, productUrl } from "./link";
+
+/** 상품의 옵션 1건 (색상-사이즈 조합) */
+export interface ScrapedOption {
+  /** 고도몰 옵션번호 (optionSno) */
+  optionSno: string;
+  /** 옵션 전체 이름 예: "BLACK-L" */
+  label: string;
+  /** 색상 예: "BLACK" (구분자가 없으면 null) */
+  color: string | null;
+  /** 사이즈 예: "L" */
+  size: string;
+  /** 옵션 재고 수량 */
+  stock: number;
+  /** 옵션 추가금(원) */
+  addPrice: number;
+}
 
 export interface ScrapedProduct {
   goodsNo: string;
@@ -17,6 +35,10 @@ export interface ScrapedProduct {
   salePrice: number | null;
   stock: number | null;
   sizes: string[];
+  /** 사이즈 → 재고 수량 */
+  sizeStock: Record<string, number>;
+  /** 옵션 원본 (색상·옵션번호·추가금 포함) */
+  options: ScrapedOption[];
   material: string | null;
   images: string[];
   detailHtml: string | null;
@@ -59,6 +81,40 @@ function toInt(s: string | null): number | null {
   return Number.isNaN(n) ? null : n;
 }
 
+/**
+ * 옵션 select 를 파싱해 사이즈별 재고를 뽑는다.
+ * 옵션이 없는 단품이면 빈 배열.
+ */
+export function parseOptions(html: string): ScrapedOption[] {
+  const select = html.match(/<select[^>]*name=["']optionSnoInput["'][^>]*>([\s\S]*?)<\/select>/i)?.[1];
+  if (!select) return [];
+
+  const out: ScrapedOption[] = [];
+  for (const m of select.matchAll(/<option[^>]*\svalue=["']([^"']*)["'][^>]*>([\s\S]*?)<\/option>/gi)) {
+    const value = m[1];
+    if (!value) continue; // 첫 안내용 <option value="">
+
+    const [left, labelRaw] = value.split("^|^");
+    const label = decode(labelRaw ?? "");
+    if (!label) continue;
+
+    const parts = left.split("||");
+    const optionSno = parts[0] ?? "";
+    const addPrice = toInt(parts[1]) ?? 0;
+    // 마지막 칸이 재고. 표시 텍스트에 [품절]이 있으면 0으로 확정.
+    const soldOut = /품절/.test(m[2]);
+    const stock = soldOut ? 0 : toInt(parts[parts.length - 1]) ?? 0;
+
+    // "BLACK-L" → 색상 BLACK / 사이즈 L (사이즈는 마지막 하이픈 뒤)
+    const cut = label.lastIndexOf("-");
+    const color = cut > 0 ? label.slice(0, cut) : null;
+    const size = cut > 0 ? label.slice(cut + 1) : label;
+
+    out.push({ optionSno, label, color, size, stock, addPrice });
+  }
+  return out;
+}
+
 export async function scrapeProduct(url: string): Promise<ScrapedProduct> {
   const goodsNo = extractGoodsNo(url);
   if (!goodsNo) throw new Error("URL에서 goodsNo를 찾을 수 없습니다: " + url);
@@ -81,7 +137,17 @@ export async function scrapeProduct(url: string): Promise<ScrapedProduct> {
   // 가격 / 재고 (hidden input)
   const listPrice = toInt(inputVal(html, "set_goods_fixedPrice"));
   const salePrice = toInt(inputVal(html, "set_goods_price"));
-  const stock = toInt(inputVal(html, "set_goods_stock"));
+
+  // 옵션(사이즈별 재고). 같은 사이즈가 색상별로 여러 개면 합산한다.
+  const options = parseOptions(html);
+  const sizeStock: Record<string, number> = {};
+  for (const o of options) sizeStock[o.size] = (sizeStock[o.size] ?? 0) + o.stock;
+  const sizes = Object.keys(sizeStock);
+
+  // 총재고는 hidden input 우선, 없으면 옵션 합계로 보정
+  const stock =
+    toInt(inputVal(html, "set_goods_stock")) ??
+    (options.length > 0 ? options.reduce((s, o) => s + o.stock, 0) : null);
 
   // 이미지 (og:image + 제이프리모 S3 패턴 수집, 순서 유지 dedup)
   const images: string[] = [];
@@ -100,7 +166,9 @@ export async function scrapeProduct(url: string): Promise<ScrapedProduct> {
     listPrice,
     salePrice,
     stock,
-    sizes: [], // 옵션은 AJAX 로딩 → 추후 옵션 API 연동 시 채움
+    sizes,
+    sizeStock,
+    options,
     material: null,
     images,
     detailHtml: null,
