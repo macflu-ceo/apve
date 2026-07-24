@@ -4,7 +4,7 @@ import { won, parseList } from "@/lib/format";
 import { getViewerRate } from "@/lib/grade";
 import SizeGuideModal from "@/components/SizeGuideModal";
 import CodeButton from "./CodeButton";
-import TryOnButton from "./TryOnButton";
+import AiImageStudio from "./AiImageStudio";
 
 export const dynamic = "force-dynamic";
 
@@ -101,8 +101,8 @@ export default async function GoodsPage({ params }: { params: { goodsNo: string 
         {/* 내 코드 만들기 */}
         <CodeButton goodsNo={product.goodsNo} />
 
-        {/* AI 착용샷 */}
-        <TryOnButton goodsNo={product.goodsNo} />
+        {/* AI 이미지 생성 */}
+        <AiImageStudio goodsNo={product.goodsNo} />
 
         {product.sourceUrl && (
           <a href={product.sourceUrl} target="_blank" className="mt-3 block text-center text-xs text-sub underline">
