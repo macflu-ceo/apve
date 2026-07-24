@@ -51,6 +51,9 @@ export async function signup(input: {
       verified: true,
       ci: input.ci,
       status: "pending",
+      // 가입 직후 자동 로그인되므로 1회로 집계
+      lastLoginAt: now,
+      loginCount: 1,
       termsAgreedAt: now,
       marketingAgreed: input.agreeMarketing,
       agreementsJson: JSON.stringify({
@@ -75,6 +78,12 @@ export async function login(username: string, password: string) {
   if (!p || !verifyPassword(password, p.passwordHash))
     return { ok: false, message: "아이디 또는 비밀번호가 올바르지 않습니다." };
   if (p.status === "rejected" || !p.active) return { ok: false, message: "이용이 제한된 계정입니다." };
+
+  // 로그인 통계 기록 (어드민 회원 관리에서 조회)
+  await prisma.partner.update({
+    where: { id: p.id },
+    data: { lastLoginAt: new Date(), loginCount: { increment: 1 } },
+  });
 
   setSession(p.id);
   return { ok: true, message: "로그인되었습니다." };

@@ -24,6 +24,8 @@ export default async function MyPage() {
   const isApproved = partner.status === "approved";
   const myGrade = isApproved ? await getPartnerGrade(partner.id) : null;
   const grade = isApproved ? myGrade?.name ?? "어필리에이터" : "승인대기중";
+  // 첫구매/일반(시스템 등급)이 아닌 커스텀 등급 = 이미 업그레이드된 회원
+  const isUpgraded = isApproved && !!myGrade && myGrade.systemKey == null;
 
   const [links, sales] = await Promise.all([
     prisma.issuedLink.findMany({ where: { partnerId: partner.id }, include: { product: true }, orderBy: { createdAt: "desc" } }),
@@ -61,17 +63,29 @@ export default async function MyPage() {
         </p>
       </div>
 
-      {/* 멤버십 업그레이드 CTA → /concierge */}
-      <Link
-        href="/concierge"
-        className="flex items-center justify-between rounded-xl2 bg-gradient-to-br from-[#efe6df] to-[#d8c3b3] p-5"
-      >
-        <div>
-          <div className="text-base font-black text-ink">컨시어지 가입하기</div>
-          <div className="mt-0.5 text-xs font-semibold text-ink/60">멤버십을 업그레이드하고 더 큰 혜택을 받으세요</div>
+      {/* 상위 등급(컨시어지 등)은 업그레이드 CTA 대신 현재 멤버십을 보여준다 */}
+      {isUpgraded ? (
+        <div className="flex items-center justify-between rounded-xl2 bg-gradient-to-br from-[#efe6df] to-[#d8c3b3] p-5">
+          <div>
+            <div className="text-base font-black text-ink">{myGrade!.name} 멤버십</div>
+            <div className="mt-0.5 text-xs font-semibold text-ink/60">
+              수수료율 {myGrade!.percent}% 가 적용되고 있습니다
+            </div>
+          </div>
+          <span className="rounded-full bg-white/70 px-3 py-1 text-xs font-black text-ink">이용중</span>
         </div>
-        <span className="text-xl">→</span>
-      </Link>
+      ) : (
+        <Link
+          href="/concierge"
+          className="flex items-center justify-between rounded-xl2 bg-gradient-to-br from-[#efe6df] to-[#d8c3b3] p-5"
+        >
+          <div>
+            <div className="text-base font-black text-ink">컨시어지 가입하기</div>
+            <div className="mt-0.5 text-xs font-semibold text-ink/60">멤버십을 업그레이드하고 더 큰 혜택을 받으세요</div>
+          </div>
+          <span className="text-xl">→</span>
+        </Link>
+      )}
 
       {!isApproved ? (
         /* 승인대기중 안내 */

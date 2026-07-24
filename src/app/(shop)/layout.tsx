@@ -5,13 +5,15 @@ import AuthModalProvider from "@/components/auth/AuthModalProvider";
 import AuthNav from "@/components/auth/AuthNav";
 import SearchBox from "@/components/SearchBox";
 import Logo from "@/components/Logo";
+import { ShopNav, ShopNavMobile } from "@/components/ShopNav";
+import { getPartnerGrade } from "@/lib/grade";
 
-const TABS = [
+const BASE_TABS = [
   { href: "/", label: "추천상품" },
   { href: "/board?category=공지", label: "공지" },
   { href: "/board?category=가이드", label: "가이드" },
-  { href: "/concierge", label: "멤버십 업그레이드" },
 ];
+const UPGRADE_TAB = { href: "/concierge", label: "멤버십 업그레이드" };
 
 function TopIcon({ path, label, href }: { path: string; label: string; href: string }) {
   return (
@@ -37,6 +39,12 @@ function BottomTab({ path, label, href }: { path: string; label: string; href: s
 
 export default async function ShopLayout({ children }: { children: React.ReactNode }) {
   const [setting, partner] = await Promise.all([getSiteSetting(), getSessionPartner()]);
+
+  // 이미 상위 등급(컨시어지 등 = systemKey 없는 커스텀 등급)이면 업그레이드 메뉴를 감춘다
+  const grade = partner ? await getPartnerGrade(partner.id) : null;
+  const upgraded = !!grade && grade.systemKey == null;
+  const tabs = upgraded ? BASE_TABS : [...BASE_TABS, UPGRADE_TAB];
+
   return (
     <AuthModalProvider>
       <header className="sticky top-0 z-40 border-b border-line bg-white">
@@ -45,20 +53,7 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
             <Logo height={22} />
           </Link>
 
-          <nav className="hidden lg:block">
-            <ul className="flex gap-6 text-[15px] font-bold">
-              {TABS.map((t, i) => (
-                <li key={i}>
-                  <Link
-                    href={t.href}
-                    className={i === 0 ? "border-b-2 border-brand pb-1 text-ink" : "pb-1 text-ink/70 hover:text-ink"}
-                  >
-                    {t.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </nav>
+          <ShopNav tabs={tabs} />
 
           <div className="ml-auto hidden min-w-[240px] flex-1 md:block lg:max-w-sm">
             <SearchBox />
@@ -76,17 +71,7 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
         </div>
 
         {/* 탭 (모바일/태블릿) */}
-        <nav className="lg:hidden">
-          <ul className="no-scrollbar flex gap-5 overflow-x-auto px-4 pb-2 text-[15px] font-bold">
-            {TABS.map((t, i) => (
-              <li key={i} className="whitespace-nowrap">
-                <Link href={t.href} className={i === 0 ? "border-b-2 border-brand pb-1" : "pb-1 text-ink/70"}>
-                  {t.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
+        <ShopNavMobile tabs={tabs} />
       </header>
 
       <main className="mx-auto max-w-shell pb-24 md:pb-0">{children}</main>
@@ -121,7 +106,9 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
                 <li><Link href="/" className="hover:text-ink">추천상품</Link></li>
                 <li><Link href="/board?category=공지" className="hover:text-ink">공지사항</Link></li>
                 <li><Link href="/board?category=가이드" className="hover:text-ink">이용 가이드</Link></li>
-                <li><Link href="/concierge" className="hover:text-ink">멤버십 업그레이드</Link></li>
+                {!upgraded && (
+                  <li><Link href="/concierge" className="hover:text-ink">멤버십 업그레이드</Link></li>
+                )}
                 <li><Link href="/me" className="hover:text-ink">내정보</Link></li>
                 <li><Link href="/terms" className="font-semibold hover:text-ink">약관 및 정책</Link></li>
               </ul>

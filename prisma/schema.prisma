@@ -44,6 +44,10 @@ model Partner {
   active       Boolean  @default(true)
   createdAt    DateTime @default(now())
 
+  /// 마지막 로그인 시각 / 누적 로그인 횟수 (어드민 회원 통계)
+  lastLoginAt  DateTime?
+  loginCount   Int      @default(0)
+
   /// 어드민이 수동 지정한 등급. 없으면 판매실적으로 자동 판정(첫구매/일반)
   grade   Grade?  @relation(fields: [gradeId], references: [id])
   gradeId String?

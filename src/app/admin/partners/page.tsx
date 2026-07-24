@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { won } from "@/lib/format";
 import { listGrades } from "@/lib/grade";
@@ -8,21 +9,228 @@ import { decryptSensitive, maskResidentNo, maskAccount } from "@/lib/crypto";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminPartners() {
-  const [partners, grades] = await Promise.all([
-    prisma.partner.findMany({
-      orderBy: { createdAt: "desc" },
-      include: { _count: { select: { sales: true, links: true } }, sales: true },
-    }),
+// ── 기간 기준 ──
+// joined   : 그 기간에 가입한 회원만 (지표는 전체 누적)
+// login    : 그 기간에 로그인한 회원만 (지표는 전체 누적)
+// activity : 회원은 전부, 지표(AI/코드/판매/수수료)만 그 기간으로 집계
+const BASIS = [
+  { key: "joined", label: "가입일" },
+  { key: "login", label: "최근 로그인" },
+  { key: "activity", label: "실적 발생일" },
+] as const;
+
+const STATUS = [
+  { key: "approved", label: "승인" },
+  { key: "pending", label: "대기" },
+  { key: "rejected", label: "반려" },
+  { key: "all", label: "전체" },
+] as const;
+
+/** YYYY-MM-DD 를 한국시간 기준 하루의 시작/끝으로 변환 */
+function kstStart(d: string) {
+  return new Date(`${d}T00:00:00+09:00`);
+}
+function kstEnd(d: string) {
+  return new Date(`${d}T23:59:59.999+09:00`);
+}
+/** 오늘로부터 n일 전 날짜 문자열 (KST) */
+function daysAgo(n: number) {
+  const t = Date.now() + 9 * 3600_000 - n * 86400_000;
+  return new Date(t).toISOString().slice(0, 10);
+}
+function fmtDate(d: Date | null) {
+  if (!d) return "-";
+  return new Date(d.getTime() + 9 * 3600_000).toISOString().slice(0, 10);
+}
+function fmtDateTime(d: Date | null) {
+  if (!d) return "-";
+  const s = new Date(d.getTime() + 9 * 3600_000).toISOString();
+  return `${s.slice(5, 10)} ${s.slice(11, 16)}`;
+}
+/** 숫자만 남기기 (전화번호 검색용) */
+function digits(s: string) {
+  return s.replace(/\D/g, "");
+}
+
+type SP = Record<string, string | undefined>;
+type Row = {
+  id: string;
+  name: string;
+  username: string;
+  phone: string | null;
+  code: string | null;
+  status: string;
+  createdAt: Date;
+  lastLoginAt: Date | null;
+  loginCount: number;
+  gradeId: string | null;
+  gradeName: string;
+  settlementStatus: string;
+  aiCount: number;
+  linkCount: number;
+  saleCount: number;
+  commission: number;
+  totalSaleCount: number;
+  residentNoEnc: string | null;
+  address: string | null;
+  bankName: string | null;
+  bankAccount: string | null;
+  accountHolder: string | null;
+  idCardUrl: string | null;
+  bankbookUrl: string | null;
+};
+
+const SORTERS: Record<string, (a: Row, b: Row) => number> = {
+  name: (a, b) => a.name.localeCompare(b.name, "ko"),
+  username: (a, b) => a.username.localeCompare(b.username),
+  phone: (a, b) => digits(a.phone ?? "").localeCompare(digits(b.phone ?? "")),
+  code: (a, b) => (a.code ?? "").localeCompare(b.code ?? ""),
+  grade: (a, b) => a.gradeName.localeCompare(b.gradeName, "ko"),
+  settlement: (a, b) => a.settlementStatus.localeCompare(b.settlementStatus),
+  createdAt: (a, b) => a.createdAt.getTime() - b.createdAt.getTime(),
+  lastLoginAt: (a, b) => (a.lastLoginAt?.getTime() ?? 0) - (b.lastLoginAt?.getTime() ?? 0),
+  loginCount: (a, b) => a.loginCount - b.loginCount,
+  aiCount: (a, b) => a.aiCount - b.aiCount,
+  linkCount: (a, b) => a.linkCount - b.linkCount,
+  saleCount: (a, b) => a.saleCount - b.saleCount,
+  commission: (a, b) => a.commission - b.commission,
+};
+
+export default async function AdminPartners({ searchParams }: { searchParams: SP }) {
+  const q = (searchParams.q ?? "").trim();
+  const basis = (BASIS.find((b) => b.key === searchParams.basis)?.key ?? "joined") as string;
+  const status = (STATUS.find((s) => s.key === searchParams.status)?.key ?? "approved") as string;
+  const from = searchParams.from ?? "";
+  const to = searchParams.to ?? "";
+  const sort = SORTERS[searchParams.sort ?? ""] ? searchParams.sort! : "createdAt";
+  const dir = searchParams.dir === "asc" ? "asc" : "desc";
+
+  const hasRange = !!(from || to);
+  const range = hasRange
+    ? { ...(from ? { gte: kstStart(from) } : {}), ...(to ? { lte: kstEnd(to) } : {}) }
+    : undefined;
+  // 실적 집계에만 기간을 적용할지 (basis=activity)
+  const metricRange = basis === "activity" ? range : undefined;
+
+  // 회원 자체를 거르는 조건
+  const partnerWhere: Record<string, unknown> = {};
+  if (status !== "all") partnerWhere.status = status;
+  if (basis === "joined" && range) partnerWhere.createdAt = range;
+  if (basis === "login" && range) partnerWhere.lastLoginAt = range;
+  if (q) {
+    const d = digits(q);
+    partnerWhere.OR = [
+      { name: { contains: q, mode: "insensitive" } },
+      { username: { contains: q, mode: "insensitive" } },
+      ...(d.length >= 2 ? [{ phone: { contains: d } }] : []),
+      ...(q ? [{ phone: { contains: q } }] : []),
+    ];
+  }
+
+  const [partners, grades, aiAgg, linkAgg, saleAgg, saleTotalAgg, pendingList] = await Promise.all([
+    prisma.partner.findMany({ where: partnerWhere }),
     listGrades(),
+    prisma.tryOnImage.groupBy({
+      by: ["partnerId"],
+      _count: { _all: true },
+      ...(metricRange ? { where: { createdAt: metricRange } } : {}),
+    }),
+    prisma.issuedLink.groupBy({
+      by: ["partnerId"],
+      _count: { _all: true },
+      ...(metricRange ? { where: { createdAt: metricRange } } : {}),
+    }),
+    prisma.sale.groupBy({
+      by: ["partnerId"],
+      _count: { _all: true },
+      _sum: { commission: true },
+      ...(metricRange ? { where: { orderedAt: metricRange } } : {}),
+    }),
+    // 등급 자동판정(첫구매/일반)은 항상 전체 누적 실적 기준
+    prisma.sale.groupBy({ by: ["partnerId"], _count: { _all: true } }),
+    prisma.partner.findMany({ where: { status: "pending" }, orderBy: { createdAt: "desc" } }),
   ]);
+
   const gradeOptions = grades.map((g) => ({ id: g.id, name: g.name, percent: g.percent }));
   const firstName = grades.find((g) => g.systemKey === "first")?.name ?? "첫구매";
   const normalName = grades.find((g) => g.systemKey === "normal")?.name ?? "일반";
 
-  const pending = partners.filter((p) => p.status === "pending");
-  const approved = partners.filter((p) => p.status === "approved");
-  const rejected = partners.filter((p) => p.status === "rejected");
+  const aiMap = new Map(aiAgg.map((r) => [r.partnerId, r._count._all]));
+  const linkMap = new Map(linkAgg.map((r) => [r.partnerId, r._count._all]));
+  const saleMap = new Map(saleAgg.map((r) => [r.partnerId, r]));
+  const saleTotalMap = new Map(saleTotalAgg.map((r) => [r.partnerId, r._count._all]));
+
+  const rows: Row[] = partners.map((p) => {
+    const totalSaleCount = saleTotalMap.get(p.id) ?? 0;
+    const s = saleMap.get(p.id);
+    return {
+      id: p.id,
+      name: p.name,
+      username: p.username,
+      phone: p.phone,
+      code: p.code,
+      status: p.status,
+      createdAt: p.createdAt,
+      lastLoginAt: p.lastLoginAt,
+      loginCount: p.loginCount,
+      gradeId: p.gradeId,
+      gradeName: p.gradeId
+        ? grades.find((g) => g.id === p.gradeId)?.name ?? "-"
+        : totalSaleCount > 0
+          ? normalName
+          : firstName,
+      settlementStatus: p.settlementStatus,
+      aiCount: aiMap.get(p.id) ?? 0,
+      linkCount: linkMap.get(p.id) ?? 0,
+      saleCount: s?._count._all ?? 0,
+      commission: s?._sum.commission ?? 0,
+      totalSaleCount,
+      residentNoEnc: p.residentNoEnc,
+      address: p.address,
+      bankName: p.bankName,
+      bankAccount: p.bankAccount,
+      accountHolder: p.accountHolder,
+      idCardUrl: p.idCardUrl,
+      bankbookUrl: p.bankbookUrl,
+    };
+  });
+
+  rows.sort((a, b) => (dir === "asc" ? 1 : -1) * SORTERS[sort](a, b));
+
+  const sum = rows.reduce(
+    (acc, r) => ({
+      loginCount: acc.loginCount + r.loginCount,
+      aiCount: acc.aiCount + r.aiCount,
+      linkCount: acc.linkCount + r.linkCount,
+      saleCount: acc.saleCount + r.saleCount,
+      commission: acc.commission + r.commission,
+    }),
+    { loginCount: 0, aiCount: 0, linkCount: 0, saleCount: 0, commission: 0 }
+  );
+
+  /** 현재 조건을 유지한 채 일부만 바꾼 URL */
+  function href(patch: SP) {
+    const next = { q, basis, status, from, to, sort, dir, ...patch };
+    const sp = new URLSearchParams();
+    for (const [k, v] of Object.entries(next)) if (v) sp.set(k, String(v));
+    return `/admin/partners?${sp.toString()}`;
+  }
+
+  /** 정렬 가능한 헤더 셀 */
+  function Th({ k, label, right }: { k: string; label: string; right?: boolean }) {
+    const on = sort === k;
+    return (
+      <th className={`whitespace-nowrap py-2 ${right ? "text-right" : "text-left"}`}>
+        <Link
+          href={href({ sort: k, dir: on && dir === "desc" ? "asc" : "desc" })}
+          className={`inline-flex items-center gap-0.5 hover:text-ink ${on ? "font-bold text-brand" : ""}`}
+        >
+          {label}
+          <span className={on ? "" : "text-line"}>{on ? (dir === "asc" ? "▲" : "▼") : "↕"}</span>
+        </Link>
+      </th>
+    );
+  }
 
   return (
     <div>
@@ -31,93 +239,218 @@ export default async function AdminPartners() {
       {/* 가입 신청 대기 */}
       <section className="mb-8">
         <h2 className="mb-3 text-lg font-semibold">
-          가입 신청 대기 <span className="text-brand">({pending.length})</span>
+          가입 신청 대기 <span className="text-brand">({pendingList.length})</span>
         </h2>
-        {pending.length === 0 ? (
+        {pendingList.length === 0 ? (
           <div className="card p-6 text-sm text-sub">대기 중인 신청이 없습니다.</div>
         ) : (
           <div className="space-y-2">
-            {pending.map((p) => (
+            {pendingList.map((p) => (
               <PendingRow
                 key={p.id}
-                p={{ id: p.id, username: p.username, name: p.name, phone: p.phone, verified: p.verified, createdAt: p.createdAt.toISOString().slice(0, 10) }}
+                p={{
+                  id: p.id,
+                  username: p.username,
+                  name: p.name,
+                  phone: p.phone,
+                  verified: p.verified,
+                  createdAt: fmtDate(p.createdAt),
+                }}
               />
             ))}
           </div>
         )}
       </section>
 
-      {/* 승인된 파트너 */}
+      {/* ── 필터 ── */}
+      <form method="get" className="mb-4 space-y-3 rounded-xl2 border border-line bg-[#fbfaf9] p-4">
+        <div className="flex flex-wrap items-end gap-3">
+          <label className="flex flex-col gap-1">
+            <span className="text-xs font-semibold text-sub">검색 (이름 · 아이디 · 전화번호)</span>
+            <input
+              name="q"
+              defaultValue={q}
+              placeholder="홍길동 / 01012345678"
+              className="field w-56"
+            />
+          </label>
+
+          <label className="flex flex-col gap-1">
+            <span className="text-xs font-semibold text-sub">기간 기준</span>
+            <select name="basis" defaultValue={basis} className="field w-32">
+              {BASIS.map((b) => (
+                <option key={b.key} value={b.key}>
+                  {b.label}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="flex flex-col gap-1">
+            <span className="text-xs font-semibold text-sub">시작일</span>
+            <input type="date" name="from" defaultValue={from} className="field w-40" />
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="text-xs font-semibold text-sub">종료일</span>
+            <input type="date" name="to" defaultValue={to} className="field w-40" />
+          </label>
+
+          <label className="flex flex-col gap-1">
+            <span className="text-xs font-semibold text-sub">상태</span>
+            <select name="status" defaultValue={status} className="field w-24">
+              {STATUS.map((s) => (
+                <option key={s.key} value={s.key}>
+                  {s.label}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <input type="hidden" name="sort" value={sort} />
+          <input type="hidden" name="dir" value={dir} />
+          <button className="btn-brand h-[42px] px-5">조회</button>
+          <Link href="/admin/partners" className="btn-line h-[42px] px-4 leading-[26px]">
+            초기화
+          </Link>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-1.5 text-xs">
+          <span className="mr-1 text-sub">빠른 선택</span>
+          {[
+            { label: "오늘", f: daysAgo(0), t: daysAgo(0) },
+            { label: "7일", f: daysAgo(6), t: daysAgo(0) },
+            { label: "30일", f: daysAgo(29), t: daysAgo(0) },
+            { label: "90일", f: daysAgo(89), t: daysAgo(0) },
+          ].map((r) => (
+            <Link
+              key={r.label}
+              href={href({ from: r.f, to: r.t })}
+              className={`rounded-full border px-3 py-1 font-semibold ${
+                from === r.f && to === r.t
+                  ? "border-brand bg-brand text-white"
+                  : "border-line bg-white text-ink/70 hover:border-ink/30"
+              }`}
+            >
+              {r.label}
+            </Link>
+          ))}
+          <Link
+            href={href({ from: "", to: "" })}
+            className={`rounded-full border px-3 py-1 font-semibold ${
+              !hasRange ? "border-brand bg-brand text-white" : "border-line bg-white text-ink/70 hover:border-ink/30"
+            }`}
+          >
+            전체기간
+          </Link>
+          <span className="ml-2 text-sub">
+            {basis === "activity"
+              ? "· 회원은 전부 표시하고, AI·코드·판매·수수료만 이 기간으로 집계합니다."
+              : `· ${BASIS.find((b) => b.key === basis)!.label}이 이 기간에 속한 회원만 표시합니다. (지표는 전체 누적)`}
+          </span>
+        </div>
+      </form>
+
+      {/* ── 목록 ── */}
       <section className="mb-8">
-        <h2 className="mb-3 text-lg font-semibold">승인된 파트너 ({approved.length})</h2>
+        <h2 className="mb-3 text-lg font-semibold">
+          회원 목록 <span className="text-brand">({rows.length})</span>
+        </h2>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px] text-sm">
-            <thead className="border-b border-line text-left text-sub">
+          <table className="w-full min-w-[1280px] text-sm">
+            <thead className="border-b border-line text-sub">
               <tr>
-                <th className="py-2">이름</th>
-                <th>아이디</th>
-                <th>코드</th>
-                <th>등급</th>
-                <th>정산정보</th>
-                <th>링크</th>
-                <th>판매</th>
-                <th>누적 수수료</th>
+                <Th k="name" label="이름" />
+                <Th k="username" label="아이디" />
+                <Th k="phone" label="연락처" />
+                <Th k="code" label="코드" />
+                <Th k="grade" label="등급" />
+                <Th k="settlement" label="정산정보" />
+                <Th k="createdAt" label="가입일" />
+                <Th k="lastLoginAt" label="최근 로그인" />
+                <Th k="loginCount" label="로그인" right />
+                <Th k="aiCount" label="AI 이미지" right />
+                <Th k="linkCount" label="코드 생성" right />
+                <Th k="saleCount" label="판매" right />
+                <Th k="commission" label="수수료" right />
               </tr>
             </thead>
             <tbody>
-              {approved.map((p) => {
-                const commission = p.sales.reduce((s, x) => s + x.commission, 0);
-                return (
-                  <tr key={p.id} className="border-b border-line">
-                    <td className="py-2 font-medium">{p.name}</td>
-                    <td className="text-sub">@{p.username}</td>
-                    <td>
+              {rows.length === 0 && (
+                <tr>
+                  <td colSpan={13} className="py-8 text-center text-sub">
+                    조건에 맞는 회원이 없습니다.
+                  </td>
+                </tr>
+              )}
+              {rows.map((p) => (
+                <tr key={p.id} className="border-b border-line align-middle">
+                  <td className="whitespace-nowrap py-2 font-medium">
+                    {p.name}
+                    {p.status !== "approved" && (
+                      <span className="ml-1 rounded bg-line px-1 text-[10px] text-sub">
+                        {p.status === "pending" ? "대기" : "반려"}
+                      </span>
+                    )}
+                  </td>
+                  <td className="whitespace-nowrap text-sub">@{p.username}</td>
+                  <td className="whitespace-nowrap text-sub">{p.phone ?? "-"}</td>
+                  <td>
+                    {p.code ? (
                       <code className="rounded bg-brandsoft px-1.5 py-0.5 text-xs">{p.code}</code>
-                    </td>
-                    <td>
-                      <GradeSelect
-                        partnerId={p.id}
-                        gradeId={p.gradeId}
-                        autoName={p._count.sales > 0 ? normalName : firstName}
-                        grades={gradeOptions}
-                      />
-                    </td>
-                    <td>
-                      <SettlementCell
-                        partnerId={p.id}
-                        status={p.settlementStatus}
-                        residentMasked={maskResidentNo(decryptSensitive(p.residentNoEnc))}
-                        address={p.address}
-                        bank={p.bankName}
-                        accountMasked={maskAccount(p.bankAccount)}
-                        holder={p.accountHolder}
-                        idCardPath={p.idCardUrl}
-                        bankbookPath={p.bankbookUrl}
-                      />
-                    </td>
-                    <td>{p._count.links}건</td>
-                    <td>{p._count.sales}건</td>
-                    <td className="font-semibold text-brand">{won(commission)}</td>
-                  </tr>
-                );
-              })}
+                    ) : (
+                      <span className="text-sub">-</span>
+                    )}
+                  </td>
+                  <td>
+                    <GradeSelect
+                      partnerId={p.id}
+                      gradeId={p.gradeId}
+                      autoName={p.totalSaleCount > 0 ? normalName : firstName}
+                      grades={gradeOptions}
+                    />
+                  </td>
+                  <td>
+                    <SettlementCell
+                      partnerId={p.id}
+                      status={p.settlementStatus}
+                      residentMasked={maskResidentNo(decryptSensitive(p.residentNoEnc))}
+                      address={p.address}
+                      bank={p.bankName}
+                      accountMasked={maskAccount(p.bankAccount)}
+                      holder={p.accountHolder}
+                      idCardPath={p.idCardUrl}
+                      bankbookPath={p.bankbookUrl}
+                    />
+                  </td>
+                  <td className="whitespace-nowrap text-sub">{fmtDate(p.createdAt)}</td>
+                  <td className="whitespace-nowrap text-sub">{fmtDateTime(p.lastLoginAt)}</td>
+                  <td className="text-right tabular-nums">{p.loginCount.toLocaleString()}</td>
+                  <td className="text-right tabular-nums">{p.aiCount.toLocaleString()}</td>
+                  <td className="text-right tabular-nums">{p.linkCount.toLocaleString()}</td>
+                  <td className="text-right tabular-nums">{p.saleCount.toLocaleString()}</td>
+                  <td className="whitespace-nowrap text-right font-semibold tabular-nums text-brand">
+                    {won(p.commission)}
+                  </td>
+                </tr>
+              ))}
             </tbody>
+            {rows.length > 0 && (
+              <tfoot>
+                <tr className="border-t-2 border-line bg-[#fbfaf9] font-bold">
+                  <td className="py-2" colSpan={8}>
+                    합계 ({rows.length}명)
+                  </td>
+                  <td className="text-right tabular-nums">{sum.loginCount.toLocaleString()}</td>
+                  <td className="text-right tabular-nums">{sum.aiCount.toLocaleString()}</td>
+                  <td className="text-right tabular-nums">{sum.linkCount.toLocaleString()}</td>
+                  <td className="text-right tabular-nums">{sum.saleCount.toLocaleString()}</td>
+                  <td className="whitespace-nowrap text-right tabular-nums text-brand">{won(sum.commission)}</td>
+                </tr>
+              </tfoot>
+            )}
           </table>
         </div>
       </section>
-
-      {rejected.length > 0 && (
-        <section>
-          <h2 className="mb-3 text-lg font-semibold text-sub">반려 ({rejected.length})</h2>
-          <div className="text-sm text-sub">
-            {rejected.map((p) => (
-              <span key={p.id} className="mr-3">
-                {p.name}(@{p.username})
-              </span>
-            ))}
-          </div>
-        </section>
-      )}
     </div>
   );
 }
