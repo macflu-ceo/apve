@@ -7,6 +7,7 @@
 
 import { prisma } from "@/lib/db";
 import { getPartnerGrade } from "@/lib/grade";
+import { boostFromWindows } from "@/lib/timesale";
 
 /** 고도몰 API 한 행 */
 export interface GodoSaleRow {
@@ -100,6 +101,15 @@ export async function syncConciergeSales(from: string, to: string): Promise<Sync
   // 등급 %는 파트너별로 한 번만 조회 (캐시)
   const gradeCache = new Map<string, number>();
 
+  // 골든타임 부스트 이력 (기간과 겹치는 것만)
+  const boostWindows = await prisma.marginUpWindow.findMany({
+    where: {
+      startAt: { lte: new Date(`${to}T23:59:59+09:00`) },
+      endAt: { gte: new Date(`${from}T00:00:00+09:00`) },
+    },
+    select: { startAt: true, endAt: true, productsJson: true },
+  });
+
   for (const row of rows) {
     // 미결제(입금대기)는 아직 판매가 아님 → 스킵
     if (row.orderStatus && row.orderStatus.toLowerCase().startsWith("o")) {
@@ -127,8 +137,13 @@ export async function syncConciergeSales(from: string, to: string): Promise<Sync
       ? await prisma.product.findUnique({ where: { goodsNo: row.goodsNo }, select: { id: true } })
       : null;
 
+    // 골든타임 부스트: 주문 시각이 그 상품의 부스트 기간에 들면 수수료율 가산
+    const orderedAt = toDate(row.orderedAt) ?? new Date();
+    const boost = boostFromWindows(boostWindows, product?.id ?? null, orderedAt);
+    const effRate = percent + boost;
+
     const amount = Math.round(row.amount ?? 0);
-    const commission = row.settleStatus === "canceled" ? 0 : Math.round((amount * percent) / 100);
+    const commission = row.settleStatus === "canceled" ? 0 : Math.round((amount * effRate) / 100);
     if (row.settleStatus === "canceled") result.canceled++;
 
     const syncKey = `${row.orderNo}|${row.goodsNo}|${row.optionName ?? ""}`;
@@ -141,7 +156,7 @@ export async function syncConciergeSales(from: string, to: string): Promise<Sync
       commission,
       status: row.settleStatus,
       orderNo: row.orderNo,
-      orderedAt: toDate(row.orderedAt) ?? new Date(),
+      orderedAt,
       goodsNo: row.goodsNo,
       goodsName: row.goodsNm,
       optionName: row.optionName || null,

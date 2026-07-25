@@ -18,9 +18,11 @@ export default async function AdminTimeSale() {
 
   return (
     <div>
-      <h1 className="mb-1 text-2xl font-bold">타임세일</h1>
+      <h1 className="mb-1 text-2xl font-bold">골든타임 (한정 수수료 부스트)</h1>
       <p className="mb-6 text-sm text-sub">
-        맨 위 배너에 노출됩니다. 상품·할인율·오픈 시간을 정하고, 진행 중일 때 추가 할인가와 카운트다운이 표시됩니다.
+        맨 위 배너에 노출됩니다. 한정 시간 동안 선택한 상품을 팔면 <b>수수료가 올라갑니다.</b> 상품·부스트·오픈 시간을 정하세요.
+        <br />
+        (상품 가격은 그대로이고, 파트너가 받는 수수료율만 올라가는 방식이라 고도몰 설정이 필요 없습니다.)
       </p>
 
       <TimeSaleEditor
@@ -28,14 +30,14 @@ export default async function AdminTimeSale() {
           title: config.title,
           upcomingText: config.upcomingText,
           liveText: config.liveText,
-          baseDiscount: config.baseDiscount,
+          baseBoost: config.baseBoost,
           active: config.active,
           startAt: config.startAt?.toISOString() ?? null,
           endAt: config.endAt?.toISOString() ?? null,
         }}
         state={state}
         refPercent={refPercent}
-        initialItems={items.map((i) => ({ productId: i.productId, discount: i.discount }))}
+        initialItems={items.map((i) => ({ productId: i.productId, boost: i.boost }))}
         products={products.map((p) => ({
           id: p.id,
           name: p.name,

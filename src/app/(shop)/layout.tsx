@@ -9,6 +9,8 @@ import { getPartnerGrade } from "@/lib/grade";
 import { getCompany } from "@/lib/company";
 import { getTimeSaleForShop } from "@/lib/timesale";
 import TimeSaleBanner from "@/components/TimeSaleBanner";
+import { getActivePopups } from "@/lib/popup";
+import PopupLayer from "@/components/PopupLayer";
 
 const BASE_TABS = [
   { href: "/", label: "추천상품" },
@@ -40,11 +42,12 @@ function BottomTab({ path, label, href }: { path: string; label: string; href: s
 }
 
 export default async function ShopLayout({ children }: { children: React.ReactNode }) {
-  const [setting, partner, timeSale, COMPANY] = await Promise.all([
+  const [setting, partner, timeSale, COMPANY, popups] = await Promise.all([
     getSiteSetting(),
     getSessionPartner(),
     getTimeSaleForShop(),
     getCompany(),
+    getActivePopups(),
   ]);
 
   // 이미 상위 등급(컨시어지 등 = systemKey 없는 커스텀 등급)이면 업그레이드 메뉴를 감춘다
@@ -54,6 +57,7 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
 
   return (
     <AuthModalProvider>
+      {popups.length > 0 && <PopupLayer popups={popups} />}
       {timeSale && timeSale.state !== "off" && (
         <TimeSaleBanner
           title={timeSale.ts.title}
@@ -62,6 +66,7 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
           liveText={timeSale.ts.liveText}
           startAt={timeSale.ts.startAt?.toISOString() ?? null}
           endAt={timeSale.ts.endAt?.toISOString() ?? null}
+          maxBoost={timeSale.maxBoost}
         />
       )}
       <header className="sticky top-0 z-40 border-b border-line bg-white">

@@ -260,21 +260,21 @@ model Sale {
   @@index([status, paidOut])
 }
 
-/// 타임세일 (단일 설정) — 맨 위 배너 + 카운트다운
+/// 골든타임 (단일 설정) — 한정 시간 수수료 부스트. 맨 위 배너 + 카운트다운
 model TimeSale {
   id           String   @id @default("main")
-  title        String   @default("⚡ TIME SALE")
+  title        String   @default("🔥 골든타임")
   /// 배너 노출 on/off (마스터 스위치)
   active       Boolean  @default(false)
   /// 오픈(시작)·종료 시각. 둘 다 있고 now가 그 사이면 '진행중'
   startAt      DateTime?
   endAt        DateTime?
   /// 오픈 전/종료 후 노출 문구
-  upcomingText String   @default("타임세일 오픈 예정!")
+  upcomingText String   @default("골든타임 오픈 예정!")
   /// 진행중 강조 문구
-  liveText     String   @default("지금 진행중")
-  /// 세일 기본 추가 할인율(%) — 상품별 개별값이 없으면 이 값 적용
-  baseDiscount Int      @default(0)
+  liveText     String   @default("지금 판매하면 수수료 UP")
+  /// 기본 추가 수수료율(%p) — 상품별 개별값이 없으면 이 값 적용
+  baseBoost    Int      @default(0)
   updatedAt    DateTime @updatedAt
 
   products TimeSaleProduct[]
@@ -287,10 +287,37 @@ model TimeSaleProduct {
   product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   productId  String
   sort       Int      @default(0)
-  /// 이 상품만의 추가 할인율(%). null이면 세일 기본 할인율 적용
-  discount   Int?
+  /// 이 상품만의 추가 수수료율(%p). null이면 기본값 적용
+  boost      Int?
 
   @@unique([timeSaleId, productId])
+}
+
+/// 골든타임 진행 이력 스냅샷 — 정산 시 그 기간 판매에 부스트를 정확히 적용하기 위함
+model MarginUpWindow {
+  id           String   @id @default(cuid())
+  startAt      DateTime
+  endAt        DateTime
+  baseBoost    Int      @default(0)
+  /// 상품별 부스트 스냅샷 (JSON: { "<productId>": boost%p })
+  productsJson String
+  createdAt    DateTime @default(now())
+
+  @@index([startAt, endAt])
+}
+
+/// 홈 팝업 (이미지 + 링크, 가운데 모달)
+model Popup {
+  id        String   @id @default(cuid())
+  title     String
+  imageUrl  String
+  linkUrl   String?
+  active    Boolean  @default(true)
+  /// 노출 기간 (없으면 상시)
+  startAt   DateTime?
+  endAt     DateTime?
+  sort      Int      @default(0)
+  createdAt DateTime @default(now())
 }
 
 /// 홈 히어로 배너

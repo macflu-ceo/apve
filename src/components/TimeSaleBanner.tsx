@@ -28,6 +28,7 @@ export default function TimeSaleBanner({
   liveText,
   startAt,
   endAt,
+  maxBoost,
 }: {
   title: string;
   state: State;
@@ -35,6 +36,7 @@ export default function TimeSaleBanner({
   liveText: string;
   startAt: string | null; // ISO
   endAt: string | null;
+  maxBoost: number;
 }) {
   const router = useRouter();
   const [now, setNow] = useState<number | null>(null);
@@ -70,16 +72,22 @@ export default function TimeSaleBanner({
   return (
     <Link
       href="/timesale"
-      className={`block ${live ? "bg-gradient-to-r from-[#e5322f] via-[#f0453e] to-[#c81e1a]" : "bg-gradient-to-r from-[#2b2622] to-[#4a3f36]"} text-white`}
+      className={`block ${live ? "bg-gradient-to-r from-[#b8860b] via-[#e0a520] to-[#9a6f08]" : "bg-gradient-to-r from-[#2b2622] to-[#4a3f36]"} text-white`}
     >
       <div className="mx-auto flex max-w-shell items-center gap-3 px-4 py-2.5">
-        <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-black tracking-wide ${live ? "bg-white text-[#e5322f]" : "bg-white/20 text-white"}`}>
+        <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-black tracking-wide ${live ? "bg-white text-[#9a6f08]" : "bg-white/20 text-white"}`}>
           {live ? "LIVE" : "SOON"}
         </span>
 
         <span className="shrink-0 text-sm font-black tracking-tight">{title}</span>
 
-        <span className="hidden text-xs font-semibold text-white/80 sm:inline">
+        {maxBoost > 0 && (
+          <span className={`shrink-0 rounded px-1.5 py-0.5 text-xs font-black ${live ? "bg-white text-[#9a6f08]" : "bg-white/15 text-white"}`}>
+            수수료 +{maxBoost}%p
+          </span>
+        )}
+
+        <span className="hidden text-xs font-semibold text-white/85 sm:inline">
           {live ? liveText : upcomingText}
         </span>
 
