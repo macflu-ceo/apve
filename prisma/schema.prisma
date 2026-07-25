@@ -113,11 +113,28 @@ model Product {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  /// 누적 조회수 (빠른 정렬/표시용 비정규화 카운터)
+  views       Int      @default(0)
+
   links       IssuedLink[]
   sales       Sale[]
   tryOns      TryOnImage[]
   sections    SectionProduct[]
   exhibitions ExhibitionProduct[]
+  viewLogs    ProductView[]
+}
+
+/// 상품 조회 이벤트 (기간별 통계용) — 상세페이지 진입 시 1건
+model ProductView {
+  id        String   @id @default(cuid())
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId String
+  /// 로그인 파트너면 기록(비로그인은 null)
+  partnerId String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([productId, createdAt])
 }
 
 /// 기획전 — 이름 + 상단 배너 + 골라 담은 상품들로 구성된 독립 페이지

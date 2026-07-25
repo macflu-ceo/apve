@@ -5,6 +5,7 @@ import Logo from "@/components/Logo";
 
 const ADMIN_MENU = [
   { href: "/admin", label: "대시보드" },
+  { href: "/admin/analytics", label: "애널리틱스" },
   { href: "/admin/products", label: "상품 등록/관리" },
   { href: "/admin/banners", label: "배너 관리" },
   { href: "/admin/categories", label: "카테고리 관리" },

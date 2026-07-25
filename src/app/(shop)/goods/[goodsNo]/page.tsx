@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { won, parseList } from "@/lib/format";
 import { getViewerRate } from "@/lib/grade";
+import { getSessionPartner } from "@/lib/auth";
+import { logProductView } from "@/lib/analytics";
 import SizeGuideModal from "@/components/SizeGuideModal";
 import CodeButton from "./CodeButton";
 import AiImageStudio from "./AiImageStudio";
@@ -11,6 +13,10 @@ export const dynamic = "force-dynamic";
 export default async function GoodsPage({ params }: { params: { goodsNo: string } }) {
   const product = await prisma.product.findUnique({ where: { goodsNo: params.goodsNo } });
   if (!product) notFound();
+
+  // 조회수 기록 (비차단)
+  const viewer = await getSessionPartner();
+  await logProductView(product.id, viewer?.id);
 
   const images = parseList(product.imagesJson);
   const sizes = parseList(product.sizesJson);
