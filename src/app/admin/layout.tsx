@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { isAdmin } from "@/lib/admin";
 import Logo from "@/components/Logo";
+import AdminMenu from "./AdminMenu";
 
 const ADMIN_MENU = [
   { href: "/admin", label: "대시보드" },
@@ -47,17 +48,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       <div className="mx-auto grid max-w-shell gap-8 px-4 py-6 md:grid-cols-[200px_1fr]">
         <aside>
-          <nav className="flex flex-col gap-1">
-            {ADMIN_MENU.map((m) => (
-              <Link
-                key={m.href}
-                href={m.href}
-                className="rounded-lg px-3 py-2 text-sm font-medium text-ink/80 hover:bg-white hover:text-ink"
-              >
-                {m.label}
-              </Link>
-            ))}
-          </nav>
+          <AdminMenu items={ADMIN_MENU} />
         </aside>
         <div className="rounded-xl2 bg-white p-6 shadow-sm">{children}</div>
       </div>
