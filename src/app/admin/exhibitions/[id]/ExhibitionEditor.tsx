@@ -20,10 +20,12 @@ export default function ExhibitionEditor({
   exhibition,
   products,
   selectedIds,
+  refPercent = 0,
 }: {
   exhibition: Ex;
   products: PickProduct[];
   selectedIds: string[];
+  refPercent?: number;
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
@@ -112,7 +114,7 @@ export default function ExhibitionEditor({
             </button>
           </div>
         </div>
-        <ProductPickerTable products={products} selected={selected} onChange={setSelected} />
+        <ProductPickerTable products={products} selected={selected} onChange={setSelected} refPercent={refPercent} />
       </div>
     </div>
   );

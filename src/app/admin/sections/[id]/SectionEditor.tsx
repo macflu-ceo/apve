@@ -9,10 +9,12 @@ export default function SectionEditor({
   section,
   products,
   selectedIds,
+  refPercent = 0,
 }: {
   section: { id: string; title: string; subtitle: string | null; sort: number };
   products: PickProduct[];
   selectedIds: string[];
+  refPercent?: number;
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
@@ -60,7 +62,7 @@ export default function SectionEditor({
             </button>
           </div>
         </div>
-        <ProductPickerTable products={products} selected={selected} onChange={setSelected} />
+        <ProductPickerTable products={products} selected={selected} onChange={setSelected} refPercent={refPercent} />
       </div>
     </div>
   );

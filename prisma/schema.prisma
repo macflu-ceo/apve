@@ -98,6 +98,8 @@ model Product {
   sizeStockJson String?
   /// 원산지
   origin      String?
+  /// 시즌 (상품명에서 추출: "26SS" / "25FW")
+  season      String?
   /// 상품 태그 (JSON 배열: ["신상","단독"]) — 이미지 좌측 하단 배지
   tagsJson    String?
   material    String?

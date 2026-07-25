@@ -13,7 +13,6 @@ const ADMIN_MENU = [
   { href: "/admin/posts", label: "공지/가이드(게시판)" },
   { href: "/admin/partners", label: "회원(파트너) 관리" },
   { href: "/admin/grades", label: "등급/수수료율" },
-  { href: "/admin/search", label: "검색 설정/통계" },
   { href: "/admin/concierge", label: "컨시어지 신청" },
   { href: "/admin/ai-images", label: "AI 생성 이미지" },
   { href: "/admin/sales", label: "판매내역" },

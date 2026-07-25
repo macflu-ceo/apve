@@ -57,6 +57,13 @@ export async function getViewerRate(): Promise<{
   return { percent: top?.percent ?? 0, gradeName: null, isMine: false };
 }
 
+/** 최고 등급의 수수료율(%) — 예상 수수료 기준값 */
+export async function getTopGradePercent(): Promise<number> {
+  await ensureDefaultGrades();
+  const top = await prisma.grade.findFirst({ orderBy: { percent: "desc" } });
+  return top?.percent ?? 0;
+}
+
 /** 금액 × 퍼센트 → 수수료(원) */
 export function commissionOf(amount: number | null | undefined, percent: number): number | null {
   if (amount == null) return null;

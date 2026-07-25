@@ -3,7 +3,6 @@ import { getSiteSetting } from "@/lib/settings";
 import { getSessionPartner } from "@/lib/auth";
 import AuthModalProvider from "@/components/auth/AuthModalProvider";
 import AuthNav from "@/components/auth/AuthNav";
-import SearchBox from "@/components/SearchBox";
 import Logo from "@/components/Logo";
 import { ShopNav, ShopNavMobile } from "@/components/ShopNav";
 import { getPartnerGrade } from "@/lib/grade";
@@ -55,19 +54,10 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
 
           <ShopNav tabs={tabs} />
 
-          <div className="ml-auto hidden min-w-[240px] flex-1 md:block lg:max-w-sm">
-            <SearchBox />
-          </div>
-
-          <div className="ml-auto flex items-center gap-4 md:ml-0">
-            <TopIcon href="/category" label="카테고리" path="M4 6h16M4 12h16M4 18h16" />
+          <div className="ml-auto flex items-center gap-4">
+            <TopIcon href="/category" label="상품필터" path="M3 5h18M6 10h12M10 15h4" />
             <AuthNav name={partner?.name ?? null} />
           </div>
-        </div>
-
-        {/* 검색 (모바일) */}
-        <div className="px-4 pb-2 md:hidden">
-          <SearchBox />
         </div>
 
         {/* 탭 (모바일/태블릿) */}

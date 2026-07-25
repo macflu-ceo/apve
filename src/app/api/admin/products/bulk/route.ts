@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import * as XLSX from "xlsx";
 import { prisma } from "@/lib/db";
 import { extractGoodsNo, productUrl } from "@/lib/godomall/link";
+import { parseSeason } from "@/lib/season";
 
 const str = (v: unknown) => (v == null ? null : String(v).trim() || null);
 const int = (v: unknown) => {
@@ -48,10 +49,12 @@ export async function POST(req: Request) {
         .map((s) => s.trim())
         .filter(Boolean);
 
+      const nm = String(row["상품명"] ?? "").trim() || `상품 ${goodsNo}`;
       const data = {
-        name: String(row["상품명"] ?? "").trim() || `상품 ${goodsNo}`,
+        name: nm,
         brand: str(row["브랜드"]),
         category: str(row["카테고리"]),
+        season: parseSeason(nm),
         origin: str(row["원산지"]),
         tagsJson: JSON.stringify(tags),
         sizesJson: JSON.stringify(sizes),

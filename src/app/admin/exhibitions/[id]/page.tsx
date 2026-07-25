@@ -2,18 +2,20 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { parseList } from "@/lib/format";
+import { getTopGradePercent } from "@/lib/grade";
 import ExhibitionEditor from "./ExhibitionEditor";
 import CopyLinkButton from "@/components/CopyLinkButton";
 
 export const dynamic = "force-dynamic";
 
 export default async function ExhibitionDetail({ params }: { params: { id: string } }) {
-  const [ex, products] = await Promise.all([
+  const [ex, products, refPercent] = await Promise.all([
     prisma.exhibition.findUnique({
       where: { id: params.id },
       include: { products: { orderBy: { sort: "asc" } } },
     }),
     prisma.product.findMany({ orderBy: { createdAt: "desc" } }),
+    getTopGradePercent(),
   ]);
   if (!ex) notFound();
 
@@ -47,12 +49,15 @@ export default async function ExhibitionDetail({ params }: { params: { id: strin
           bannerTo: ex.bannerTo,
           sort: ex.sort,
         }}
+        refPercent={refPercent}
         products={products.map((p) => ({
           id: p.id,
           name: p.name,
           brand: p.brand,
           category: p.category,
+          season: p.season,
           image: parseList(p.imagesJson)[0] ?? null,
+          listPrice: p.listPrice,
           salePrice: p.salePrice,
           goodsNo: p.goodsNo,
           stock: p.stock,

@@ -1,36 +1,45 @@
-import Link from "next/link";
 import { prisma } from "@/lib/db";
+import ProductCard from "@/components/ProductCard";
+import ProductFilterBar from "@/components/ProductFilterBar";
+import { getViewerRate } from "@/lib/grade";
+import { parseFilter, buildWhere, sortProducts, getFacets } from "@/lib/productFilter";
 
 export const dynamic = "force-dynamic";
 
-export default async function CategoryPage() {
-  const products = await prisma.product.findMany({ where: { active: true } });
-  // MVP: 브랜드 기준 그룹핑 (추후 고도몰 카테고리 연동)
-  const byBrand = new Map<string, number>();
-  for (const p of products) {
-    const b = p.brand ?? "기타";
-    byBrand.set(b, (byBrand.get(b) ?? 0) + 1);
-  }
-  const brands = [...byBrand.entries()].sort((a, b) => b[1] - a[1]);
+export default async function CategoryPage({
+  searchParams,
+}: {
+  searchParams: Record<string, string | undefined>;
+}) {
+  const filter = parseFilter(searchParams);
+  const where = buildWhere(filter, { activeOnly: true });
+
+  const [rows, facets, rate] = await Promise.all([
+    prisma.product.findMany({ where }),
+    getFacets(true),
+    getViewerRate(),
+  ]);
+  const products = sortProducts(rows, filter.sort);
 
   return (
-    <div>
-      <h1 className="mb-6 text-2xl font-bold">카테고리</h1>
-      {brands.length === 0 ? (
-        <div className="card p-10 text-center text-ink/60">등록된 상품이 없습니다.</div>
+    <div className="px-4 py-4">
+      <h1 className="mb-2 text-xl font-black">상품 전체</h1>
+
+      <ProductFilterBar facets={facets} />
+
+      <p className="mb-4 text-sm text-sub">{products.length.toLocaleString()}개의 상품</p>
+
+      {products.length === 0 ? (
+        <div className="rounded-xl2 bg-[#f7f7f7] p-12 text-center text-sub">
+          조건에 맞는 상품이 없습니다.
+        </div>
       ) : (
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-          {brands.map(([brand, count]) => (
-            <Link key={brand} href="/" className="card p-6 text-center hover:shadow-md">
-              <div className="font-semibold">{brand}</div>
-              <div className="mt-1 text-xs text-ink/50">{count}개 상품</div>
-            </Link>
+        <div className="grid grid-cols-2 gap-x-3 gap-y-6 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+          {products.map((p) => (
+            <ProductCard key={p.id} product={p} percent={rate.percent} />
           ))}
         </div>
       )}
-      <p className="mt-6 text-xs text-ink/40">
-        ※ 현재는 브랜드 기준 그룹핑입니다. 고도몰 카테고리 체계 연동 시 확장됩니다.
-      </p>
     </div>
   );
 }

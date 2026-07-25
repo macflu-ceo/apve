@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { scrapeProduct } from "@/lib/godomall/scrape";
 import { fetchStockOne, toSizeStock, refreshStock } from "@/lib/godomall/stock";
 import { extractGoodsNo } from "@/lib/godomall/link";
+import { parseSeason } from "@/lib/season";
 
 /** 상품 노출/원산지/태그 수정 (수수료율은 회원 등급에 귀속) */
 export async function updateProduct(
@@ -59,6 +60,7 @@ async function upsertFromUrl(url: string): Promise<{ goodsNo: string; name: stri
     name: s.name ?? undefined,
     brand: s.brand,
     category: s.category,
+    season: parseSeason(s.name),
     listPrice: s.listPrice,
     salePrice: s.salePrice,
     stock,
@@ -143,9 +145,22 @@ export async function importFromLinks(text: string) {
   return { ok: true, total: urls.length, created, updated, errors };
 }
 
-/** 등록된 상품 전체의 사이즈·재고를 고도몰 API로 최신화 */
+/** 상품명에서 시즌(SS26 등)을 채운다. (기존 상품 일괄 보정) */
+async function backfillSeasons() {
+  const rows = await prisma.product.findMany({
+    where: { season: null },
+    select: { id: true, name: true },
+  });
+  for (const p of rows) {
+    const season = parseSeason(p.name);
+    if (season) await prisma.product.update({ where: { id: p.id }, data: { season } });
+  }
+}
+
+/** 등록된 상품 전체의 사이즈·재고를 고도몰 API로 최신화 (+ 시즌 보정) */
 export async function refreshAllStockAction() {
   try {
+    await backfillSeasons();
     const r = await refreshStock();
     revalidatePath("/admin/products");
     revalidatePath("/");
