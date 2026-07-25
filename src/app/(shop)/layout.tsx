@@ -115,8 +115,9 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
                 <li>사업자등록번호 {COMPANY.bizNo}</li>
                 <li>통신판매업 신고번호 {COMPANY.mailOrderNo}</li>
                 <li>{COMPANY.address}</li>
-                <li>개인정보 보호책임자 {COMPANY.privacyOfficer}</li>
-                <li>고객센터 {COMPANY.csPhone} · {COMPANY.email}</li>
+                <li>개인정보 보호책임자 {COMPANY.privacyOfficer} ({COMPANY.privacyEmail})</li>
+                <li>고객센터 {COMPANY.csPhone} · 팩스 {COMPANY.fax}</li>
+                <li>{COMPANY.email} · 호스팅 {COMPANY.hosting}</li>
               </ul>
             </div>
           </div>

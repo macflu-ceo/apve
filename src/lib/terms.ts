@@ -236,7 +236,7 @@ export const PRIVACY_POLICY: TermDoc = {
 
 제9조 (개인정보 보호책임자)
 - 개인정보 보호책임자: ${C.privacyOfficer}
-- 연락처: ${C.csPhone} / ${C.email}
+- 연락처: ${C.csPhone} / ${C.privacyEmail}
 이용자는 개인정보 보호 관련 문의·불만·피해구제를 위 책임자에게 요청할 수 있습니다.
 
 제10조 (권익침해 구제 방법)

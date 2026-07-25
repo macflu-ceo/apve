@@ -4,13 +4,16 @@ export const COMPANY = {
   brand: "돈버는명품샵",
   ceo: "지준우",
   bizNo: "435-87-02485",
-  // 통신판매업 신고번호 — 발급 후 값 교체
-  mailOrderNo: "제2026-서울강남-XXXX호",
-  address: "서울특별시 강남구 테헤란로2길 27, 908호",
+  mailOrderNo: "2024-서울강남-06628호",
+  address: "서울특별시 강남구 테헤란로2길 27(역삼동) 908호",
   csPhone: "1533-1658",
-  email: "greg@jprimo.com",
+  fax: "050-4467-6518",
+  email: "info@jprimo.com",
   // 개인정보 보호책임자
   privacyOfficer: "이긍정",
+  privacyEmail: "greg@jprimo.com",
+  // 호스팅 제공자
+  hosting: "엔에이치엔커머스(주)",
   // 실제 상품 구매가 이루어지는 쇼핑몰
   shopUrl: "https://viaelite.co.kr",
   shopName: "비아엘리떼",
