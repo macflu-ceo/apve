@@ -37,7 +37,7 @@ export default function PendingRow({ p }: { p: P }) {
       <input
         value={code}
         onChange={(e) => setCode(e.target.value)}
-        placeholder="고도몰 코드 (예: ic001ws)"
+        placeholder="고도몰 아이디 (예: cd001ws)"
         className="w-44 rounded-md border border-line px-3 py-2 text-sm"
       />
       <button onClick={approve} disabled={pending || !code} className="btn-brand px-4 py-2 text-xs disabled:opacity-40">
@@ -46,6 +46,10 @@ export default function PendingRow({ p }: { p: P }) {
       <button onClick={reject} disabled={pending} className="text-xs text-red-500 hover:underline">
         반려
       </button>
+      <p className="w-full text-[11px] leading-relaxed text-sub">
+        ⚠️ 코드는 <b>고도몰에서 발급한 영업사원 아이디와 반드시 동일</b>하게 입력하세요. 이 값으로 판매 실적이 매칭됩니다.
+        (고도몰에 해당 아이디가 <b>영업사원</b>으로 등록돼 있어야 합니다.)
+      </p>
       {msg && <span className="w-full text-xs text-red-600">{msg}</span>}
     </div>
   );
