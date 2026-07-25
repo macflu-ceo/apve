@@ -24,7 +24,6 @@ function kstEnd(d: string) {
 
 export interface FunnelResult {
   signups: number;       // 신규 가입
-  approvals: number;     // 승인(코드 부여)된 회원 — 현재 상태 기준
   productViews: number;  // 상품 조회
   linksCreated: number;  // 내 코드 만들기
   salesCount: number;    // 판매 건수(확정)
@@ -51,7 +50,6 @@ export async function getFunnel(from: string, to: string): Promise<FunnelResult>
 
   return {
     signups,
-    approvals: 0, // 승인 시각 미기록 — 필요 시 approvedAt 추가
     productViews,
     linksCreated,
     salesCount: sales._count._all,
