@@ -7,6 +7,8 @@ import Logo from "@/components/Logo";
 import { ShopNav, ShopNavMobile } from "@/components/ShopNav";
 import { getPartnerGrade } from "@/lib/grade";
 import { COMPANY } from "@/lib/company";
+import { getTimeSaleForShop } from "@/lib/timesale";
+import TimeSaleBanner from "@/components/TimeSaleBanner";
 
 const BASE_TABS = [
   { href: "/", label: "추천상품" },
@@ -38,7 +40,11 @@ function BottomTab({ path, label, href }: { path: string; label: string; href: s
 }
 
 export default async function ShopLayout({ children }: { children: React.ReactNode }) {
-  const [setting, partner] = await Promise.all([getSiteSetting(), getSessionPartner()]);
+  const [setting, partner, timeSale] = await Promise.all([
+    getSiteSetting(),
+    getSessionPartner(),
+    getTimeSaleForShop(),
+  ]);
 
   // 이미 상위 등급(컨시어지 등 = systemKey 없는 커스텀 등급)이면 업그레이드 메뉴를 감춘다
   const grade = partner ? await getPartnerGrade(partner.id) : null;
@@ -47,6 +53,16 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
 
   return (
     <AuthModalProvider>
+      {timeSale && timeSale.state !== "off" && (
+        <TimeSaleBanner
+          title={timeSale.ts.title}
+          state={timeSale.state}
+          upcomingText={timeSale.ts.upcomingText}
+          liveText={timeSale.ts.liveText}
+          startAt={timeSale.ts.startAt?.toISOString() ?? null}
+          endAt={timeSale.ts.endAt?.toISOString() ?? null}
+        />
+      )}
       <header className="sticky top-0 z-40 border-b border-line bg-white">
         <div className="mx-auto flex max-w-shell items-center gap-6 px-4 py-3">
           <Link href="/" className="shrink-0" aria-label={setting.siteName}>

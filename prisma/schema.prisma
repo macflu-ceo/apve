@@ -122,6 +122,7 @@ model Product {
   sections    SectionProduct[]
   exhibitions ExhibitionProduct[]
   viewLogs    ProductView[]
+  timeSales   TimeSaleProduct[]
 }
 
 /// 상품 조회 이벤트 (기간별 통계용) — 상세페이지 진입 시 1건
@@ -257,6 +258,39 @@ model Sale {
 
   @@index([partnerId, orderedAt])
   @@index([status, paidOut])
+}
+
+/// 타임세일 (단일 설정) — 맨 위 배너 + 카운트다운
+model TimeSale {
+  id           String   @id @default("main")
+  title        String   @default("⚡ TIME SALE")
+  /// 배너 노출 on/off (마스터 스위치)
+  active       Boolean  @default(false)
+  /// 오픈(시작)·종료 시각. 둘 다 있고 now가 그 사이면 '진행중'
+  startAt      DateTime?
+  endAt        DateTime?
+  /// 오픈 전/종료 후 노출 문구
+  upcomingText String   @default("타임세일 오픈 예정!")
+  /// 진행중 강조 문구
+  liveText     String   @default("지금 진행중")
+  /// 세일 기본 추가 할인율(%) — 상품별 개별값이 없으면 이 값 적용
+  baseDiscount Int      @default(0)
+  updatedAt    DateTime @updatedAt
+
+  products TimeSaleProduct[]
+}
+
+model TimeSaleProduct {
+  id         String   @id @default(cuid())
+  timeSale   TimeSale @relation(fields: [timeSaleId], references: [id], onDelete: Cascade)
+  timeSaleId String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId  String
+  sort       Int      @default(0)
+  /// 이 상품만의 추가 할인율(%). null이면 세일 기본 할인율 적용
+  discount   Int?
+
+  @@unique([timeSaleId, productId])
 }
 
 /// 홈 히어로 배너

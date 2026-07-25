@@ -12,6 +12,7 @@ const ADMIN_MENU = [
   { href: "/admin/categories", label: "카테고리 관리" },
   { href: "/admin/sections", label: "홈 진열(섹션)" },
   { href: "/admin/exhibitions", label: "기획전 관리" },
+  { href: "/admin/timesale", label: "타임세일" },
   { href: "/admin/posts", label: "공지/가이드(게시판)" },
   { href: "/admin/partners", label: "회원(파트너) 관리" },
   { href: "/admin/grades", label: "등급/수수료율" },
