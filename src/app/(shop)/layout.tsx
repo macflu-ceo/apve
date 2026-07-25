@@ -6,6 +6,7 @@ import AuthNav from "@/components/auth/AuthNav";
 import Logo from "@/components/Logo";
 import { ShopNav, ShopNavMobile } from "@/components/ShopNav";
 import { getPartnerGrade } from "@/lib/grade";
+import { COMPANY } from "@/lib/company";
 
 const BASE_TABS = [
   { href: "/", label: "추천상품" },
@@ -100,24 +101,28 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
                   <li><Link href="/concierge" className="hover:text-ink">멤버십 업그레이드</Link></li>
                 )}
                 <li><Link href="/me" className="hover:text-ink">내정보</Link></li>
-                <li><Link href="/terms" className="font-semibold hover:text-ink">약관 및 정책</Link></li>
+                <li><Link href="/terms?doc=service" className="hover:text-ink">이용약관</Link></li>
+                <li><Link href="/terms?doc=privacy_policy" className="font-semibold hover:text-ink">개인정보처리방침</Link></li>
+                <li><Link href="/terms?doc=refund_policy" className="hover:text-ink">취소·환불 정책</Link></li>
               </ul>
             </div>
 
             {/* 사업자 정보 */}
             <div>
               <div className="mb-2 text-sm font-bold">사업자 정보</div>
-              <ul className="space-y-1.5 text-xs leading-relaxed text-sub">
-                <li>{setting.companyName}</li>
-                {setting.businessNo && <li>사업자등록번호 {setting.businessNo}</li>}
-                {setting.contact && <li>{setting.contact}</li>}
-                <li>{setting.footerNote}</li>
+              <ul className="space-y-1 text-xs leading-relaxed text-sub">
+                <li>{COMPANY.corpName} · 대표 {COMPANY.ceo}</li>
+                <li>사업자등록번호 {COMPANY.bizNo}</li>
+                <li>통신판매업 신고번호 {COMPANY.mailOrderNo}</li>
+                <li>{COMPANY.address}</li>
+                <li>개인정보 보호책임자 {COMPANY.privacyOfficer}</li>
+                <li>고객센터 {COMPANY.csPhone} · {COMPANY.email}</li>
               </ul>
             </div>
           </div>
 
           <div className="mt-8 border-t border-line pt-4 text-[11px] text-sub">
-            © {new Date().getFullYear()} {setting.companyName}. All rights reserved.
+            © {new Date().getFullYear()} {COMPANY.corpName}. All rights reserved.
           </div>
         </div>
       </footer>
