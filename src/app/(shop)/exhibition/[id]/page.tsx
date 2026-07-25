@@ -1,9 +1,26 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import ProductCard from "@/components/ProductCard";
 import { getViewerRate } from "@/lib/grade";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
+  const ex = await prisma.exhibition.findUnique({ where: { id: params.id } });
+  if (!ex || !ex.active) return { title: "기획전" };
+  const desc = (ex.subtitle ?? `${ex.title} 기획전 - 돈버는 명품샵`).slice(0, 150);
+  return {
+    title: ex.title,
+    description: desc,
+    alternates: { canonical: `/exhibition/${ex.id}` },
+    openGraph: {
+      title: `${ex.title} | 돈버는 명품샵`,
+      description: desc,
+      ...(ex.bannerImageUrl ? { images: [{ url: ex.bannerImageUrl }] } : {}),
+    },
+  };
+}
 
 export default async function ExhibitionPage({ params }: { params: { id: string } }) {
   const ex = await prisma.exhibition.findUnique({

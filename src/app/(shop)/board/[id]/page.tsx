@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
@@ -5,6 +6,19 @@ import { parseList } from "@/lib/format";
 import { toEmbedUrl } from "@/lib/embed";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
+  const post = await prisma.post.findUnique({ where: { id: params.id } });
+  if (!post || !post.published) return { title: "게시글" };
+  const desc = post.content.replace(/<[^>]+>/g, "").slice(0, 150);
+  const img = parseList(post.imagesJson)[0];
+  return {
+    title: post.title,
+    description: desc,
+    alternates: { canonical: `/board/${post.id}` },
+    openGraph: { title: `${post.title} | 돈버는 명품샵`, description: desc, ...(img ? { images: [{ url: img }] } : {}) },
+  };
+}
 
 export default async function BoardDetail({ params }: { params: { id: string } }) {
   const post = await prisma.post.findUnique({ where: { id: params.id } });

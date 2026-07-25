@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { won, parseList } from "@/lib/format";
@@ -9,6 +10,38 @@ import CodeButton from "./CodeButton";
 import AiImageStudio from "./AiImageStudio";
 
 export const dynamic = "force-dynamic";
+
+/** 상품별 SEO 메타데이터 (제목/설명/OG 이미지/canonical) */
+export async function generateMetadata({ params }: { params: { goodsNo: string } }): Promise<Metadata> {
+  const product = await prisma.product.findUnique({ where: { goodsNo: params.goodsNo } });
+  if (!product) return { title: "상품을 찾을 수 없습니다" };
+
+  const img = parseList(product.imagesJson)[0];
+  const priceTxt = product.salePrice != null ? ` ${product.salePrice.toLocaleString()}원` : "";
+  const parts = [product.brand, product.category, product.origin ? `${product.origin} 정품` : null].filter(Boolean);
+  const desc =
+    `${product.name}${priceTxt}. ${parts.join(" · ")}. 돈버는 명품샵에서 코드로 판매하고 수수료를 받으세요.`.slice(0, 155);
+  const title = product.brand ? `${product.name}` : product.name;
+
+  return {
+    title,
+    description: desc,
+    alternates: { canonical: `/goods/${product.goodsNo}` },
+    openGraph: {
+      type: "website",
+      title: `${title} | 돈버는 명품샵`,
+      description: desc,
+      url: `/goods/${product.goodsNo}`,
+      ...(img ? { images: [{ url: img }] } : {}),
+    },
+    twitter: {
+      card: img ? "summary_large_image" : "summary",
+      title: `${title} | 돈버는 명품샵`,
+      description: desc,
+      ...(img ? { images: [img] } : {}),
+    },
+  };
+}
 
 export default async function GoodsPage({ params }: { params: { goodsNo: string } }) {
   const product = await prisma.product.findUnique({ where: { goodsNo: params.goodsNo } });
@@ -34,8 +67,30 @@ export default async function GoodsPage({ params }: { params: { goodsNo: string 
   const expectedCommission =
     product.salePrice != null ? Math.round((product.salePrice * rate.percent) / 100) : null;
 
+  // 구조화 데이터 (Google 리치 결과용 Product 스키마)
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.name,
+    ...(product.brand ? { brand: { "@type": "Brand", name: product.brand } } : {}),
+    ...(images.length ? { image: images } : {}),
+    ...(product.origin ? { countryOfOrigin: product.origin } : {}),
+    ...(product.salePrice != null
+      ? {
+          offers: {
+            "@type": "Offer",
+            price: product.salePrice,
+            priceCurrency: "KRW",
+            availability:
+              (product.stock ?? 0) > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+          },
+        }
+      : {}),
+  };
+
   return (
     <div className="grid gap-8 px-4 pb-12 pt-8 md:grid-cols-2 md:pt-12">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       {/* 이미지 (대표 1장만) */}
       <div>
         <div className="relative aspect-[3/4] overflow-hidden rounded-xl2 bg-[#f5f4f2]">
