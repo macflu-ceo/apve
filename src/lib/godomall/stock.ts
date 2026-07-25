@@ -79,19 +79,21 @@ export async function fetchStockOne(goodsNo: string): Promise<StockResult | null
 export interface RefreshResult {
   targeted: number;
   updated: number;
+  hidden: number;
   errors: number;
 }
 
 /**
  * 등록된 상품들의 사이즈·재고를 고도몰 API로 최신화한다.
- * goodsNos 미지정 시 활성 상품 전체.
+ * goodsNos 미지정 시 전체 상품.
+ * 완전 품절(총재고 0)이면 자동으로 노출을 끈다(active=false).
  */
 export async function refreshStock(goodsNos?: string[]): Promise<RefreshResult> {
   const products = goodsNos
-    ? await prisma.product.findMany({ where: { goodsNo: { in: goodsNos } }, select: { id: true, goodsNo: true } })
-    : await prisma.product.findMany({ where: { active: true }, select: { id: true, goodsNo: true } });
+    ? await prisma.product.findMany({ where: { goodsNo: { in: goodsNos } }, select: { id: true, goodsNo: true, active: true } })
+    : await prisma.product.findMany({ select: { id: true, goodsNo: true, active: true } });
 
-  const result: RefreshResult = { targeted: products.length, updated: 0, errors: 0 };
+  const result: RefreshResult = { targeted: products.length, updated: 0, hidden: 0, errors: 0 };
   if (products.length === 0) return result;
 
   const stockMap = await fetchStock(products.map((p) => p.goodsNo));
@@ -100,6 +102,8 @@ export async function refreshStock(goodsNos?: string[]): Promise<RefreshResult> 
     const s = stockMap.get(p.goodsNo);
     if (!s) continue; // 옵션 없는 단품 등 — 건너뜀
     const { sizes, sizeStock } = toSizeStock(s.options);
+    // 완전 품절이면 노출 끄기 (재입고 시 자동 노출은 하지 않음 — 어드민이 직접 켬)
+    const hideNow = s.totalStock <= 0 && p.active;
     try {
       await prisma.product.update({
         where: { id: p.id },
@@ -107,9 +111,11 @@ export async function refreshStock(goodsNos?: string[]): Promise<RefreshResult> 
           sizesJson: JSON.stringify(sizes),
           sizeStockJson: JSON.stringify(sizeStock),
           stock: s.totalStock,
+          ...(hideNow ? { active: false } : {}),
         },
       });
       result.updated++;
+      if (hideNow) result.hidden++;
     } catch {
       result.errors++;
     }
