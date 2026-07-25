@@ -3,6 +3,7 @@ import ProductCard from "@/components/ProductCard";
 import ProductFilterBar from "@/components/ProductFilterBar";
 import { getViewerRate } from "@/lib/grade";
 import { parseFilter, buildWhere, sortProducts, getFacets } from "@/lib/productFilter";
+import { getActiveBoostMap } from "@/lib/timesale";
 
 export const dynamic = "force-dynamic";
 
@@ -14,10 +15,11 @@ export default async function CategoryPage({
   const filter = parseFilter(searchParams);
   const where = buildWhere(filter, { activeOnly: true });
 
-  const [rows, facets, rate] = await Promise.all([
+  const [rows, facets, rate, boostMap] = await Promise.all([
     prisma.product.findMany({ where }),
     getFacets(true),
     getViewerRate(),
+    getActiveBoostMap(),
   ]);
   const products = sortProducts(rows, filter.sort);
 
@@ -36,7 +38,7 @@ export default async function CategoryPage({
       ) : (
         <div className="grid grid-cols-2 gap-x-3 gap-y-6 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
           {products.map((p) => (
-            <ProductCard key={p.id} product={p} percent={rate.percent} />
+            <ProductCard key={p.id} product={p} percent={rate.percent} boost={boostMap.get(p.goodsNo) ?? 0} />
           ))}
         </div>
       )}

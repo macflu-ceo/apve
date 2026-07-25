@@ -15,11 +15,14 @@ export default function ProductCard({
   product,
   rank,
   percent,
+  boost = 0,
 }: {
   product: P;
   rank?: number;
   /** 보는 사람의 등급 수수료율(%) */
   percent: number;
+  /** 진행중인 골든타임 추가 수수료율(%p). 0보다 크면 수수료 영역을 빨강 강조 */
+  boost?: number;
 }) {
   const img = parseList(product.imagesJson)[0];
   const tags = parseList(product.tagsJson);
@@ -29,6 +32,10 @@ export default function ProductCard({
       : 0;
   const commission =
     product.salePrice != null ? Math.round((product.salePrice * percent) / 100) : 0;
+  const boosted =
+    boost > 0 && product.salePrice != null
+      ? Math.round((product.salePrice * (percent + boost)) / 100)
+      : 0;
 
   return (
     <Link href={`/goods/${product.goodsNo}`} className="group block">
@@ -74,10 +81,20 @@ export default function ProductCard({
           {discount > 0 && <span className="text-[16px] font-extrabold text-deal">{discount}%</span>}
           <span className="text-[16px] font-extrabold">{won(product.salePrice)}</span>
         </div>
-        {commission > 0 && (
-          <div className="mt-1 inline-block rounded bg-brandsoft px-1.5 py-0.5 text-[11px] font-bold text-brand">
-            최대 {won(commission)} 수수료
+        {boosted > 0 ? (
+          <div className="mt-1 inline-flex items-center gap-1 rounded bg-red-50 px-1.5 py-0.5 text-[11px] font-bold text-red-600 ring-1 ring-red-200">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+              <path d="M12 20V5M5 12l7-7 7 7" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            수수료 {won(boosted)}
+            <span className="font-extrabold">+{boost}%p</span>
           </div>
+        ) : (
+          commission > 0 && (
+            <div className="mt-1 inline-block rounded bg-brandsoft px-1.5 py-0.5 text-[11px] font-bold text-brand">
+              최대 {won(commission)} 수수료
+            </div>
+          )
         )}
       </div>
     </Link>

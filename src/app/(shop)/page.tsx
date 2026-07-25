@@ -4,6 +4,7 @@ import ProductCard from "@/components/ProductCard";
 import BannerCarousel from "@/components/BannerCarousel";
 import { getSiteSetting } from "@/lib/settings";
 import { getViewerRate } from "@/lib/grade";
+import { getActiveBoostMap } from "@/lib/timesale";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +32,7 @@ export default async function HomePage() {
     getSiteSetting(),
   ]);
   const rate = await getViewerRate();
+  const boostMap = await getActiveBoostMap();
 
   const banners = dbBanners.length > 0 ? dbBanners : DEFAULT_BANNERS;
   const categories = dbCategories.length > 0 ? dbCategories : DEFAULT_CHIPS;
@@ -86,6 +88,7 @@ export default async function HomePage() {
                   key={p.id}
                   product={p}
                   percent={rate.percent}
+                  boost={boostMap.get(p.goodsNo) ?? 0}
                   rank={i === 0 && idx < 3 ? idx + 1 : undefined}
                 />
               ))}

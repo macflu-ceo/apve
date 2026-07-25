@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import ProductCard from "@/components/ProductCard";
 import { getViewerRate } from "@/lib/grade";
+import { getActiveBoostMap } from "@/lib/timesale";
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +33,7 @@ export default async function ExhibitionPage({ params }: { params: { id: string 
   const products = ex.products.map((ep) => ep.product).filter((p) => p.active);
   const light = !!ex.bannerImageUrl;
   const rate = await getViewerRate();
+  const boostMap = await getActiveBoostMap();
 
   return (
     <div className="pb-10">
@@ -60,7 +62,7 @@ export default async function ExhibitionPage({ params }: { params: { id: string 
         ) : (
           <div className="grid grid-cols-2 gap-x-3 gap-y-6 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {products.map((p) => (
-              <ProductCard key={p.id} product={p} percent={rate.percent} />
+              <ProductCard key={p.id} product={p} percent={rate.percent} boost={boostMap.get(p.goodsNo) ?? 0} />
             ))}
           </div>
         )}

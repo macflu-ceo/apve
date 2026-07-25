@@ -5,6 +5,7 @@ import { won, parseList } from "@/lib/format";
 import { getViewerRate } from "@/lib/grade";
 import { getSessionPartner } from "@/lib/auth";
 import { logProductView } from "@/lib/analytics";
+import { activeBoostForProduct } from "@/lib/timesale";
 import SizeGuideModal from "@/components/SizeGuideModal";
 import CodeButton from "./CodeButton";
 import AiImageStudio from "./AiImageStudio";
@@ -66,6 +67,12 @@ export default async function GoodsPage({ params }: { params: { goodsNo: string 
   const rate = await getViewerRate();
   const expectedCommission =
     product.salePrice != null ? Math.round((product.salePrice * rate.percent) / 100) : null;
+  // 진행중 골든타임 부스트
+  const boost = await activeBoostForProduct(product.id);
+  const boostedCommission =
+    boost > 0 && product.salePrice != null
+      ? Math.round((product.salePrice * (rate.percent + boost)) / 100)
+      : null;
 
   // 구조화 데이터 (Google 리치 결과용 Product 스키마)
   const jsonLd = {
@@ -125,15 +132,33 @@ export default async function GoodsPage({ params }: { params: { goodsNo: string 
         </div>
 
         {/* 예상 수익 (등급별) */}
-        <div className="mt-4 flex items-center justify-between rounded-xl2 bg-brandsoft p-4">
-          <span className="text-sm text-ink/70">
-            예상 수익
-            <span className="ml-1 text-xs text-sub">
-              ({rate.isMine ? `${rate.gradeName} ${rate.percent}%` : `최대 ${rate.percent}%`})
+        {boostedCommission != null ? (
+          <div className="mt-4 flex items-center justify-between rounded-xl2 bg-red-50 p-4 ring-1 ring-red-200">
+            <span className="text-sm text-ink/70">
+              예상 수익
+              <span className="ml-1 inline-flex items-center gap-0.5 text-xs font-bold text-red-600">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                  <path d="M12 20V5M5 12l7-7 7 7" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                골든타임 +{boost}%p
+              </span>
             </span>
-          </span>
-          <span className="text-lg font-extrabold text-brand">{won(expectedCommission)}</span>
-        </div>
+            <span className="text-right">
+              <span className="mr-1 text-xs text-sub line-through">{won(expectedCommission)}</span>
+              <span className="text-lg font-extrabold text-red-600">{won(boostedCommission)}</span>
+            </span>
+          </div>
+        ) : (
+          <div className="mt-4 flex items-center justify-between rounded-xl2 bg-brandsoft p-4">
+            <span className="text-sm text-ink/70">
+              예상 수익
+              <span className="ml-1 text-xs text-sub">
+                ({rate.isMine ? `${rate.gradeName} ${rate.percent}%` : `최대 ${rate.percent}%`})
+              </span>
+            </span>
+            <span className="text-lg font-extrabold text-brand">{won(expectedCommission)}</span>
+          </div>
+        )}
 
         {/* 상품 정보 */}
         <dl className="mt-5 space-y-2 border-t border-line pt-5 text-sm">

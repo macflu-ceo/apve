@@ -50,6 +50,23 @@ export async function getTimeSaleForShop() {
   return { ts, items, state, maxBoost };
 }
 
+/** 지금 진행중인 골든타임의 상품별 부스트 맵 (goodsNo → %p). 진행중이 아니면 빈 맵. */
+export async function getActiveBoostMap(now = new Date()): Promise<Map<string, number>> {
+  const map = new Map<string, number>();
+  const ts = await prisma.timeSale.findUnique({
+    where: { id: "main" },
+    include: { products: { include: { product: { select: { goodsNo: true, active: true } } } } },
+  });
+  if (!ts) return map;
+  const activeItems = ts.products.filter((p) => p.product.active);
+  if (resolveState(ts, activeItems.length, now) !== "live") return map;
+  for (const p of activeItems) {
+    const b = effectiveBoost(p.boost, ts.baseBoost);
+    if (b > 0) map.set(p.product.goodsNo, b);
+  }
+  return map;
+}
+
 /** 특정 상품이 지금 진행중인 골든타임에 포함되면 부스트(%p) 반환, 아니면 0 */
 export async function activeBoostForProduct(productId: string, now = new Date()): Promise<number> {
   const ts = await prisma.timeSale.findUnique({
