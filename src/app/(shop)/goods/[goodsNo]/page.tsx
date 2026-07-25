@@ -136,11 +136,12 @@ export default async function GoodsPage({ params }: { params: { goodsNo: string 
           <div className="mt-4 flex items-center justify-between rounded-xl2 bg-red-50 p-4 ring-1 ring-red-200">
             <span className="text-sm text-ink/70">
               예상 수익
-              <span className="ml-1 inline-flex items-center gap-0.5 text-xs font-bold text-red-600">
+              <span className="ml-1 inline-flex items-center gap-1 align-middle text-xs font-bold text-red-600">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
                   <path d="M12 20V5M5 12l7-7 7 7" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-                골든타임 +{boost}%p
+                {rate.isMine ? "" : "최대 "}수수료 {rate.percent + boost}%
+                <span className="rounded bg-red-600 px-1 py-0.5 text-[10px] font-black text-white">+{boost}%p</span>
               </span>
             </span>
             <span className="text-right">

@@ -16,6 +16,7 @@ export default function ProductCard({
   rank,
   percent,
   boost = 0,
+  confirmed = false,
 }: {
   product: P;
   rank?: number;
@@ -23,6 +24,8 @@ export default function ProductCard({
   percent: number;
   /** 진행중인 골든타임 추가 수수료율(%p). 0보다 크면 수수료 영역을 빨강 강조 */
   boost?: number;
+  /** 로그인+승인되어 수수료율이 확정된 상태 (false면 '최대'로 안내) */
+  confirmed?: boolean;
 }) {
   const img = parseList(product.imagesJson)[0];
   const tags = parseList(product.tagsJson);
@@ -82,17 +85,19 @@ export default function ProductCard({
           <span className="text-[16px] font-extrabold">{won(product.salePrice)}</span>
         </div>
         {boosted > 0 ? (
-          <div className="mt-1 inline-flex items-center gap-1 rounded bg-red-50 px-1.5 py-0.5 text-[11px] font-bold text-red-600 ring-1 ring-red-200">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-              <path d="M12 20V5M5 12l7-7 7 7" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            수수료 {won(boosted)}
-            <span className="font-extrabold">+{boost}%p</span>
+          <div className="mt-1 flex flex-wrap items-center gap-1">
+            <span className="inline-flex items-center gap-1 rounded bg-red-50 px-1.5 py-0.5 text-[11px] font-bold text-red-600 ring-1 ring-red-200">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                <path d="M12 20V5M5 12l7-7 7 7" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              {confirmed ? "" : "최대 "}수수료 {percent + boost}% {won(boosted)}
+            </span>
+            <span className="rounded bg-red-600 px-1 py-0.5 text-[10px] font-black text-white">+{boost}%p</span>
           </div>
         ) : (
           commission > 0 && (
             <div className="mt-1 inline-block rounded bg-brandsoft px-1.5 py-0.5 text-[11px] font-bold text-brand">
-              최대 {won(commission)} 수수료
+              {confirmed ? "" : "최대 "}수수료 {won(commission)}
             </div>
           )
         )}

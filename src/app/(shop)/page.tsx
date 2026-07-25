@@ -89,6 +89,7 @@ export default async function HomePage() {
                   product={p}
                   percent={rate.percent}
                   boost={boostMap.get(p.goodsNo) ?? 0}
+                  confirmed={rate.isMine}
                   rank={i === 0 && idx < 3 ? idx + 1 : undefined}
                 />
               ))}

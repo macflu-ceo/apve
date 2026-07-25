@@ -49,7 +49,8 @@ export async function getViewerRate(): Promise<{
 }> {
   await ensureDefaultGrades();
   const partner = await getSessionPartner();
-  if (partner) {
+  // 승인된 회원만 수수료율이 확정됨 (미승인·비로그인은 '최대'로 안내)
+  if (partner && partner.status === "approved") {
     const g = await getPartnerGrade(partner.id);
     if (g) return { percent: g.percent, gradeName: g.name, isMine: true };
   }
