@@ -54,7 +54,14 @@ export async function fetchConciergeSales(
 
   const data = await res.json();
   if (data?.error) throw new Error(`고도몰 API: ${data.error}`);
-  return Array.isArray(data?.list) ? (data.list as GodoSaleRow[]) : [];
+  const list: GodoSaleRow[] = Array.isArray(data?.list) ? data.list : [];
+  // 고도몰이 goodsNo/orderNo/code를 숫자로 줄 수 있어 문자열로 정규화
+  return list.map((r) => ({
+    ...r,
+    goodsNo: r.goodsNo != null ? String(r.goodsNo) : r.goodsNo,
+    orderNo: r.orderNo != null ? String(r.orderNo) : r.orderNo,
+    code: r.code != null ? String(r.code) : r.code,
+  }));
 }
 
 /** 날짜 문자열 → Date (없으면 null) */

@@ -62,10 +62,10 @@ export async function fetchStock(goodsNos: string[]): Promise<Map<string, StockR
 
     const list: StockResult[] = Array.isArray(data?.goods)
       ? data.goods
-      : data?.goodsNo
+      : data?.goodsNo != null
         ? [data as StockResult]
         : [];
-    for (const g of list) map.set(String(g.goodsNo), g);
+    for (const g of list) map.set(String(g.goodsNo), { ...g, goodsNo: String(g.goodsNo) });
   }
   return map;
 }
