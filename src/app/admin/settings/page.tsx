@@ -18,6 +18,13 @@ export default async function AdminSettings() {
           contact: setting.contact,
           footerNote: setting.footerNote,
           bannerInterval: setting.bannerInterval,
+          ceo: setting.ceo,
+          mailOrderNo: setting.mailOrderNo,
+          address: setting.address,
+          csPhone: setting.csPhone,
+          email: setting.email,
+          privacyOfficer: setting.privacyOfficer,
+          privacyEmail: setting.privacyEmail,
         }}
       />
     </div>

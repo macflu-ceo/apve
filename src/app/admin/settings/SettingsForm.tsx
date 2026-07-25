@@ -11,6 +11,13 @@ type S = {
   contact: string | null;
   footerNote: string;
   bannerInterval: number;
+  ceo: string | null;
+  mailOrderNo: string | null;
+  address: string | null;
+  csPhone: string | null;
+  email: string | null;
+  privacyOfficer: string | null;
+  privacyEmail: string | null;
 };
 
 export default function SettingsForm({ setting }: { setting: S }) {
@@ -30,10 +37,20 @@ export default function SettingsForm({ setting }: { setting: S }) {
 
   const rows: { name: keyof S; label: string; placeholder?: string }[] = [
     { name: "siteName", label: "사이트명" },
-    { name: "companyName", label: "회사명" },
+    { name: "footerNote", label: "하단 문구(소개)" },
+  ];
+
+  // 사업자 정보 (약관·개인정보처리방침·푸터에 공통 반영)
+  const bizRows: { name: keyof S; label: string; placeholder?: string }[] = [
+    { name: "companyName", label: "상호(법인명)", placeholder: "주식회사 제이프리모인터내셔널" },
+    { name: "ceo", label: "대표자명", placeholder: "지준우" },
     { name: "businessNo", label: "사업자등록번호", placeholder: "435-87-02485" },
-    { name: "contact", label: "연락처/이메일" },
-    { name: "footerNote", label: "하단 문구" },
+    { name: "mailOrderNo", label: "통신판매업 신고번호", placeholder: "2024-서울강남-06628호" },
+    { name: "address", label: "사업장 주소", placeholder: "서울특별시 강남구 …" },
+    { name: "csPhone", label: "고객센터 전화", placeholder: "1533-1658" },
+    { name: "email", label: "대표 이메일", placeholder: "info@jprimo.com" },
+    { name: "privacyOfficer", label: "개인정보 보호책임자", placeholder: "이긍정" },
+    { name: "privacyEmail", label: "개인정보 책임자 이메일", placeholder: "greg@jprimo.com" },
   ];
 
   return (
@@ -49,6 +66,26 @@ export default function SettingsForm({ setting }: { setting: S }) {
           />
         </div>
       ))}
+
+      <div className="border-t border-line pt-4">
+        <div className="mb-1 text-sm font-bold">사업자 정보</div>
+        <p className="mb-3 text-xs text-sub">
+          여기서 저장하면 <b>푸터·이용약관·개인정보처리방침·환불정책</b>에 자동 반영됩니다. (이사 등 변경 시 여기만 수정)
+        </p>
+        <div className="space-y-4">
+          {bizRows.map((r) => (
+            <div key={r.name}>
+              <label className="text-sm font-medium">{r.label}</label>
+              <input
+                name={r.name}
+                defaultValue={setting[r.name] ?? ""}
+                placeholder={r.placeholder}
+                className="field mt-1"
+              />
+            </div>
+          ))}
+        </div>
+      </div>
       <div>
         <label className="text-sm font-medium">메인 배너 자동 전환 시간(초)</label>
         <input

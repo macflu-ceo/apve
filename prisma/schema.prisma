@@ -382,6 +382,16 @@ model SiteSetting {
   footerNote  String   @default("이탈리아 부티크 직계약 정품 보증")
   /// 메인 배너 자동 전환 간격(초)
   bannerInterval Int    @default(3)
+
+  /// ── 사업자 정보 (약관·개인정보처리방침·푸터 공통) ──
+  ceo          String?  // 대표자명
+  mailOrderNo  String?  // 통신판매업 신고번호
+  address      String?  // 사업장 주소
+  csPhone      String?  // 고객센터
+  email        String?  // 대표 이메일
+  privacyOfficer String? // 개인정보 보호책임자
+  privacyEmail String?   // 개인정보 보호책임자 이메일
+
   updatedAt   DateTime @updatedAt
 }
 

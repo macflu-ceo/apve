@@ -6,7 +6,7 @@ import AuthNav from "@/components/auth/AuthNav";
 import Logo from "@/components/Logo";
 import { ShopNav, ShopNavMobile } from "@/components/ShopNav";
 import { getPartnerGrade } from "@/lib/grade";
-import { COMPANY } from "@/lib/company";
+import { getCompany } from "@/lib/company";
 import { getTimeSaleForShop } from "@/lib/timesale";
 import TimeSaleBanner from "@/components/TimeSaleBanner";
 
@@ -40,10 +40,11 @@ function BottomTab({ path, label, href }: { path: string; label: string; href: s
 }
 
 export default async function ShopLayout({ children }: { children: React.ReactNode }) {
-  const [setting, partner, timeSale] = await Promise.all([
+  const [setting, partner, timeSale, COMPANY] = await Promise.all([
     getSiteSetting(),
     getSessionPartner(),
     getTimeSaleForShop(),
+    getCompany(),
   ]);
 
   // 이미 상위 등급(컨시어지 등 = systemKey 없는 커스텀 등급)이면 업그레이드 메뉴를 감춘다

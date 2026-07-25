@@ -1,15 +1,18 @@
 import Link from "next/link";
-import { POLICIES, TERMS, SETTLEMENT_CONSENT, TERMS_VERSION } from "@/lib/terms";
+import { buildPolicies, TERMS, SETTLEMENT_CONSENT, TERMS_VERSION } from "@/lib/terms";
+import { getCompany } from "@/lib/company";
 
 export const dynamic = "force-dynamic";
 
-// 공개 정책 3종(이용약관·개인정보처리방침·환불정책)을 앞에, 가입 동의 문서는 접어서 뒤에
-const CONSENTS = [...TERMS.slice(1), SETTLEMENT_CONSENT];
-const ALL = [...POLICIES, ...CONSENTS].filter(
-  (d, i, arr) => arr.findIndex((x) => x.key === d.key) === i
-);
+export default async function TermsPage({ searchParams }: { searchParams?: { doc?: string } }) {
+  const company = await getCompany();
+  const POLICIES = buildPolicies(company);
+  // 공개 정책 3종(이용약관·개인정보처리방침·환불정책)을 앞에, 가입 동의 문서는 접어서 뒤에
+  const CONSENTS = [...TERMS.slice(1), SETTLEMENT_CONSENT];
+  const ALL = [...POLICIES, ...CONSENTS].filter(
+    (d, i, arr) => arr.findIndex((x) => x.key === d.key) === i
+  );
 
-export default function TermsPage({ searchParams }: { searchParams?: { doc?: string } }) {
   const key = searchParams?.doc ?? ALL[0].key;
   const doc = ALL.find((d) => d.key === key) ?? ALL[0];
 

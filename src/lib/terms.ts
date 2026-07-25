@@ -1,6 +1,6 @@
 // 약관/동의 문서 모음
 // ⚠️ 실제 서비스 오픈 전 반드시 법무 검토를 받으세요. (초안입니다)
-import { COMPANY as C } from "@/lib/company";
+import { COMPANY as C, type Company } from "@/lib/company";
 
 export const TERMS_VERSION = "1.0 (2026-07)";
 export const POLICY_EFFECTIVE = "2026년 7월 25일";
@@ -179,13 +179,14 @@ export const SETTLEMENT_CONSENT: TermDoc = {
    귀하는 동의를 거부할 권리가 있으나, 거부 시 수익금 지급이 불가능합니다.`,
 };
 
-/** 개인정보처리방침 (공개용 전문) */
-export const PRIVACY_POLICY: TermDoc = {
+/** 개인정보처리방침 (공개용 전문) — 사업자 정보를 주입해 생성 */
+export function buildPrivacyPolicy(c: Company = C): TermDoc {
+  return {
   key: "privacy_policy",
   title: "개인정보처리방침",
   required: false,
   short: "개인정보처리방침",
-  body: `${C.corpName}(이하 "회사")은 이용자의 개인정보를 중요시하며, 「개인정보 보호법」 등 관련 법령을 준수합니다. 본 방침은 회사가 운영하는 ${C.brand}(이하 "서비스")에 적용됩니다.
+  body: `${c.corpName}(이하 "회사")은 이용자의 개인정보를 중요시하며, 「개인정보 보호법」 등 관련 법령을 준수합니다. 본 방침은 회사가 운영하는 ${c.brand}(이하 "서비스")에 적용됩니다.
 
 제1조 (수집하는 개인정보 항목 및 방법)
 회사는 회원가입·서비스 이용·수익 정산 과정에서 다음의 개인정보를 수집합니다.
@@ -220,7 +221,7 @@ export const PRIVACY_POLICY: TermDoc = {
 회사는 서비스 제공을 위해 다음과 같이 개인정보 처리를 위탁하며, 위탁계약 시 개인정보가 안전하게 관리되도록 규정합니다.
 1. 본인확인: 본인확인기관(다날·KCP·KG이니시스 등) — 휴대폰 본인확인
 2. 결제·인증 연동: (주)코리아포트원 등 — 본인확인 중계
-3. 상품 판매·주문 처리: ${C.shopName}(${C.shopUrl}) 및 쇼핑몰 솔루션 제공사
+3. 상품 판매·주문 처리: ${c.shopName}(${c.shopUrl}) 및 쇼핑몰 솔루션 제공사
 4. 클라우드 인프라: 호스팅 및 데이터 저장
 
 제6조 (정보주체의 권리와 행사 방법)
@@ -235,8 +236,8 @@ export const PRIVACY_POLICY: TermDoc = {
 3. 신분증·통장 사본 등은 외부에서 접근할 수 없는 별도의 비공개 저장소에 보관합니다.
 
 제9조 (개인정보 보호책임자)
-- 개인정보 보호책임자: ${C.privacyOfficer}
-- 연락처: ${C.csPhone} / ${C.privacyEmail}
+- 개인정보 보호책임자: ${c.privacyOfficer}
+- 연락처: ${c.csPhone} / ${c.privacyEmail}
 이용자는 개인정보 보호 관련 문의·불만·피해구제를 위 책임자에게 요청할 수 있습니다.
 
 제10조 (권익침해 구제 방법)
@@ -249,21 +250,23 @@ export const PRIVACY_POLICY: TermDoc = {
 본 방침의 변경 시 시행 7일 전부터 공지사항을 통해 고지합니다.
 
 시행일: ${POLICY_EFFECTIVE}
-${C.corpName} · 대표 ${C.ceo} · 사업자등록번호 ${C.bizNo}
-${C.address}`,
-};
+${c.corpName} · 대표 ${c.ceo} · 사업자등록번호 ${c.bizNo}
+${c.address}`,
+  };
+}
 
-/** 환불(취소·반품) 정책 */
-export const REFUND_POLICY: TermDoc = {
+/** 환불(취소·반품) 정책 — 사업자 정보를 주입해 생성 */
+export function buildRefundPolicy(c: Company = C): TermDoc {
+  return {
   key: "refund_policy",
   title: "취소·환불 정책",
   required: false,
   short: "취소·환불 정책",
-  body: `본 정책은 ${C.brand}를 통해 발급된 파트너 링크로 이루어진 상품 구매 및 파트너 수익과 관련한 취소·환불 기준을 정합니다.
+  body: `본 정책은 ${c.brand}를 통해 발급된 파트너 링크로 이루어진 상품 구매 및 파트너 수익과 관련한 취소·환불 기준을 정합니다.
 
 제1조 (상품 구매의 취소·환불)
-1. ${C.brand}는 상품 정보를 소개하고 파트너 링크를 제공하는 플랫폼이며, 실제 상품 결제·배송·환불은 상품 판매 쇼핑몰인 ${C.shopName}(${C.shopUrl})에서 이루어집니다.
-2. 따라서 상품의 청약철회·교환·환불은 ${C.shopName}의 이용약관 및 환불 정책을 따릅니다.
+1. ${c.brand}는 상품 정보를 소개하고 파트너 링크를 제공하는 플랫폼이며, 실제 상품 결제·배송·환불은 상품 판매 쇼핑몰인 ${c.shopName}(${c.shopUrl})에서 이루어집니다.
+2. 따라서 상품의 청약철회·교환·환불은 ${c.shopName}의 이용약관 및 환불 정책을 따릅니다.
 3. 소비자는 「전자상거래 등에서의 소비자보호에 관한 법률」에 따라 상품 수령일로부터 7일 이내에 청약철회를 할 수 있습니다. 다만 다음의 경우 제한될 수 있습니다.
    - 이용자의 책임으로 상품이 훼손된 경우
    - 이용자의 사용 또는 일부 소비로 상품의 가치가 현저히 감소한 경우
@@ -279,14 +282,24 @@ export const REFUND_POLICY: TermDoc = {
 회사가 별도의 유료 상품·멤버십을 제공하는 경우, 해당 결제의 환불은 관련 법령 및 개별 판매 페이지에 고지된 조건에 따릅니다.
 
 제4조 (문의)
-취소·환불 관련 문의는 고객센터(${C.csPhone}) 또는 ${C.email}로 접수할 수 있습니다.
+취소·환불 관련 문의는 고객센터(${c.csPhone}) 또는 ${c.email}로 접수할 수 있습니다.
 
 시행일: ${POLICY_EFFECTIVE}
-${C.corpName} · 대표 ${C.ceo} · 통신판매업 신고번호 ${C.mailOrderNo}`,
-};
+${c.corpName} · 대표 ${c.ceo} · 통신판매업 신고번호 ${c.mailOrderNo}`,
+  };
+}
 
-/** 푸터·정책 페이지에 노출되는 공개 정책 3종 */
-export const POLICIES: TermDoc[] = [TERMS[0], PRIVACY_POLICY, REFUND_POLICY];
+/** 기본값 기준 정적 문서 (getTerm 등 하위호환) */
+export const PRIVACY_POLICY: TermDoc = buildPrivacyPolicy();
+export const REFUND_POLICY: TermDoc = buildRefundPolicy();
+
+/** 사업자 정보를 반영한 공개 정책 3종 (이용약관·개인정보처리방침·환불정책) */
+export function buildPolicies(c: Company = C): TermDoc[] {
+  return [TERMS[0], buildPrivacyPolicy(c), buildRefundPolicy(c)];
+}
+
+/** 푸터·정책 페이지에 노출되는 공개 정책 3종 (정적 기본값) */
+export const POLICIES: TermDoc[] = buildPolicies();
 
 export function getTerm(key: string): TermDoc | undefined {
   return [...TERMS, SETTLEMENT_CONSENT, PRIVACY_POLICY, REFUND_POLICY].find((t) => t.key === key);
