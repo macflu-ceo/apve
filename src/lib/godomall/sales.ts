@@ -1,55 +1,157 @@
 // 판매내역(전환) 연동 어댑터
-// 고도몰이 주문에 유입 code를 기록하므로, 그 데이터를 주기적으로 "가져와(pull)"
-// code 기준으로 파트너에 귀속시켜 Sale 테이블에 적재한다.
+// 고도몰 관리자 [영업사원 통계] 와 동일한 데이터를, 커스텀 API 엔드포인트에서 가져온다.
+//   엔드포인트: https://api.viaelite.co.kr/concierge/sales  (module/Controller/Api/Concierge/SalesController.php)
+//   응답: { total, list: [{ orderNo, code, orderedAt, confirmedAt, settleStatus, goodsNo, goodsNm, ... }] }
 //
-// ⚠️ 통로 미확정: 고도몰 프로 관리자에 Open API / 제휴마케팅 정산 데이터가 있는지
-//    확인 후 fetchRawSales()를 실제 구현으로 교체. 지금은 수동 업로드/더미로 동작.
+// code(salesAgentCode) 기준으로 파트너에 귀속시키고, 수수료는 파트너 '등급'의 %로 계산한다.
 
 import { prisma } from "@/lib/db";
 import { getPartnerGrade } from "@/lib/grade";
 
-export interface RawSale {
-  code: string;          // 유입 파트너 코드
-  goodsNo: string;       // 상품번호
-  amount: number;        // 판매금액(원)
-  orderNo?: string;
-  orderedAt: string;     // ISO date
-  status?: "confirmed" | "pending" | "canceled";
+/** 고도몰 API 한 행 */
+export interface GodoSaleRow {
+  orderNo: string;
+  code: string;
+  orderedAt: string;
+  paidAt: string | null;
+  deliveredAt: string | null;
+  confirmedAt: string | null;
+  orderStatus: string;
+  settleStatus: "confirmed" | "pending" | "canceled";
+  goodsNo: string;
+  goodsNm: string;
+  brand: string | null;
+  origin: string | null;
+  optionName: string;
+  qty: number;
+  salePrice: number;
+  listPrice: number;
+  discount: number;
+  amount: number;
+}
+
+const API_URL = process.env.GODO_SALES_API_URL || "https://api.viaelite.co.kr/concierge/sales";
+const API_KEY = process.env.GODO_SALES_API_KEY || "";
+
+/** 고도몰에서 기간별 판매내역을 가져온다. scope=all 이면 취소/반품까지 포함. */
+export async function fetchConciergeSales(
+  from: string,
+  to: string,
+  opts: { code?: string; scope?: "valid" | "all" } = {}
+): Promise<GodoSaleRow[]> {
+  const scope = opts.scope ?? "all";
+  const url = new URL(API_URL);
+  url.searchParams.set("from", from);
+  url.searchParams.set("to", to);
+  url.searchParams.set("scope", scope);
+  if (opts.code) url.searchParams.set("code", opts.code);
+
+  const res = await fetch(url.toString(), {
+    headers: { "X-API-KEY": API_KEY },
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error(`고도몰 API 오류 (${res.status})`);
+
+  const data = await res.json();
+  if (data?.error) throw new Error(`고도몰 API: ${data.error}`);
+  return Array.isArray(data?.list) ? (data.list as GodoSaleRow[]) : [];
+}
+
+/** 날짜 문자열 → Date (없으면 null) */
+function toDate(v: string | null | undefined): Date | null {
+  if (!v) return null;
+  const d = new Date(v.replace(" ", "T"));
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+export interface SyncResult {
+  fetched: number;
+  upserted: number;
+  skippedUnpaid: number;
+  unmatchedCode: number;
+  canceled: number;
 }
 
 /**
- * 고도몰에서 원시 판매내역을 가져온다.
- * TODO: 고도몰 Open API 또는 제휴마케팅 CSV export 연동으로 교체.
- * 현재는 인자로 받은 배열(수동 업로드/CSV 파싱 결과)을 그대로 통과시킨다.
+ * 기간을 지정해 고도몰 판매내역을 동기화한다.
+ *  · syncKey(orderNo|goodsNo|optionName) 로 중복 없이 upsert
+ *  · 미결제(orderStatus 'o%')는 건너뜀
+ *  · 취소/반품/교환/환불은 status=canceled 로 반영 (기존에 넣었던 건도 갱신됨)
+ *  · 수수료는 파트너 등급 %로 재계산
  */
-export async function fetchRawSales(manual: RawSale[] = []): Promise<RawSale[]> {
-  return manual;
-}
+export async function syncConciergeSales(from: string, to: string): Promise<SyncResult> {
+  const rows = await fetchConciergeSales(from, to, { scope: "all" });
 
-/** 원시 판매내역을 파트너/상품에 매칭해 DB에 적재하고, 수수료를 계산한다. */
-export async function ingestSales(rows: RawSale[]) {
-  let inserted = 0;
+  const result: SyncResult = {
+    fetched: rows.length,
+    upserted: 0,
+    skippedUnpaid: 0,
+    unmatchedCode: 0,
+    canceled: 0,
+  };
+
+  // 등급 %는 파트너별로 한 번만 조회 (캐시)
+  const gradeCache = new Map<string, number>();
+
   for (const row of rows) {
-    const product = await prisma.product.findUnique({ where: { goodsNo: row.goodsNo } });
-    if (!product) continue; // 플랫폼에 등록되지 않은 상품은 스킵
-    const partner = await prisma.partner.findUnique({ where: { code: row.code } });
-    // 수수료율은 파트너의 '등급'에 귀속
-    const grade = partner ? await getPartnerGrade(partner.id) : null;
-    const commission = Math.round((row.amount * (grade?.percent ?? 0)) / 100);
+    // 미결제(입금대기)는 아직 판매가 아님 → 스킵
+    if (row.orderStatus && row.orderStatus.toLowerCase().startsWith("o")) {
+      result.skippedUnpaid++;
+      continue;
+    }
 
-    await prisma.sale.create({
-      data: {
-        productId: product.id,
-        partnerId: partner?.id ?? null,
-        code: row.code,
-        amount: row.amount,
-        commission,
-        status: row.status ?? "confirmed",
-        orderNo: row.orderNo,
-        orderedAt: new Date(row.orderedAt),
-      },
+    const partner = row.code
+      ? await prisma.partner.findUnique({ where: { code: row.code } })
+      : null;
+    if (!partner) result.unmatchedCode++;
+
+    let percent = 0;
+    if (partner) {
+      if (gradeCache.has(partner.id)) {
+        percent = gradeCache.get(partner.id)!;
+      } else {
+        const grade = await getPartnerGrade(partner.id);
+        percent = grade?.percent ?? 0;
+        gradeCache.set(partner.id, percent);
+      }
+    }
+
+    const product = row.goodsNo
+      ? await prisma.product.findUnique({ where: { goodsNo: row.goodsNo }, select: { id: true } })
+      : null;
+
+    const amount = Math.round(row.amount ?? 0);
+    const commission = row.settleStatus === "canceled" ? 0 : Math.round((amount * percent) / 100);
+    if (row.settleStatus === "canceled") result.canceled++;
+
+    const syncKey = `${row.orderNo}|${row.goodsNo}|${row.optionName ?? ""}`;
+
+    const payload = {
+      productId: product?.id ?? null,
+      partnerId: partner?.id ?? null,
+      code: row.code,
+      amount,
+      commission,
+      status: row.settleStatus,
+      orderNo: row.orderNo,
+      orderedAt: toDate(row.orderedAt) ?? new Date(),
+      goodsNo: row.goodsNo,
+      goodsName: row.goodsNm,
+      optionName: row.optionName || null,
+      qty: row.qty ?? 1,
+      listPrice: row.listPrice ?? null,
+      discount: row.discount ?? null,
+      confirmedAt: toDate(row.confirmedAt),
+      source: "godomall",
+    };
+
+    await prisma.sale.upsert({
+      where: { syncKey },
+      update: payload,
+      create: { syncKey, ...payload },
     });
-    inserted++;
+    result.upserted++;
   }
-  return { inserted };
+
+  return result;
 }

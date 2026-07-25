@@ -128,7 +128,12 @@ class SalesController extends \Controller\Api\Controller
             // 옵션명 추출: optionInfo = [["사이즈","Black-S","sku",0,null]]
             $optionName = '';
             if (empty($r['optionInfo']) === false) {
-                $opt = json_decode($r['optionInfo'], true);
+                $raw = $r['optionInfo'];
+                $opt = json_decode($raw, true);
+                if (is_array($opt) === false) {
+                    // 이스케이프가 한 번 더 걸린 경우 대비
+                    $opt = json_decode(stripslashes($raw), true);
+                }
                 if (is_array($opt) === true && isset($opt[0][1]) === true) {
                     $optionName = $opt[0][1];
                 }

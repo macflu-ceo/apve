@@ -9,6 +9,12 @@ import { SETTLEMENT_POLICY } from "@/lib/terms";
 
 export const dynamic = "force-dynamic";
 
+const SALE_STATUS: Record<string, { label: string; cls: string }> = {
+  confirmed: { label: "구매확정", cls: "text-deal" },
+  pending: { label: "진행중", cls: "text-amber-600" },
+  canceled: { label: "취소/반품", cls: "text-red-500" },
+};
+
 export default async function MyPage() {
   const partner = await getCurrentPartner();
   if (!partner) {
@@ -29,10 +35,16 @@ export default async function MyPage() {
 
   const [links, sales] = await Promise.all([
     prisma.issuedLink.findMany({ where: { partnerId: partner.id }, include: { product: true }, orderBy: { createdAt: "desc" } }),
-    prisma.sale.findMany({ where: { partnerId: partner.id }, include: { product: true }, orderBy: { orderedAt: "desc" } }),
+    prisma.sale.findMany({ where: { partnerId: partner.id }, orderBy: { orderedAt: "desc" } }),
   ]);
-  const totalAmount = sales.reduce((s, x) => s + x.amount, 0);
-  const totalCommission = sales.reduce((s, x) => s + x.commission, 0);
+  // 매출·수익은 취소/반품 제외
+  const validSales = sales.filter((s) => s.status !== "canceled");
+  const totalAmount = validSales.reduce((s, x) => s + x.amount, 0);
+  const totalCommission = validSales.reduce((s, x) => s + x.commission, 0);
+  // 정산 대상(구매확정)만
+  const confirmedCommission = sales
+    .filter((s) => s.status === "confirmed")
+    .reduce((s, x) => s + x.commission, 0);
 
   return (
     <div className="space-y-6 px-4 py-6">
@@ -98,18 +110,23 @@ export default async function MyPage() {
       ) : (
         <>
           {/* 요약 */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <div className="card p-4">
-              <div className="text-xs text-sub">발급 링크</div>
-              <div className="mt-1 text-lg font-bold">{links.length}개</div>
+              <div className="text-xs text-sub">판매 건수</div>
+              <div className="mt-1 text-lg font-bold">{validSales.length}건</div>
             </div>
             <div className="card p-4">
               <div className="text-xs text-sub">판매 매출</div>
               <div className="mt-1 text-lg font-bold">{won(totalAmount)}</div>
             </div>
             <div className="card p-4">
-              <div className="text-xs text-sub">누적 수익</div>
+              <div className="text-xs text-sub">예상 수익</div>
               <div className="mt-1 text-lg font-bold text-brand">{won(totalCommission)}</div>
+            </div>
+            <div className="card p-4">
+              <div className="text-xs text-sub">확정 수익</div>
+              <div className="mt-1 text-lg font-bold text-brand">{won(confirmedCommission)}</div>
+              <div className="mt-0.5 text-[10px] text-sub">정산 대상</div>
             </div>
           </div>
 
@@ -128,21 +145,30 @@ export default async function MyPage() {
                     <tr>
                       <th className="py-2">일자</th>
                       <th>상품</th>
-                      <th>금액</th>
-                      <th>수익</th>
+                      <th>옵션</th>
+                      <th className="text-right">금액</th>
+                      <th className="text-right">수익</th>
                       <th>상태</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {sales.map((s) => (
-                      <tr key={s.id} className="border-b border-line">
-                        <td className="py-2">{s.orderedAt.toISOString().slice(0, 10)}</td>
-                        <td className="max-w-[240px] truncate">{s.product.name}</td>
-                        <td>{won(s.amount)}</td>
-                        <td className="font-semibold text-brand">{won(s.commission)}</td>
-                        <td className="text-sub">{s.status}</td>
-                      </tr>
-                    ))}
+                    {sales.map((s) => {
+                      const st = SALE_STATUS[s.status] ?? { label: s.status, cls: "text-sub" };
+                      return (
+                        <tr key={s.id} className="border-b border-line align-middle">
+                          <td className="whitespace-nowrap py-2">
+                            {new Date(s.orderedAt.getTime() + 9 * 3600_000).toISOString().slice(0, 10)}
+                          </td>
+                          <td className="max-w-[220px] truncate">{s.goodsName ?? s.goodsNo ?? "-"}</td>
+                          <td className="whitespace-nowrap text-xs text-sub">{s.optionName ?? "-"}</td>
+                          <td className="whitespace-nowrap text-right tabular-nums">{won(s.amount)}</td>
+                          <td className="whitespace-nowrap text-right font-semibold tabular-nums text-brand">
+                            {s.status === "canceled" ? "-" : won(s.commission)}
+                          </td>
+                          <td className={`whitespace-nowrap text-xs font-bold ${st.cls}`}>{st.label}</td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

@@ -199,21 +199,40 @@ model IssuedLink {
 }
 
 /// 고도몰에서 가져온 판매(전환) 내역 — code 기준으로 파트너에 귀속
+/// 한 행 = 주문의 상품 1건 (고도몰 orderGoods 기준)
 model Sale {
   id         String   @id @default(cuid())
-  product    Product  @relation(fields: [productId], references: [id])
-  productId  String
+  /// 플랫폼에 등록된 상품이면 연결(선택). 미등록 상품 주문도 스냅샷으로 보관.
+  product    Product? @relation(fields: [productId], references: [id])
+  productId  String?
   partner    Partner? @relation(fields: [partnerId], references: [id])
   partnerId  String?
-  /// 주문 시점 유입 코드 (고도몰 기록)
+  /// 주문 시점 유입 코드 (고도몰 salesAgentCode)
   code       String
   /// 판매금액 / 정산 수수료 (원)
   amount     Int
   commission Int
-  status     String   @default("confirmed") // confirmed | pending | canceled
+  /// confirmed(구매확정) | pending(결제~배송중) | canceled(취소/반품/교환/환불)
+  status     String   @default("confirmed")
   orderNo    String?
   orderedAt  DateTime
   createdAt  DateTime @default(now())
+
+  /// ── 고도몰 동기화 스냅샷 (상품 미등록이어도 표시 가능) ──
+  goodsNo     String?
+  goodsName   String?
+  optionName  String?
+  qty         Int       @default(1)
+  listPrice   Int?
+  discount    Int?
+  /// 구매확정 일시 (정산 트리거)
+  confirmedAt DateTime?
+  /// 중복 적재 방지 키: orderNo|goodsNo|optionName
+  syncKey     String?   @unique
+  /// 출처: godomall | manual | seed
+  source      String?
+
+  @@index([partnerId, orderedAt])
 }
 
 /// 홈 히어로 배너
