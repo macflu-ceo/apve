@@ -275,6 +275,9 @@ model TimeSale {
   liveText     String   @default("지금 판매하면 수수료 UP")
   /// 기본 추가 수수료율(%p) — 상품별 개별값이 없으면 이 값 적용
   baseBoost    Int      @default(0)
+  /// 진행중 배너 색상 (그라디언트 시작/끝). 없으면 기본 골드
+  colorFrom    String   @default("#b8860b")
+  colorTo      String   @default("#9a6f08")
   updatedAt    DateTime @updatedAt
 
   products TimeSaleProduct[]

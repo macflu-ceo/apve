@@ -67,6 +67,8 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
           startAt={timeSale.ts.startAt?.toISOString() ?? null}
           endAt={timeSale.ts.endAt?.toISOString() ?? null}
           maxBoost={timeSale.maxBoost}
+          colorFrom={timeSale.ts.colorFrom}
+          colorTo={timeSale.ts.colorTo}
         />
       )}
       <header className="sticky top-0 z-40 border-b border-line bg-white">

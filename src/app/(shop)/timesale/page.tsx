@@ -25,7 +25,14 @@ export default async function TimeSalePage() {
   return (
     <div className="px-4 py-6">
       {/* 히어로 */}
-      <div className={`mb-6 rounded-xl2 p-6 text-center text-white ${upcoming ? "bg-gradient-to-br from-[#2b2622] to-[#4a3f36]" : "bg-gradient-to-br from-[#b8860b] to-[#9a6f08]"}`}>
+      <div
+        className="mb-6 rounded-xl2 p-6 text-center text-white"
+        style={{
+          backgroundImage: upcoming
+            ? "linear-gradient(135deg, #2b2622, #4a3f36)"
+            : `linear-gradient(135deg, ${ts.colorFrom}, ${ts.colorTo})`,
+        }}
+      >
         <div className="text-2xl font-black tracking-tight">{ts.title}</div>
         <div className="mt-1 text-sm font-semibold text-white/85">
           {upcoming ? ts.upcomingText : ts.liveText}

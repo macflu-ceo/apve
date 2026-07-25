@@ -17,11 +17,14 @@ type SaveInput = {
   liveText: string;
   baseBoost: number;
   active: boolean;
+  colorFrom: string;
+  colorTo: string;
   /** 선택 상품 + 개별 부스트(null이면 기본) — 배치 순서 유지 */
   items: { productId: string; boost: number | null }[];
 };
 
 const clampBoost = (n: number) => Math.max(0, Math.min(90, Math.round(n)));
+const hex = (v: string, d: string) => (/^#[0-9a-fA-F]{6}$/.test(v) ? v : d);
 
 export async function saveTimeSale(input: SaveInput) {
   if (!isAdmin()) return { ok: false, message: "권한이 없습니다." };
@@ -32,6 +35,8 @@ export async function saveTimeSale(input: SaveInput) {
     liveText: input.liveText,
     baseBoost: clampBoost(input.baseBoost),
     active: input.active,
+    colorFrom: hex(input.colorFrom, "#b8860b"),
+    colorTo: hex(input.colorTo, "#9a6f08"),
   };
   await prisma.timeSale.upsert({
     where: { id: "main" },

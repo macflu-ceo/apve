@@ -29,6 +29,8 @@ export default function TimeSaleBanner({
   startAt,
   endAt,
   maxBoost,
+  colorFrom,
+  colorTo,
 }: {
   title: string;
   state: State;
@@ -37,6 +39,8 @@ export default function TimeSaleBanner({
   startAt: string | null; // ISO
   endAt: string | null;
   maxBoost: number;
+  colorFrom: string;
+  colorTo: string;
 }) {
   const router = useRouter();
   const [now, setNow] = useState<number | null>(null);
@@ -68,21 +72,28 @@ export default function TimeSaleBanner({
 
   const live = state === "live";
   const t = remain != null ? fmt(remain) : null;
+  // 진행중이면 커스텀 색상, 예정이면 다크
+  const bg = live
+    ? { backgroundImage: `linear-gradient(90deg, ${colorFrom}, ${colorTo})` }
+    : { backgroundImage: "linear-gradient(90deg, #2b2622, #4a3f36)" };
 
   return (
-    <Link
-      href="/timesale"
-      className={`block ${live ? "bg-gradient-to-r from-[#b8860b] via-[#e0a520] to-[#9a6f08]" : "bg-gradient-to-r from-[#2b2622] to-[#4a3f36]"} text-white`}
-    >
+    <Link href="/timesale" className="block text-white" style={bg}>
       <div className="mx-auto flex max-w-shell items-center gap-3 px-4 py-2.5">
-        <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-black tracking-wide ${live ? "bg-white text-[#9a6f08]" : "bg-white/20 text-white"}`}>
+        <span
+          className="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-black tracking-wide"
+          style={live ? { backgroundColor: "#fff", color: colorTo } : { backgroundColor: "rgba(255,255,255,0.2)" }}
+        >
           {live ? "LIVE" : "SOON"}
         </span>
 
         <span className="shrink-0 text-sm font-black tracking-tight">{title}</span>
 
         {maxBoost > 0 && (
-          <span className={`shrink-0 rounded px-1.5 py-0.5 text-xs font-black ${live ? "bg-white text-[#9a6f08]" : "bg-white/15 text-white"}`}>
+          <span
+            className="shrink-0 rounded px-1.5 py-0.5 text-xs font-black"
+            style={live ? { backgroundColor: "#fff", color: colorTo } : { backgroundColor: "rgba(255,255,255,0.15)" }}
+          >
             수수료 +{maxBoost}%p
           </span>
         )}

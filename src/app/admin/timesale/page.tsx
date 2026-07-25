@@ -34,6 +34,8 @@ export default async function AdminTimeSale() {
           active: config.active,
           startAt: config.startAt?.toISOString() ?? null,
           endAt: config.endAt?.toISOString() ?? null,
+          colorFrom: config.colorFrom,
+          colorTo: config.colorTo,
         }}
         state={state}
         refPercent={refPercent}

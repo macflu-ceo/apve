@@ -14,7 +14,18 @@ type Config = {
   active: boolean;
   startAt: string | null;
   endAt: string | null;
+  colorFrom: string;
+  colorTo: string;
 };
+
+const COLOR_PRESETS: { label: string; from: string; to: string }[] = [
+  { label: "레드", from: "#e5322f", to: "#c81e1a" },
+  { label: "골드", from: "#b8860b", to: "#9a6f08" },
+  { label: "퍼플", from: "#7c3aed", to: "#5b21b6" },
+  { label: "블루", from: "#2563eb", to: "#1e40af" },
+  { label: "핑크", from: "#ec4899", to: "#be185d" },
+  { label: "블랙", from: "#2b2622", to: "#4a3f36" },
+];
 
 export default function TimeSaleEditor({
   config,
@@ -38,6 +49,8 @@ export default function TimeSaleEditor({
   const [liveText, setLiveText] = useState(config.liveText);
   const [baseBoost, setBaseBoost] = useState(String(config.baseBoost));
   const [active, setActive] = useState(config.active);
+  const [colorFrom, setColorFrom] = useState(config.colorFrom);
+  const [colorTo, setColorTo] = useState(config.colorTo);
 
   const [selected, setSelected] = useState<string[]>(initialItems.map((i) => i.productId));
   const [overrides, setOverrides] = useState<Record<string, string>>(
@@ -68,7 +81,9 @@ export default function TimeSaleEditor({
   }
 
   const save = () =>
-    run(() => saveTimeSale({ title, upcomingText, liveText, baseBoost: base, active, items: itemsPayload() }));
+    run(() =>
+      saveTimeSale({ title, upcomingText, liveText, baseBoost: base, active, colorFrom, colorTo, items: itemsPayload() })
+    );
 
   const stateLabel =
     state === "live" ? "🟢 진행중" : state === "upcoming" ? "🟡 오픈 예정 / 대기" : "⚪ 노출 꺼짐";
@@ -148,6 +163,39 @@ export default function TimeSaleEditor({
         <p className="text-xs text-sub">
           예) 기본 등급 수수료율이 13%인데 부스트 +5%p면, 이 상품을 골든타임에 팔면 <b>18%</b>가 적용됩니다.
         </p>
+
+        {/* 배너 색상 */}
+        <div className="border-t border-line pt-3">
+          <div className="mb-2 text-xs font-semibold text-sub">진행중 배너 색상</div>
+          <div className="flex flex-wrap items-center gap-2">
+            {COLOR_PRESETS.map((c) => {
+              const on = colorFrom === c.from && colorTo === c.to;
+              return (
+                <button
+                  key={c.label}
+                  type="button"
+                  onClick={() => { setColorFrom(c.from); setColorTo(c.to); }}
+                  className={`h-8 w-8 rounded-full ring-offset-2 ${on ? "ring-2 ring-ink" : ""}`}
+                  style={{ backgroundImage: `linear-gradient(135deg, ${c.from}, ${c.to})` }}
+                  title={c.label}
+                  aria-label={c.label}
+                />
+              );
+            })}
+            <span className="mx-1 text-xs text-sub">직접</span>
+            <input type="color" value={colorFrom} onChange={(e) => setColorFrom(e.target.value)} className="h-8 w-10 cursor-pointer rounded border border-line" title="시작색" />
+            <input type="color" value={colorTo} onChange={(e) => setColorTo(e.target.value)} className="h-8 w-10 cursor-pointer rounded border border-line" title="끝색" />
+          </div>
+          {/* 미리보기 */}
+          <div
+            className="mt-3 flex items-center gap-2 rounded-lg px-3 py-2 text-white"
+            style={{ backgroundImage: `linear-gradient(90deg, ${colorFrom}, ${colorTo})` }}
+          >
+            <span className="rounded-full bg-white px-2 py-0.5 text-[11px] font-black" style={{ color: colorTo }}>LIVE</span>
+            <span className="text-sm font-black">{title || "🔥 골든타임"}</span>
+            {base > 0 && <span className="rounded bg-white px-1.5 py-0.5 text-xs font-black" style={{ color: colorTo }}>수수료 +{base}%p</span>}
+          </div>
+        </div>
       </div>
 
       {/* 상품 선택 */}
