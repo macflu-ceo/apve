@@ -12,9 +12,9 @@ use Request;
  *        ?key=인증키&from=2026-07-01&to=2026-07-31[&code=cd001ws][&limit=500][&scope=all]
  * 인증 : 헤더 X-API-KEY 또는 파라미터 key
  *
- * 관리자 [영업사원 통계 > 상세 내역] 과 동일한 조건으로 조회한다.
- * (McSalesAgentStatistics::getAllDetailStatistics 와 같은 쿼리 + 상품번호 등 추가 컬럼)
- * 기존 모듈을 고치지 않고 별도로 조회하므로 관리자 화면에 영향이 없다.
+ * 관리자 [영업사원 통계] 와 동일한 조인/제외조건을 사용하되,
+ * 플랫폼 연동에 필요한 컬럼만 선별해서 내보낸다.
+ * (고객 개인정보·매입원가 등 민감정보는 응답에 포함하지 않는다.)
  *
  * @package Controller\Api\Concierge
  */
@@ -60,14 +60,31 @@ class SalesController extends \Controller\Api\Controller
             $limit = 500;
         }
 
-        // scope=all 이면 취소/반품/교환/환불까지 전부 (정산 차감 확인용)
+        // scope=all 이면 취소/반품/교환/환불까지 포함 (정산 차감 확인용)
         $scope = (isset($req['scope']) === true && $req['scope'] === 'all') ? 'all' : 'valid';
 
-        // 3) 조회
+        // 3) 조회 — 필요한 컬럼만 선별 (민감정보 제외)
         $db = \App::load('DB');
 
         $strSQL = '
-            SELECT s.orderNo, s.salesAgentCode, s.regDt, og.*
+            SELECT
+                s.orderNo,
+                s.salesAgentCode,
+                s.regDt,
+                og.goodsNo,
+                og.goodsNm,
+                og.makerNm,
+                og.originNm,
+                og.optionInfo,
+                og.goodsCnt,
+                og.goodsPrice,
+                og.fixedPrice,
+                IFNULL(og.salesDiscountPrice, 0) AS salesDiscountPrice,
+                og.orderStatus,
+                og.paymentDt,
+                og.deliveryCompleteDt,
+                og.finishDt,
+                og.cancelDt
             FROM mc_sales_agent_statistics s
             INNER JOIN ' . DB_ORDER . ' o ON s.orderNo = o.orderNo AND s.salesAgentCode = o.salesAgentCode
             INNER JOIN ' . DB_ORDER_GOODS . ' og ON s.orderNo = og.orderNo
@@ -102,14 +119,77 @@ class SalesController extends \Controller\Api\Controller
             $rows = [];
         }
 
-        // 4) 응답
+        // 4) 응답 정리
+        $list = [];
+        foreach ($rows as $r) {
+            $qty = (int) $r['goodsCnt'];
+            $unit = (int) $r['goodsPrice'];
+
+            // 옵션명 추출: optionInfo = [["사이즈","Black-S","sku",0,null]]
+            $optionName = '';
+            if (empty($r['optionInfo']) === false) {
+                $opt = json_decode($r['optionInfo'], true);
+                if (is_array($opt) === true && isset($opt[0][1]) === true) {
+                    $optionName = $opt[0][1];
+                }
+            }
+
+            $finish = $this->cleanDate($r['finishDt']);
+            $deliveryDone = $this->cleanDate($r['deliveryCompleteDt']);
+            $cancel = $this->cleanDate($r['cancelDt']);
+
+            // 정산 상태 — 구매확정(finishDt) 되었으면 confirmed
+            if ($cancel !== null) {
+                $settle = 'canceled';
+            } elseif ($finish !== null) {
+                $settle = 'confirmed';
+            } else {
+                $settle = 'pending';
+            }
+
+            $list[] = [
+                'orderNo' => $r['orderNo'],
+                'code' => $r['salesAgentCode'],
+                'orderedAt' => $r['regDt'],
+                'paidAt' => $this->cleanDate($r['paymentDt']),
+                'deliveredAt' => $deliveryDone,
+                'confirmedAt' => $finish,
+                'orderStatus' => $r['orderStatus'],
+                'settleStatus' => $settle,
+                'goodsNo' => $r['goodsNo'],
+                'goodsNm' => $r['goodsNm'],
+                'brand' => $r['makerNm'],
+                'origin' => $r['originNm'],
+                'optionName' => $optionName,
+                'qty' => $qty,
+                'salePrice' => $unit,
+                'listPrice' => (int) $r['fixedPrice'],
+                'discount' => (int) $r['salesDiscountPrice'],
+                'amount' => $unit * $qty,
+            ];
+        }
+
         $this->json([
             'from' => $from,
             'to' => $to,
             'code' => $code,
             'scope' => $scope,
-            'total' => count($rows),
-            'list' => $rows,
+            'total' => count($list),
+            'list' => $list,
         ]);
+    }
+
+    /**
+     * '0000-00-00 00:00:00' 은 null 로 정리
+     */
+    private function cleanDate($v)
+    {
+        if (empty($v) === true) {
+            return null;
+        }
+        if (strpos($v, '0000-00-00') === 0) {
+            return null;
+        }
+        return $v;
     }
 }
