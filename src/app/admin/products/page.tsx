@@ -3,6 +3,7 @@ import { parseList } from "@/lib/format";
 import ImportForm from "./ImportForm";
 import BulkImportForm from "./BulkImportForm";
 import ProductRow from "./ProductRow";
+import RefreshStockButton from "./RefreshStockButton";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +23,10 @@ export default async function AdminProducts() {
         <BulkImportForm />
       </div>
 
-      <h2 className="mb-3 mt-8 text-lg font-semibold">등록된 상품 ({products.length})</h2>
+      <div className="mb-3 mt-8 flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-lg font-semibold">등록된 상품 ({products.length})</h2>
+        <RefreshStockButton />
+      </div>
       <div className="overflow-x-auto">
         <table className="w-full min-w-[860px] text-sm">
           <thead className="border-b border-line text-left text-sub">
