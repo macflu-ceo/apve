@@ -17,6 +17,7 @@ const ADMIN_MENU = [
   { href: "/admin/concierge", label: "컨시어지 신청" },
   { href: "/admin/ai-images", label: "AI 생성 이미지" },
   { href: "/admin/sales", label: "판매내역" },
+  { href: "/admin/settlements", label: "정산" },
   { href: "/admin/settings", label: "계정정보/설정" },
 ];
 

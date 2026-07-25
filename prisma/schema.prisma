@@ -251,7 +251,12 @@ model Sale {
   /// 출처: godomall | manual | seed
   source      String?
 
+  /// 정산(수수료 지급) 완료 여부 + 시각
+  paidOut     Boolean   @default(false)
+  paidOutAt   DateTime?
+
   @@index([partnerId, orderedAt])
+  @@index([status, paidOut])
 }
 
 /// 홈 히어로 배너
