@@ -22,6 +22,7 @@ export async function updateSettings(formData: FormData) {
     email: str("email"),
     privacyOfficer: str("privacyOfficer"),
     privacyEmail: str("privacyEmail"),
+    ogImage: str("ogImage"),
   };
   await prisma.siteSetting.upsert({
     where: { id: "main" },

@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { updateSettings } from "./actions";
+import ImageUploader from "@/components/ImageUploader";
 
 type S = {
   siteName: string;
@@ -18,12 +19,14 @@ type S = {
   email: string | null;
   privacyOfficer: string | null;
   privacyEmail: string | null;
+  ogImage: string | null;
 };
 
 export default function SettingsForm({ setting }: { setting: S }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<string | null>(null);
+  const [ogImage, setOgImage] = useState(setting.ogImage ?? "");
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -86,6 +89,26 @@ export default function SettingsForm({ setting }: { setting: S }) {
           ))}
         </div>
       </div>
+      <div className="border-t border-line pt-4">
+        <div className="mb-1 text-sm font-bold">링크 공유 미리보기 이미지 (OG)</div>
+        <p className="mb-2 text-xs text-sub">
+          카카오톡·네이버·SNS에 링크를 보낼 때 뜨는 대표 이미지입니다. <b>권장 크기 1200 × 630</b> (가로형).
+        </p>
+        <input type="hidden" name="ogImage" value={ogImage} />
+        <div className="max-w-md">
+          <ImageUploader value={ogImage} onChange={setOgImage} label="OG 이미지" />
+        </div>
+        {ogImage && (
+          <button
+            type="button"
+            onClick={() => setOgImage("")}
+            className="mt-2 text-xs text-red-500 hover:underline"
+          >
+            이미지 제거
+          </button>
+        )}
+      </div>
+
       <div>
         <label className="text-sm font-medium">메인 배너 자동 전환 시간(초)</label>
         <input

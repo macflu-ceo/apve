@@ -25,6 +25,7 @@ export default async function AdminSettings() {
           email: setting.email,
           privacyOfficer: setting.privacyOfficer,
           privacyEmail: setting.privacyEmail,
+          ogImage: setting.ogImage,
         }}
       />
     </div>
