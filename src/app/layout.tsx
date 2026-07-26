@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
-const SITE_URL = process.env.SITE_URL ?? "http://localhost:3000";
+const SITE_URL = process.env.SITE_URL ?? "https://cashboutique.co.kr";
 const SITE_NAME = "돈버는 명품샵";
 const DESCRIPTION =
   "코드 하나로 명품을 판매하는 어필리에이트 사이트. 재고 없이 명품 상품 링크를 발급해 판매하고 수익을 올리세요. 이탈리아 부티크 직수입 정품, 럭셔리 컨시어지 멤버십.";
