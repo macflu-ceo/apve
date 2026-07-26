@@ -49,6 +49,8 @@ model Partner {
   loginCount   Int      @default(0)
   /// 카카오 채널 친구 여부 (친구톡 발송 대상) — 카카오싱크 채널추가 동의 시 true
   channelFriend Boolean @default(false)
+  /// 마지막으로 알림 보낸 누적 수수료 마일스톤(원) — 중복 알림 방지
+  notifiedMilestone Int  @default(0)
 
   /// 어드민이 수동 지정한 등급. 없으면 판매실적으로 자동 판정(첫구매/일반)
   grade   Grade?  @relation(fields: [gradeId], references: [id])
@@ -313,28 +315,39 @@ model MarginUpWindow {
   @@index([startAt, endAt])
 }
 
-/// CRM 메시지 발송 (친구톡/문자/푸시) — 판촉·추천상품 안내
-model CrmMessage {
-  id          String   @id @default(cuid())
-  title       String
-  /// friendtalk | sms | push
-  channel     String   @default("friendtalk")
-  content     String
-  imageUrl    String?
-  linkUrl     String?
-  /// 연결 상품(선택) — 이미지·링크 자동 채움 근거
-  productId   String?
-  /// 대상 필터 스냅샷 (JSON)
-  filterJson  String
-  /// draft | scheduled | sent | failed
-  status      String   @default("draft")
-  targetCount Int      @default(0)
-  sentCount   Int      @default(0)
-  scheduledAt DateTime?
-  sentAt      DateTime?
-  createdAt   DateTime @default(now())
+/// 알림톡 자동 발송 규칙 — "어떤 세그먼트에게 어떤 조건(트리거)으로 보낼지"
+model AlimtalkRule {
+  id        String   @id @default(cuid())
+  name      String
+  /// 트리거: sale(판매발생) | commission(수수료도달) | settlement(정산완료) | signup(가입승인) | weekly(주간리포트)
+  trigger   String
+  /// 대상 세그먼트: all | new | active | vip | dormant
+  segment   String   @default("all")
+  /// 임계값 — commission: 마일스톤 금액(원), dormant: 일수 등
+  threshold Int?
+  /// 메시지 본문 (변수: #{이름} #{상품} #{수수료} #{누적수수료} #{건수})
+  message   String
+  /// 승인된 알림톡 템플릿 코드 (실발송 시 사용)
+  templateCode String?
+  active    Boolean  @default(true)
+  sort      Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  @@index([status, createdAt])
+  @@unique([trigger, segment, threshold])
+}
+
+/// 알림톡 발송 로그 (규칙 실행 이력)
+model AlimtalkLog {
+  id        String   @id @default(cuid())
+  trigger   String
+  ruleName  String
+  target    Int      @default(0)
+  sent      Int      @default(0)
+  provider  String   @default("mock")
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
 }
 
 /// 홈 팝업 (이미지 + 링크, 가운데 모달)

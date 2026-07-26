@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
+import { notifySignupApproved } from "@/lib/crm/events";
 
 /** 가입 신청 승인 — 고도몰에서 발급한 코드를 입력해 부여하고 활성화 */
 export async function approvePartner(id: string, code: string) {
@@ -14,6 +15,7 @@ export async function approvePartner(id: string, code: string) {
     where: { id },
     data: { status: "approved", code: c, active: true },
   });
+  await notifySignupApproved(id).catch(() => {}); // 승인 환영 알림톡 (mock)
   revalidatePath("/admin/partners");
   return { ok: true, message: "승인 완료" };
 }
