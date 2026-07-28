@@ -2,8 +2,11 @@
 
 import { createContext, useContext, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { login, signup, requestIdentity } from "@/lib/auth-actions";
+import { login, signup, requestIdentity, confirmIdentity } from "@/lib/auth-actions";
 import Logo from "@/components/Logo";
+
+// 본인인증 방식: portone(실제) | mock(개발). 환경변수로 전환.
+const IDP = process.env.NEXT_PUBLIC_IDENTITY_PROVIDER ?? "mock";
 
 type Mode = "login" | "signup";
 type Ctx = { open: (mode?: Mode) => void; close: () => void };
@@ -64,6 +67,37 @@ function AuthModal({ mode, setMode, close }: { mode: Mode; setMode: (m: Mode) =>
   }
 
   function doVerify() {
+    // 포트원 실제 본인인증: 팝업 → identityVerificationId → 서버 검증
+    if (IDP === "portone") {
+      start(async () => {
+        try {
+          const PortOne = await import("@portone/browser-sdk/v2");
+          const resp = await PortOne.requestIdentityVerification({
+            storeId: process.env.NEXT_PUBLIC_PORTONE_STORE_ID ?? "",
+            channelKey: process.env.NEXT_PUBLIC_PORTONE_CHANNEL_KEY ?? "",
+            identityVerificationId: `identity-verification-${crypto.randomUUID()}`,
+          });
+          if (!resp || resp.code != null) {
+            setMsg({ ok: false, text: resp?.message ?? "본인인증이 취소되었거나 실패했습니다." });
+            return;
+          }
+          const r = await confirmIdentity(resp.identityVerificationId);
+          if (r.ok) {
+            setCi(r.ci);
+            // 인증기관이 확인한 실명·전화로 확정
+            setS((prev) => ({ ...prev, name: r.name ?? prev.name, phone: r.phone ?? prev.phone }));
+            setMsg({ ok: true, text: "본인인증 완료" });
+          } else {
+            setMsg({ ok: false, text: r.message ?? "본인인증 실패" });
+          }
+        } catch (e) {
+          setMsg({ ok: false, text: e instanceof Error ? e.message : "본인인증 오류" });
+        }
+      });
+      return;
+    }
+
+    // mock: 이름+전화만으로 통과 (개발용)
     start(async () => {
       const r = await requestIdentity(s.name, s.phone);
       if (r.ok) {

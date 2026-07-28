@@ -8,6 +8,7 @@ const ADMIN_MENU = [
   { href: "/admin", label: "대시보드" },
   { href: "/admin/analytics", label: "애널리틱스" },
   { href: "/admin/crm", label: "CRM(메시지 발송)" },
+  { href: "/admin/catalog", label: "고도몰 상품 픽" },
   { href: "/admin/products", label: "상품 등록/관리" },
   { href: "/admin/banners", label: "배너 관리" },
   { href: "/admin/popups", label: "팝업 관리" },

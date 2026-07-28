@@ -26,15 +26,15 @@ export default function ImportForm() {
   return (
     <form onSubmit={onSubmit} className="card space-y-3 p-5">
       <div>
-        <label className="text-sm font-medium">고도몰 상품 URL</label>
+        <label className="text-sm font-medium">고도몰 상품번호 또는 URL</label>
         <input
           name="url"
           required
-          placeholder="https://viaelite.co.kr/goods/goods_view.php?goodsNo=..."
+          placeholder="예: 1000530280  또는  https://viaelite.co.kr/goods/goods_view.php?goodsNo=1000530280"
           className="mt-1 w-full rounded-md border border-black/15 px-3 py-2 text-sm"
         />
         <p className="mt-1 text-xs text-ink/50">
-          URL을 넣으면 상품명·가격·이미지·사이즈를 자동으로 가져옵니다.
+          상품번호(goodsNo)만 넣어도 됩니다. 상품명·가격·이미지·사이즈를 자동으로 가져옵니다.
         </p>
       </div>
       <div className="flex items-end gap-3">

@@ -2,13 +2,25 @@
 
 import { prisma } from "@/lib/db";
 import { hashPassword, verifyPassword, setSession, clearSession } from "@/lib/auth";
-import { verifyIdentity } from "@/lib/identity";
+import { verifyIdentity, verifyPortoneIdentity } from "@/lib/identity";
 import { TERMS_VERSION } from "@/lib/terms";
 
-/** 본인인증 (모달의 '본인인증' 버튼) */
+/** 본인인증 — mock 경로 (이름+전화만으로 통과, 개발용) */
 export async function requestIdentity(name: string, phone: string) {
   const r = await verifyIdentity(name, phone);
   return { ok: r.ok, ci: r.ci ?? null, message: r.message ?? null };
+}
+
+/** 본인인증 확정 — 포트원 팝업 성공 후 identityVerificationId를 서버에서 검증 (실명·전화·CI 수신) */
+export async function confirmIdentity(identityVerificationId: string) {
+  const r = await verifyPortoneIdentity(identityVerificationId);
+  return {
+    ok: r.ok,
+    ci: r.ci ?? null,
+    name: r.name || null,
+    phone: r.phone || null,
+    message: r.message ?? null,
+  };
 }
 
 /** 회원가입 신청 — 본인인증 통과분에 한해 pending 상태로 생성 */

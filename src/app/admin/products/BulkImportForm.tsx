@@ -12,10 +12,11 @@ export default function BulkImportForm() {
   const [pending, start] = useTransition();
   const [result, setResult] = useState<Result | null>(null);
 
-  // 대략적인 링크 개수 미리보기
+  // 대략적인 개수 미리보기 (상품번호 또는 링크)
   const count = text
     .split(/[\s,]+/)
-    .filter((t) => /goodsNo=|goods_view\.php/i.test(t)).length;
+    .map((t) => t.trim())
+    .filter((t) => /^\d{3,20}$/.test(t) || /goodsNo=|goods_view\.php/i.test(t)).length;
 
   function run() {
     setResult(null);
@@ -31,9 +32,9 @@ export default function BulkImportForm() {
 
   return (
     <div className="card p-5">
-      <div className="mb-1 text-sm font-bold">링크 붙여넣기로 일괄 등록</div>
+      <div className="mb-1 text-sm font-bold">상품번호/링크 붙여넣기로 일괄 등록</div>
       <p className="mb-3 text-xs text-sub">
-        고도몰 상품 링크를 <b>여러 개 붙여넣으세요.</b> (엑셀 열 복사 그대로 OK · 한 줄에 하나 · 공백/콤마 구분도 인식)
+        <b>상품번호(goodsNo)를 여러 개</b> 붙여넣으세요. 링크도 그대로 인식합니다. (엑셀 열 복사 OK · 한 줄에 하나 · 공백/콤마 구분도 인식)
         <br />
         상품명·가격·이미지·<b>사이즈별 재고</b>는 자동으로 가져옵니다. goodsNo 기준으로 등록/갱신돼요.
       </p>
@@ -41,7 +42,7 @@ export default function BulkImportForm() {
         value={text}
         onChange={(e) => setText(e.target.value)}
         rows={6}
-        placeholder={"https://viaelite.co.kr/goods/goods_view.php?goodsNo=1000464664\nhttps://viaelite.co.kr/goods/goods_view.php?goodsNo=1000466838\n..."}
+        placeholder={"1000464664\n1000466838\n1000530280\n(또는 goods_view.php?goodsNo=... 링크)"}
         className="w-full rounded-lg border border-line p-3 font-mono text-xs"
       />
       <div className="mt-3 flex flex-wrap items-center gap-3">
