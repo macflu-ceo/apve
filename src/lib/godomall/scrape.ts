@@ -130,9 +130,22 @@ export async function scrapeProduct(url: string): Promise<ScrapedProduct> {
   // 이름 / 브랜드 / 카테고리
   const name = meta(html, "og:title") || decode(html.match(/<title>([^<|]*)/i)?.[1] ?? "") || null;
   const brand = name?.match(/^\s*\[([^\]]+)\]/)?.[1]?.trim() ?? null;
-  // <title> "이름 | 카테고리 - 몰" 에서 카테고리 추출
+
+  // 카테고리: 상품 브레드크럼(.location_tit)에서 전체 경로 추출 (남성/여성 구분 포함)
+  //   예: <div class="location_tit"><a href="#"><span>남성</span></a></div> → "남성 > 의류 > 셔츠"
+  const crumbs: string[] = [];
+  for (const m of html.matchAll(/class=["']location_tit["']\s*>\s*<a[^>]*>\s*<span>\s*([^<]*?)\s*<\/span>/gi)) {
+    const t = decode(m[1]);
+    if (t && !/^(home|홈)$/i.test(t)) crumbs.push(t);
+  }
+  // 브레드크럼 없으면 <title> "이름 | 카테고리 - 몰" 폴백
   const titleTag = html.match(/<title>([^<]*)<\/title>/i)?.[1] ?? "";
-  const category = titleTag.includes("|") ? decode(titleTag.split("|")[1]?.split("-")[0] ?? "") || null : null;
+  const category =
+    crumbs.length > 0
+      ? crumbs.join(" > ")
+      : titleTag.includes("|")
+        ? decode(titleTag.split("|")[1]?.split("-")[0] ?? "") || null
+        : null;
 
   // 가격 / 재고 (hidden input)
   const listPrice = toInt(inputVal(html, "set_goods_fixedPrice"));

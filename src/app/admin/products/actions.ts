@@ -32,6 +32,21 @@ export async function deleteProduct(id: string) {
   revalidatePath("/");
 }
 
+/** 상품 여러 개 일괄 삭제 (체크 선택) */
+export async function deleteProducts(ids: string[]) {
+  const list = (ids ?? []).filter(Boolean);
+  if (list.length === 0) return { ok: false, message: "선택된 상품이 없습니다." };
+  await prisma.$transaction([
+    prisma.issuedLink.deleteMany({ where: { productId: { in: list } } }),
+    prisma.tryOnImage.deleteMany({ where: { productId: { in: list } } }),
+    prisma.sale.deleteMany({ where: { productId: { in: list } } }),
+    prisma.product.deleteMany({ where: { id: { in: list } } }),
+  ]);
+  revalidatePath("/admin/products");
+  revalidatePath("/");
+  return { ok: true, count: list.length };
+}
+
 /** 어드민 상품 등록 — 고도몰 상품번호(goodsNo) 또는 URL로 상품을 생성/갱신 */
 export async function importProduct(formData: FormData) {
   const raw = String(formData.get("url") ?? "").trim();

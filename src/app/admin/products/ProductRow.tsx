@@ -6,7 +6,7 @@ import Link from "next/link";
 import { won } from "@/lib/format";
 import { updateProduct, deleteProduct } from "./actions";
 
-type P = {
+export type P = {
   id: string;
   goodsNo: string;
   name: string;
@@ -19,7 +19,15 @@ type P = {
   image: string | null;
 };
 
-export default function ProductRow({ p }: { p: P }) {
+export default function ProductRow({
+  p,
+  checked,
+  onToggle,
+}: {
+  p: P;
+  checked?: boolean;
+  onToggle?: () => void;
+}) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [origin, setOrigin] = useState(p.origin ?? "");
@@ -40,7 +48,15 @@ export default function ProductRow({ p }: { p: P }) {
   }
 
   return (
-    <tr className="border-b border-line">
+    <tr className={`border-b border-line ${checked ? "bg-brandsoft/50" : ""}`}>
+      <td className="py-2">
+        <input
+          type="checkbox"
+          className="h-4 w-4"
+          checked={!!checked}
+          onChange={onToggle}
+        />
+      </td>
       <td className="py-2">
         {p.image ? (
           // eslint-disable-next-line @next/next/no-img-element

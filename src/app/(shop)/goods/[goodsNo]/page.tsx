@@ -171,6 +171,12 @@ export default async function GoodsPage({ params }: { params: { goodsNo: string 
             <dt className="w-20 shrink-0 text-sub">원산지</dt>
             <dd>{product.origin ?? "-"}</dd>
           </div>
+          {product.category && (
+            <div className="flex gap-3">
+              <dt className="w-20 shrink-0 text-sub">카테고리</dt>
+              <dd>{product.category}</dd>
+            </div>
+          )}
           <div className="flex gap-3">
             <dt className="w-20 shrink-0 text-sub">사이즈</dt>
             <dd className="flex flex-wrap items-center gap-1.5">

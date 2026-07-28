@@ -2,7 +2,7 @@ import { prisma } from "@/lib/db";
 import { parseList } from "@/lib/format";
 import ImportForm from "./ImportForm";
 import BulkImportForm from "./BulkImportForm";
-import ProductRow from "./ProductRow";
+import ProductTable from "./ProductTable";
 import RefreshStockButton from "./RefreshStockButton";
 
 export const dynamic = "force-dynamic";
@@ -27,42 +27,20 @@ export default async function AdminProducts() {
         <h2 className="text-lg font-semibold">등록된 상품 ({products.length})</h2>
         <RefreshStockButton />
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[860px] text-sm">
-          <thead className="border-b border-line text-left text-sub">
-            <tr>
-              <th className="py-2">이미지</th>
-              <th>상품</th>
-              <th>정가</th>
-              <th>할인율</th>
-              <th>판매가</th>
-              <th>원산지</th>
-              <th>태그</th>
-              <th>노출</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {products.map((p) => (
-              <ProductRow
-                key={p.id}
-                p={{
-                  id: p.id,
-                  goodsNo: p.goodsNo,
-                  name: p.name,
-                  brand: p.brand,
-                  listPrice: p.listPrice,
-                  salePrice: p.salePrice,
-                  origin: p.origin,
-                  tags: parseList(p.tagsJson),
-                  active: p.active,
-                  image: parseList(p.imagesJson)[0] ?? null,
-                }}
-              />
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <ProductTable
+        products={products.map((p) => ({
+          id: p.id,
+          goodsNo: p.goodsNo,
+          name: p.name,
+          brand: p.brand,
+          listPrice: p.listPrice,
+          salePrice: p.salePrice,
+          origin: p.origin,
+          tags: parseList(p.tagsJson),
+          active: p.active,
+          image: parseList(p.imagesJson)[0] ?? null,
+        }))}
+      />
     </div>
   );
 }
