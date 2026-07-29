@@ -12,7 +12,7 @@ const ADMIN_MENU = [
   { href: "/admin/products", label: "상품 등록/관리" },
   { href: "/admin/banners", label: "배너 관리" },
   { href: "/admin/popups", label: "팝업 관리" },
-  { href: "/admin/categories", label: "카테고리 관리" },
+  { href: "/admin/categories", label: "메인 카테고리 아이콘" },
   { href: "/admin/sections", label: "홈 진열(섹션)" },
   { href: "/admin/exhibitions", label: "기획전 관리" },
   { href: "/admin/timesale", label: "골든타임(수수료부스트)" },

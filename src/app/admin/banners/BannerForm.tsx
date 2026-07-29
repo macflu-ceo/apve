@@ -38,9 +38,9 @@ export default function BannerForm() {
     <div className="grid gap-5 md:grid-cols-2">
       {/* 미리보기 */}
       <div>
-        <div className="mb-2 text-xs font-semibold text-sub">미리보기</div>
+        <div className="mb-2 text-xs font-semibold text-sub">미리보기 (홈과 동일 · 정사각형)</div>
         <div
-          className="relative flex aspect-[21/9] flex-col justify-end overflow-hidden rounded-xl2 p-6"
+          className="relative mx-auto flex aspect-square w-full max-w-[340px] flex-col justify-end overflow-hidden rounded-xl2 p-6"
           style={
             f.imageUrl
               ? { backgroundImage: `url(${f.imageUrl})`, backgroundSize: "cover", backgroundPosition: "center" }

@@ -22,7 +22,7 @@ export default function BannerRow({ banner }: { banner: B }) {
   return (
     <div className="card flex items-center gap-4 p-3">
       <div
-        className="h-14 w-28 shrink-0 rounded-lg bg-cover bg-center"
+        className="h-16 w-16 shrink-0 rounded-lg bg-cover bg-center"
         style={
           banner.imageUrl
             ? { backgroundImage: `url(${banner.imageUrl})` }
