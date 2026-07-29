@@ -4,6 +4,7 @@
 //  · 그 외(컨시어지 등): 어드민이 파트너에게 수동 지정
 import { prisma } from "@/lib/db";
 import { getSessionPartner } from "@/lib/auth";
+import { cache } from "react";
 
 export const DEFAULT_GRADES = [
   { name: "첫구매", percent: 20, systemKey: "first", sort: 0 },
@@ -11,15 +12,15 @@ export const DEFAULT_GRADES = [
   { name: "컨시어지", percent: 13, systemKey: null as string | null, sort: 2 },
 ];
 
-/** 기본 등급 3개가 없으면 생성 */
-export async function ensureDefaultGrades() {
+/** 기본 등급 3개가 없으면 생성 (요청당 1회 메모이즈 — 매 호출 DB조회 방지) */
+export const ensureDefaultGrades = cache(async () => {
   for (const g of DEFAULT_GRADES) {
     const exists = g.systemKey
       ? await prisma.grade.findUnique({ where: { systemKey: g.systemKey } })
       : await prisma.grade.findUnique({ where: { name: g.name } });
     if (!exists) await prisma.grade.create({ data: g });
   }
-}
+});
 
 export async function listGrades() {
   await ensureDefaultGrades();

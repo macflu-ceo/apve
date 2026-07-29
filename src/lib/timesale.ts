@@ -3,16 +3,20 @@
 //   upcoming : 오픈 예정(예약된 시작 전) 또는 종료 후 (다음 오픈 대기)
 //   live     : 시작~종료 사이 진행중
 import { prisma } from "@/lib/db";
+import { cache } from "react";
 
 export type TimeSaleState = "off" | "upcoming" | "live";
 
-export async function getTimeSaleConfig() {
-  return prisma.timeSale.upsert({
-    where: { id: "main" },
-    update: {},
-    create: { id: "main" },
-  });
-}
+// 읽기 우선 (매 요청 upsert 방지) — 행이 없을 때만 1회 생성. cache()로 요청당 1회.
+export const getTimeSaleConfig = cache(async () => {
+  const row = await prisma.timeSale.findUnique({ where: { id: "main" } });
+  if (row) return row;
+  try {
+    return await prisma.timeSale.create({ data: { id: "main" } });
+  } catch {
+    return prisma.timeSale.findUniqueOrThrow({ where: { id: "main" } });
+  }
+});
 
 export function resolveState(
   ts: { active: boolean; startAt: Date | null; endAt: Date | null },
