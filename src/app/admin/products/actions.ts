@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
+import { isAdmin } from "@/lib/admin";
 import { parseSeason } from "@/lib/season";
 import { refreshStock } from "@/lib/godomall/stock";
 import { upsertFromUrl, importFromLinksText, toGoodsUrl } from "@/lib/godomall/import";
@@ -11,6 +12,7 @@ export async function updateProduct(
   id: string,
   data: { active?: boolean; origin?: string | null; tags?: string[] }
 ) {
+  if (!isAdmin()) return;
   const { tags, ...rest } = data;
   await prisma.product.update({
     where: { id },
@@ -22,6 +24,7 @@ export async function updateProduct(
 
 /** 상품 삭제 (연결된 링크/판매/착용샷도 정리) */
 export async function deleteProduct(id: string) {
+  if (!isAdmin()) return;
   await prisma.$transaction([
     prisma.issuedLink.deleteMany({ where: { productId: id } }),
     prisma.tryOnImage.deleteMany({ where: { productId: id } }),
@@ -34,6 +37,7 @@ export async function deleteProduct(id: string) {
 
 /** 상품 여러 개 일괄 삭제 (체크 선택) */
 export async function deleteProducts(ids: string[]) {
+  if (!isAdmin()) return { ok: false, message: "권한이 없습니다." };
   const list = (ids ?? []).filter(Boolean);
   if (list.length === 0) return { ok: false, message: "선택된 상품이 없습니다." };
   await prisma.$transaction([
@@ -49,6 +53,7 @@ export async function deleteProducts(ids: string[]) {
 
 /** 어드민 상품 등록 — 고도몰 상품번호(goodsNo) 또는 URL로 상품을 생성/갱신 */
 export async function importProduct(formData: FormData) {
+  if (!isAdmin()) return { ok: false, message: "권한이 없습니다." };
   const raw = String(formData.get("url") ?? "").trim();
   if (!raw) return { ok: false, message: "상품번호 또는 URL을 입력하세요." };
 
@@ -70,6 +75,7 @@ export async function importProduct(formData: FormData) {
  * 줄바꿈·공백·콤마로 구분된 텍스트에서 goodsNo가 있는 URL만 추출한다.
  */
 export async function importFromLinks(text: string) {
+  if (!isAdmin()) return { ok: false, message: "권한이 없습니다." };
   const r = await importFromLinksText(text);
   if (!r.ok) return { ok: false, message: r.message };
   revalidatePath("/admin/products");
@@ -91,6 +97,7 @@ async function backfillSeasons() {
 
 /** 등록된 상품 전체의 사이즈·재고를 고도몰 API로 최신화 (+ 시즌 보정) */
 export async function refreshAllStockAction() {
+  if (!isAdmin()) return { ok: false, message: "권한이 없습니다." };
   try {
     await backfillSeasons();
     const r = await refreshStock();

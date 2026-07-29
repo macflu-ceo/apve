@@ -18,7 +18,14 @@ export const ensureDefaultGrades = cache(async () => {
     const exists = g.systemKey
       ? await prisma.grade.findUnique({ where: { systemKey: g.systemKey } })
       : await prisma.grade.findUnique({ where: { name: g.name } });
-    if (!exists) await prisma.grade.create({ data: g });
+    if (!exists) {
+      // 동시 요청이 겹쳐 중복 생성되면 unique 충돌(P2002) — 무시
+      try {
+        await prisma.grade.create({ data: g });
+      } catch {
+        /* 이미 다른 요청이 생성함 */
+      }
+    }
   }
 });
 
