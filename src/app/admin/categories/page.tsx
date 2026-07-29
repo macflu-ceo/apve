@@ -12,7 +12,7 @@ export default async function AdminCategories() {
 
   return (
     <div>
-      <h1 className="mb-2 text-2xl font-bold">메인 카테고리 아이콘</h1>
+      <h1 className="mb-2 text-2xl font-bold">메인 원형 아이콘</h1>
       <p className="mb-5 text-sm text-sub">홈 메인 배너 아래 <b>원형 카테고리 바로가기 아이콘(작은 동그라미)</b>을 관리합니다. (없으면 기본 아이콘 노출)</p>
 
       <div className="card mb-8 p-5">
