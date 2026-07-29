@@ -11,12 +11,14 @@ export type P = {
   goodsNo: string;
   name: string;
   brand: string | null;
+  category?: string | null;
   listPrice: number | null;
   salePrice: number | null;
   origin: string | null;
   tags: string[];
   active: boolean;
   image: string | null;
+  createdAt?: string; // ISO — 정렬용
 };
 
 export default function ProductRow({

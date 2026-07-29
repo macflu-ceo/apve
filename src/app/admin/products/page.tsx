@@ -33,12 +33,14 @@ export default async function AdminProducts() {
           goodsNo: p.goodsNo,
           name: p.name,
           brand: p.brand,
+          category: p.category,
           listPrice: p.listPrice,
           salePrice: p.salePrice,
           origin: p.origin,
           tags: parseList(p.tagsJson),
           active: p.active,
           image: parseList(p.imagesJson)[0] ?? null,
+          createdAt: p.createdAt.toISOString(),
         }))}
       />
     </div>
