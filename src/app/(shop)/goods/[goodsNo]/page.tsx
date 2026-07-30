@@ -105,20 +105,9 @@ export default async function GoodsPage({ params }: { params: { goodsNo: string 
   return (
     <div className="grid gap-8 px-4 pb-12 pt-8 md:grid-cols-2 md:pt-12">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      {/* 이미지 (스와이프 갤러리 — 공통 배너 제외) */}
+      {/* 이미지 (스와이프 갤러리 + 썸네일 — 공통 배너 제외) */}
       <div>
-        <div className="relative">
-          <ProductGallery images={galleryImages} alt={product.name} />
-          {tags.length > 0 && (
-            <div className="absolute bottom-3 left-3 z-10 flex flex-wrap gap-1">
-              {tags.map((t, i) => (
-                <span key={i} className="rounded-[4px] bg-ink/85 px-2 py-1 text-xs font-bold text-white">
-                  {t}
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
+        <ProductGallery images={galleryImages} alt={product.name} tags={tags} />
       </div>
 
       {/* 정보 */}
