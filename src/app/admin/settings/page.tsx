@@ -26,6 +26,10 @@ export default async function AdminSettings() {
           privacyOfficer: setting.privacyOfficer,
           privacyEmail: setting.privacyEmail,
           ogImage: setting.ogImage,
+          appIosUrl: setting.appIosUrl,
+          appAndroidUrl: setting.appAndroidUrl,
+          appLandingUrl: setting.appLandingUrl,
+          appBoostPercent: setting.appBoostPercent,
         }}
       />
     </div>

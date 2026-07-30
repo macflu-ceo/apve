@@ -74,8 +74,10 @@ export interface DailyPoint {
   clicks: number;      // 주요 액션 클릭(코드생성/AI 등)
 }
 
-/** 일자별 트래픽·리텐션 시계열 (Visit 로그 기반) */
-export async function getDailySeries(from: string, to: string): Promise<DailyPoint[]> {
+/** 일자별 트래픽·리텐션 시계열 (Visit 로그 기반). platform: web|app|undefined(전체) */
+export async function getDailySeries(from: string, to: string, platform?: "web" | "app"): Promise<DailyPoint[]> {
+  const pf = platform ? Prisma.sql`AND platform = ${platform}` : Prisma.empty;
+  const pfV = platform ? Prisma.sql`AND v.platform = ${platform}` : Prisma.empty;
   const [agg, ret] = await Promise.all([
     prisma.$queryRaw<
       { day: string; visitors: bigint; sessions: bigint; page_views: bigint; product_views: bigint; clicks: bigint }[]
@@ -87,13 +89,13 @@ export async function getDailySeries(from: string, to: string): Promise<DailyPoi
         COUNT(*) FILTER (WHERE kind = 'product') AS product_views,
         COUNT(*) FILTER (WHERE kind = 'click') AS clicks
       FROM "Visit"
-      WHERE day >= ${from} AND day <= ${to}
+      WHERE day >= ${from} AND day <= ${to} ${pf}
       GROUP BY day`,
     // 재방문: 그 날 방문자 중 '그 이전에도' 방문한 적 있는 사람 수
     prisma.$queryRaw<{ day: string; returning: bigint }[]>`
       SELECT v.day, COUNT(DISTINCT v."visitorId") AS returning
       FROM "Visit" v
-      WHERE v.day >= ${from} AND v.day <= ${to}
+      WHERE v.day >= ${from} AND v.day <= ${to} ${pfV}
         AND EXISTS (
           SELECT 1 FROM "Visit" p
           WHERE p."visitorId" = v."visitorId" AND p.day < v.day
@@ -128,8 +130,9 @@ export interface RetentionSummary {
   loggedInVisitors: number; // 로그인(회원) 방문자 수
 }
 
-/** 기간 리텐션 요약 */
-export async function getRetentionSummary(from: string, to: string): Promise<RetentionSummary> {
+/** 기간 리텐션 요약. platform: web|app|undefined(전체) */
+export async function getRetentionSummary(from: string, to: string, platform?: "web" | "app"): Promise<RetentionSummary> {
+  const pf = platform ? Prisma.sql`AND platform = ${platform}` : Prisma.empty;
   const [base, ret] = await Promise.all([
     prisma.$queryRaw<
       { visitors: bigint; sessions: bigint; page_views: bigint; logged_in: bigint }[]
@@ -140,11 +143,11 @@ export async function getRetentionSummary(from: string, to: string): Promise<Ret
         COUNT(*) FILTER (WHERE kind IN ('page','product')) AS page_views,
         COUNT(DISTINCT "partnerId") FILTER (WHERE "partnerId" IS NOT NULL) AS logged_in
       FROM "Visit"
-      WHERE day >= ${from} AND day <= ${to}`,
+      WHERE day >= ${from} AND day <= ${to} ${pf}`,
     prisma.$queryRaw<{ n: bigint }[]>`
       SELECT COUNT(*) AS n FROM (
         SELECT "visitorId" FROM "Visit"
-        WHERE day >= ${from} AND day <= ${to}
+        WHERE day >= ${from} AND day <= ${to} ${pf}
         GROUP BY "visitorId" HAVING COUNT(DISTINCT day) >= 2
       ) t`,
   ]);

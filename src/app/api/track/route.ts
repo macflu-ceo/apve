@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSessionPartner } from "@/lib/auth";
 import { getOrSetVisitorId, getOrSetSessionId, kstDay } from "@/lib/visitor";
+import { getPlatform } from "@/lib/platform";
 
 export const dynamic = "force-dynamic";
 
@@ -43,6 +44,7 @@ export async function POST(req: Request) {
         kind,
         label: body.label ? body.label.slice(0, 40) : null,
         goodsNo,
+        platform: getPlatform(),
         day: kstDay(),
       },
     });

@@ -159,6 +159,8 @@ model Visit {
   label     String?
   /// 상품 페이지/클릭이면 상품번호
   goodsNo   String?
+  /// 유입 플랫폼: web | app (웹뷰 래퍼는 커스텀 UA/쿠키로 식별) → 지표 분리
+  platform  String   @default("web")
   /// 세션 식별자(30분 무활동 시 새 세션) → 방문 횟수 집계
   sessionId String?
   /// KST 기준 날짜 YYYY-MM-DD (일자별 집계·유니크 계산 편의)
@@ -167,6 +169,7 @@ model Visit {
 
   @@index([day])
   @@index([kind, day])
+  @@index([platform, day])
   @@index([visitorId, day])
   @@index([partnerId, day])
 }
@@ -494,6 +497,14 @@ model SiteSetting {
 
   /// 링크 공유 미리보기(OG) 이미지 URL (권장 1200×630)
   ogImage      String?
+
+  /// ── 앱 다운로드 유도 ──
+  /// iOS 앱스토어 / Android 플레이스토어 / PC용 랜딩(QR) 링크
+  appIosUrl      String?
+  appAndroidUrl  String?
+  appLandingUrl  String?
+  /// 앱 전용 첫판매 부스트(%p) — 웹에선 "앱에서 올리기" 유도에만 사용. 0이면 미적용
+  appBoostPercent Int    @default(0)
 
   updatedAt   DateTime @updatedAt
 }

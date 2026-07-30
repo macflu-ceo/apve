@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { won } from "@/lib/format";
 import { getFunnel, getTopProducts, getDailySeries, getRetentionSummary } from "@/lib/analytics";
+import type { RetentionSummary } from "@/lib/analytics";
 import DateRange from "./DateRange";
 import TrafficSection from "./TrafficSection";
 
@@ -18,12 +19,15 @@ export default async function AdminAnalytics({
 }) {
   const from = searchParams.from ?? daysAgo(29);
   const to = searchParams.to ?? daysAgo(0);
+  const pf = searchParams.platform === "app" ? "app" : searchParams.platform === "web" ? "web" : undefined;
 
-  const [funnel, top, series, retention] = await Promise.all([
+  const [funnel, top, series, retention, webSum, appSum] = await Promise.all([
     getFunnel(from, to),
     getTopProducts(from, to, 10),
-    getDailySeries(from, to),
-    getRetentionSummary(from, to),
+    getDailySeries(from, to, pf),
+    getRetentionSummary(from, to, pf),
+    getRetentionSummary(from, to, "web"),
+    getRetentionSummary(from, to, "app"),
   ]);
 
   // 전환율(코드생성/조회, 판매/코드생성)
@@ -45,6 +49,27 @@ export default async function AdminAnalytics({
       </p>
 
       <DateRange from={from} to={to} />
+
+      {/* 웹 vs 앱 비교 */}
+      <div className="mb-4 grid grid-cols-2 gap-4">
+        <PlatformCard label="웹" sum={webSum} active={pf === "web"} from={from} to={to} platform="web" />
+        <PlatformCard label="앱" sum={appSum} active={pf === "app"} from={from} to={to} platform="app" />
+      </div>
+      <div className="mb-3 text-xs text-sub">
+        아래 지표는{" "}
+        {pf ? (
+          <>
+            <b>{pf === "app" ? "앱" : "웹"}</b> 기준입니다.{" "}
+            <PlatformToggle from={from} to={to} label="전체 보기" platform={undefined} />
+          </>
+        ) : (
+          <>
+            <b>전체(웹+앱)</b> 기준입니다.{" "}
+            <PlatformToggle from={from} to={to} label="웹만" platform="web" />{" · "}
+            <PlatformToggle from={from} to={to} label="앱만" platform="app" />
+          </>
+        )}
+      </div>
 
       {/* 방문 · 리텐션 (일자별) */}
       <TrafficSection from={from} to={to} series={series} summary={retention} />
@@ -82,6 +107,64 @@ export default async function AdminAnalytics({
         <TopTable title="코드생성 TOP 10" rows={top.byLinks} metric="links" />
       </div>
     </div>
+  );
+}
+
+/** 플랫폼 필터 링크 (from/to 유지) */
+function PlatformToggle({
+  from,
+  to,
+  label,
+  platform,
+}: {
+  from: string;
+  to: string;
+  label: string;
+  platform?: "web" | "app";
+}) {
+  const sp = new URLSearchParams({ from, to });
+  if (platform) sp.set("platform", platform);
+  return (
+    <Link href={`/admin/analytics?${sp.toString()}`} className="text-brand underline hover:opacity-80">
+      {label}
+    </Link>
+  );
+}
+
+/** 웹/앱 요약 비교 카드 */
+function PlatformCard({
+  label,
+  sum,
+  active,
+  from,
+  to,
+  platform,
+}: {
+  label: string;
+  sum: RetentionSummary;
+  active: boolean;
+  from: string;
+  to: string;
+  platform: "web" | "app";
+}) {
+  const sp = new URLSearchParams({ from, to, platform });
+  return (
+    <Link
+      href={`/admin/analytics?${sp.toString()}`}
+      className={`card block p-5 transition ${active ? "ring-2 ring-brand" : "hover:border-ink/20"}`}
+    >
+      <div className="flex items-baseline justify-between">
+        <span className="text-sm font-bold">{label === "앱" ? "📱 앱" : "🌐 웹"}</span>
+        <span className="text-xs text-sub">방문자</span>
+      </div>
+      <div className="mt-1 text-2xl font-bold">{sum.visitors.toLocaleString()}명</div>
+      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-sub">
+        <span>재방문율 <b className="text-ink">{sum.returnRate.toFixed(0)}%</b></span>
+        <span>1인당 <b className="text-ink">{sum.visitsPerVisitor.toFixed(1)}회</b></span>
+        <span>세션당 <b className="text-ink">{sum.pagesPerSession.toFixed(1)}p</b></span>
+        <span>회원 <b className="text-ink">{sum.loggedInVisitors.toLocaleString()}명</b></span>
+      </div>
+    </Link>
   );
 }
 

@@ -11,6 +11,8 @@ import { getTimeSaleForShop } from "@/lib/timesale";
 import TimeSaleBanner from "@/components/TimeSaleBanner";
 import { getActivePopups } from "@/lib/popup";
 import PopupLayer from "@/components/PopupLayer";
+import AppInstallBar from "@/components/AppInstallBar";
+import { getPlatform } from "@/lib/platform";
 
 const BASE_TABS = [
   { href: "/", label: "추천상품" },
@@ -50,6 +52,8 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
     getActivePopups(),
   ]);
 
+  const platform = getPlatform(); // web | app (앱 웹뷰면 다운로드 유도 숨김)
+
   // 이미 상위 등급(컨시어지 등 = systemKey 없는 커스텀 등급)이면 업그레이드 메뉴를 감춘다
   const grade = partner ? await getPartnerGrade(partner.id) : null;
   const upgraded = !!grade && grade.systemKey == null;
@@ -58,6 +62,9 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
   return (
     <AuthModalProvider>
       {popups.length > 0 && <PopupLayer popups={popups} />}
+      {platform === "web" && (
+        <AppInstallBar ios={setting.appIosUrl} android={setting.appAndroidUrl} landing={setting.appLandingUrl} />
+      )}
       {timeSale && timeSale.state !== "off" && (
         <TimeSaleBanner
           title={timeSale.ts.title}

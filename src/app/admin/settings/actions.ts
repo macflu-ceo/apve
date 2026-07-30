@@ -23,6 +23,10 @@ export async function updateSettings(formData: FormData) {
     privacyOfficer: str("privacyOfficer"),
     privacyEmail: str("privacyEmail"),
     ogImage: str("ogImage"),
+    appIosUrl: str("appIosUrl"),
+    appAndroidUrl: str("appAndroidUrl"),
+    appLandingUrl: str("appLandingUrl"),
+    appBoostPercent: Math.max(0, Math.min(50, Number(formData.get("appBoostPercent") ?? 0) || 0)),
   };
   await prisma.siteSetting.upsert({
     where: { id: "main" },

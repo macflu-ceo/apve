@@ -20,6 +20,10 @@ type S = {
   privacyOfficer: string | null;
   privacyEmail: string | null;
   ogImage: string | null;
+  appIosUrl: string | null;
+  appAndroidUrl: string | null;
+  appLandingUrl: string | null;
+  appBoostPercent: number;
 };
 
 export default function SettingsForm({ setting }: { setting: S }) {
@@ -107,6 +111,36 @@ export default function SettingsForm({ setting }: { setting: S }) {
             이미지 제거
           </button>
         )}
+      </div>
+
+      <div className="border-t border-line pt-4">
+        <div className="mb-1 text-sm font-bold">📱 앱 다운로드 유도</div>
+        <p className="mb-3 text-xs text-sub">
+          웹(브라우저) 방문자에게만 상단 <b>앱 다운로드 바</b>가 뜹니다. 앱 안에서는 자동으로 숨겨집니다.
+          <br />
+          모바일은 해당 스토어로, PC는 랜딩(QR) 링크로 이동합니다. 비워두면 노출되지 않습니다.
+        </p>
+        <div className="space-y-4">
+          <div>
+            <label className="text-sm font-medium">iOS 앱스토어 링크</label>
+            <input name="appIosUrl" defaultValue={setting.appIosUrl ?? ""} placeholder="https://apps.apple.com/..." className="field mt-1" />
+          </div>
+          <div>
+            <label className="text-sm font-medium">Android 플레이스토어 링크</label>
+            <input name="appAndroidUrl" defaultValue={setting.appAndroidUrl ?? ""} placeholder="https://play.google.com/store/apps/..." className="field mt-1" />
+          </div>
+          <div>
+            <label className="text-sm font-medium">PC용 랜딩(QR) 링크</label>
+            <input name="appLandingUrl" defaultValue={setting.appLandingUrl ?? ""} placeholder="https://cashboutique.co.kr/app" className="field mt-1" />
+          </div>
+          <div>
+            <label className="text-sm font-medium">앱 전용 첫판매 부스트(%p)</label>
+            <input name="appBoostPercent" type="number" min={0} max={50} defaultValue={setting.appBoostPercent} className="field mt-1 w-32" />
+            <p className="mt-1 text-xs text-sub">
+              앱에서만 첫 판매 수수료를 이만큼 더 얹습니다. <b>0이면 미적용</b>. (다음 단계에서 상세페이지 유도 버튼과 연결)
+            </p>
+          </div>
+        </div>
       </div>
 
       <div>
