@@ -20,6 +20,7 @@ export default async function AdminPopups() {
           linkUrl: p.linkUrl,
           active: p.active,
           sort: p.sort,
+          platform: p.platform,
           startAt: p.startAt?.toISOString() ?? null,
           endAt: p.endAt?.toISOString() ?? null,
         }))}

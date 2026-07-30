@@ -16,10 +16,15 @@ function toDate(v: string) {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
+function normPlatform(v?: string) {
+  return v === "web" || v === "app" ? v : "all";
+}
+
 export async function createPopup(input: {
   title: string;
   imageUrl: string;
   linkUrl: string;
+  platform?: string;
   startAt: string;
   endAt: string;
 }) {
@@ -30,6 +35,7 @@ export async function createPopup(input: {
       title: input.title.trim() || "팝업",
       imageUrl: input.imageUrl.trim(),
       linkUrl: input.linkUrl.trim() || null,
+      platform: normPlatform(input.platform),
       startAt: toDate(input.startAt),
       endAt: toDate(input.endAt),
     },
@@ -40,7 +46,7 @@ export async function createPopup(input: {
 
 export async function updatePopup(
   id: string,
-  input: { title: string; linkUrl: string; active: boolean; sort: number; startAt: string; endAt: string }
+  input: { title: string; linkUrl: string; active: boolean; sort: number; platform?: string; startAt: string; endAt: string }
 ) {
   if (!isAdmin()) return { ok: false, message: "권한이 없습니다." };
   await prisma.popup.update({
@@ -50,6 +56,7 @@ export async function updatePopup(
       linkUrl: input.linkUrl.trim() || null,
       active: input.active,
       sort: input.sort,
+      platform: normPlatform(input.platform),
       startAt: toDate(input.startAt),
       endAt: toDate(input.endAt),
     },

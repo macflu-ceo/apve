@@ -12,9 +12,16 @@ type Popup = {
   linkUrl: string | null;
   active: boolean;
   sort: number;
+  platform: string; // all | web | app
   startAt: string | null; // YYYY-MM-DDTHH:mm (local) or null
   endAt: string | null;
 };
+
+const PLATFORMS = [
+  { key: "all", label: "웹+앱 모두" },
+  { key: "web", label: "웹에서만" },
+  { key: "app", label: "앱에서만" },
+];
 
 // ISO → datetime-local 값
 function toLocalInput(iso: string | null) {
@@ -33,16 +40,17 @@ export default function PopupManager({ popups }: { popups: Popup[] }) {
   const [nImg, setNImg] = useState("");
   const [nTitle, setNTitle] = useState("");
   const [nLink, setNLink] = useState("");
+  const [nPlatform, setNPlatform] = useState("all");
   const [nStart, setNStart] = useState("");
   const [nEnd, setNEnd] = useState("");
 
   function add() {
     setMsg(null);
     start(async () => {
-      const r = await createPopup({ title: nTitle, imageUrl: nImg, linkUrl: nLink, startAt: nStart, endAt: nEnd });
+      const r = await createPopup({ title: nTitle, imageUrl: nImg, linkUrl: nLink, platform: nPlatform, startAt: nStart, endAt: nEnd });
       setMsg(r.message);
       if (r.ok) {
-        setNImg(""); setNTitle(""); setNLink(""); setNStart(""); setNEnd("");
+        setNImg(""); setNTitle(""); setNLink(""); setNPlatform("all"); setNStart(""); setNEnd("");
         router.refresh();
       }
     });
@@ -63,6 +71,12 @@ export default function PopupManager({ popups }: { popups: Popup[] }) {
           <div className="space-y-3">
             <input value={nTitle} onChange={(e) => setNTitle(e.target.value)} placeholder="관리용 제목 (예: 신규가입 이벤트)" className={`${field} w-full`} />
             <input value={nLink} onChange={(e) => setNLink(e.target.value)} placeholder="클릭 시 이동할 링크 (선택, 예: /timesale)" className={`${field} w-full`} />
+            <label className="text-sm">
+              <div className="mb-1 text-xs text-sub">노출 대상</div>
+              <select value={nPlatform} onChange={(e) => setNPlatform(e.target.value)} className={field}>
+                {PLATFORMS.map((p) => <option key={p.key} value={p.key}>{p.label}</option>)}
+              </select>
+            </label>
             <div className="flex flex-wrap gap-3">
               <label className="text-sm">
                 <div className="mb-1 text-xs text-sub">노출 시작 (선택)</div>
@@ -106,12 +120,13 @@ function PopupRow({ p }: { p: Popup }) {
   const [link, setLink] = useState(p.linkUrl ?? "");
   const [active, setActive] = useState(p.active);
   const [sort, setSort] = useState(String(p.sort));
+  const [platform, setPlatform] = useState(p.platform);
   const [startAt, setStartAt] = useState(toLocalInput(p.startAt));
   const [endAt, setEndAt] = useState(toLocalInput(p.endAt));
 
   const save = () =>
     start(async () => {
-      await updatePopup(p.id, { title, linkUrl: link, active, sort: parseInt(sort, 10) || 0, startAt, endAt });
+      await updatePopup(p.id, { title, linkUrl: link, active, sort: parseInt(sort, 10) || 0, platform, startAt, endAt });
       router.refresh();
     });
   const remove = () => {
@@ -139,6 +154,9 @@ function PopupRow({ p }: { p: Popup }) {
             <label className="flex items-center gap-1">
               순서 <input value={sort} onChange={(e) => setSort(e.target.value)} className="w-14 rounded border border-line px-2 py-1" inputMode="numeric" />
             </label>
+            <select value={platform} onChange={(e) => setPlatform(e.target.value)} className="rounded border border-line px-1.5 py-1">
+              {PLATFORMS.map((pf) => <option key={pf.key} value={pf.key}>{pf.label}</option>)}
+            </select>
           </div>
           <div className="flex flex-wrap gap-2 text-xs text-sub">
             <label>시작 <input type="datetime-local" value={startAt} onChange={(e) => setStartAt(e.target.value)} className="rounded border border-line px-1 py-0.5" /></label>

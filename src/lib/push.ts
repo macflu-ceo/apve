@@ -155,6 +155,15 @@ export async function sendPushToSegment(
   return res;
 }
 
+/** 특정 회원의 기기들에 발송 (개별 로그는 남기지 않음 — 트리거에서 집계). */
+export async function sendPushToPartner(partnerId: string, msg: PushMessage): Promise<PushResult> {
+  const tokens = await prisma.pushToken.findMany({
+    where: { active: true, partnerId },
+    select: { id: true, token: true },
+  });
+  return sendPushToTokens(tokens, msg);
+}
+
 /** 테스트 발송 — 특정 기기 토큰 1개에만. (운영자가 본인 기기로 미리 확인) */
 export async function sendTestPush(token: string, msg: PushMessage): Promise<PushResult> {
   const res = await sendPushToTokens([{ id: "test", token }], msg);

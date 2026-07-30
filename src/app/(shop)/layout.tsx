@@ -50,7 +50,7 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
     getSessionPartner(),
     getTimeSaleForShop(),
     getCompany(),
-    getActivePopups(),
+    getActivePopups(getPlatform()),
   ]);
 
   const platform = getPlatform(); // web | app (앱 웹뷰면 다운로드 유도 숨김)

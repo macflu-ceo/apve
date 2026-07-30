@@ -30,6 +30,11 @@ export default async function AdminSettings() {
           appAndroidUrl: setting.appAndroidUrl,
           appLandingUrl: setting.appLandingUrl,
           appBoostPercent: setting.appBoostPercent,
+          webDailyCodeLimit: setting.webDailyCodeLimit,
+          appSplashUrl: setting.appSplashUrl,
+          offlineTitle: setting.offlineTitle,
+          offlineMessage: setting.offlineMessage,
+          pushOnSale: setting.pushOnSale,
         }}
       />
     </div>

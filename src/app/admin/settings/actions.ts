@@ -27,6 +27,11 @@ export async function updateSettings(formData: FormData) {
     appAndroidUrl: str("appAndroidUrl"),
     appLandingUrl: str("appLandingUrl"),
     appBoostPercent: Math.max(0, Math.min(50, Number(formData.get("appBoostPercent") ?? 0) || 0)),
+    webDailyCodeLimit: Math.max(0, Math.min(999, Number(formData.get("webDailyCodeLimit") ?? 3) || 0)),
+    appSplashUrl: str("appSplashUrl"),
+    offlineTitle: str("offlineTitle"),
+    offlineMessage: str("offlineMessage"),
+    pushOnSale: formData.get("pushOnSale") === "on",
   };
   await prisma.siteSetting.upsert({
     where: { id: "main" },

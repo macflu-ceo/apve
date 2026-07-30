@@ -4,6 +4,8 @@ import { prisma } from "@/lib/db";
 import { sendMessage } from "@/lib/crm/send";
 import { render } from "@/lib/crm/rules";
 import { segmentWhere, type SegmentKey } from "@/lib/crm/segments";
+import { getSiteSetting } from "@/lib/settings";
+import { sendPushToPartner } from "@/lib/push";
 
 const won = (n: number) => n.toLocaleString("ko-KR");
 
@@ -19,10 +21,12 @@ async function inSegment(partnerId: string, segment: string): Promise<boolean> {
   return !!hit;
 }
 
-/** 판매 발생 알림톡 — 아직 알림 안 보낸 구매확정 건 대상 */
+/** 판매 발생 알림톡 + (설정 시) 앱 푸시 — 아직 알림 안 보낸 구매확정 건 대상 */
 export async function notifyNewSales(limit = 300): Promise<number> {
+  const setting = await getSiteSetting().catch(() => null);
+  const pushOnSale = !!setting?.pushOnSale;
   const rule = await prisma.alimtalkRule.findFirst({ where: { trigger: "sale", active: true } });
-  if (!rule) return 0;
+  if (!rule && !pushOnSale) return 0; // 알림톡 규칙도 없고 푸시도 꺼져있으면 할 일 없음
 
   const rows = await prisma.sale.findMany({
     where: { status: "confirmed", notifiedAt: null, partnerId: { not: null } },
@@ -33,21 +37,51 @@ export async function notifyNewSales(limit = 300): Promise<number> {
   if (rows.length === 0) return 0;
 
   let sent = 0;
+  let pushTarget = 0;
+  let pushSent = 0;
+  let pushProvider = "mock";
   for (const s of rows) {
     if (!s.partner) continue;
-    // 세그먼트 미해당이어도 '판매 알림'은 발생 자체가 근거이므로 표시만 마킹
-    const ok = await inSegment(s.partner.id, rule.segment);
-    if (ok) {
-      const content = render(rule.message, { 이름: s.partner.name, 상품: s.goodsName ?? "상품", 수수료: won(s.commission) });
-      const r = await sendMessage(
-        { channel: "alimtalk", content, templateCode: rule.templateCode },
-        [{ phone: s.partner.phone, name: s.partner.name, channelFriend: s.partner.channelFriend }]
-      );
-      sent += r.sent;
+    // 알림톡
+    if (rule) {
+      const ok = await inSegment(s.partner.id, rule.segment);
+      if (ok) {
+        const content = render(rule.message, { 이름: s.partner.name, 상품: s.goodsName ?? "상품", 수수료: won(s.commission) });
+        const r = await sendMessage(
+          { channel: "alimtalk", content, templateCode: rule.templateCode },
+          [{ phone: s.partner.phone, name: s.partner.name, channelFriend: s.partner.channelFriend }]
+        );
+        sent += r.sent;
+      }
+    }
+    // 앱 푸시 (특정행동 트리거)
+    if (pushOnSale) {
+      const pr = await sendPushToPartner(s.partner.id, {
+        title: "💰 판매가 발생했어요!",
+        body: `${s.goodsName ?? "상품"} · 예상 수수료 ${won(s.commission)}원`,
+        url: "/me",
+      });
+      pushTarget += pr.target;
+      pushSent += pr.sent;
+      pushProvider = pr.provider;
     }
     await prisma.sale.update({ where: { id: s.id }, data: { notifiedAt: new Date() } });
   }
-  await log("sale", rule.name, rows.length, sent, process.env.CRM_PROVIDER ?? "mock");
+  if (rule) await log("sale", rule.name, rows.length, sent, process.env.CRM_PROVIDER ?? "mock");
+  if (pushOnSale && pushTarget > 0) {
+    await prisma.pushLog.create({
+      data: {
+        title: "판매 발생 자동 알림",
+        body: `판매 ${rows.length}건 · 회원 앱 푸시`,
+        segment: "members",
+        trigger: "sale",
+        target: pushTarget,
+        sent: pushSent,
+        failed: pushTarget - pushSent,
+        provider: pushProvider,
+      },
+    });
+  }
   return sent;
 }
 

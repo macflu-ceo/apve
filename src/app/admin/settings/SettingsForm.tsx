@@ -24,6 +24,11 @@ type S = {
   appAndroidUrl: string | null;
   appLandingUrl: string | null;
   appBoostPercent: number;
+  webDailyCodeLimit: number;
+  appSplashUrl: string | null;
+  offlineTitle: string | null;
+  offlineMessage: string | null;
+  pushOnSale: boolean;
 };
 
 export default function SettingsForm({ setting }: { setting: S }) {
@@ -31,6 +36,7 @@ export default function SettingsForm({ setting }: { setting: S }) {
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<string | null>(null);
   const [ogImage, setOgImage] = useState(setting.ogImage ?? "");
+  const [appSplash, setAppSplash] = useState(setting.appSplashUrl ?? "");
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -67,7 +73,7 @@ export default function SettingsForm({ setting }: { setting: S }) {
           <label className="text-sm font-medium">{r.label}</label>
           <input
             name={r.name}
-            defaultValue={setting[r.name] ?? ""}
+            defaultValue={(setting[r.name] as string | null) ?? ""}
             placeholder={r.placeholder}
             className="field mt-1"
           />
@@ -85,7 +91,7 @@ export default function SettingsForm({ setting }: { setting: S }) {
               <label className="text-sm font-medium">{r.label}</label>
               <input
                 name={r.name}
-                defaultValue={setting[r.name] ?? ""}
+                defaultValue={(setting[r.name] as string | null) ?? ""}
                 placeholder={r.placeholder}
                 className="field mt-1"
               />
@@ -142,6 +148,42 @@ export default function SettingsForm({ setting }: { setting: S }) {
               예) 10 입력 → 웹 첫판매 10% / 앱 첫판매 20%. 웹 상세페이지엔 "앱에서 올리기" 버튼이 뜹니다. <b>0이면 웹·앱 동일(미적용)</b>.
             </p>
           </div>
+        </div>
+      </div>
+
+      <div className="border-t border-line pt-4">
+        <div className="mb-1 text-sm font-bold">📱 앱 전용 설정</div>
+        <p className="mb-3 text-xs text-sub">앱(웹뷰) 실행·이용 경험과 웹→앱 유도에 쓰입니다.</p>
+        <div className="space-y-4">
+          <div>
+            <label className="text-sm font-medium">웹 하루 코드 발급 한도</label>
+            <input name="webDailyCodeLimit" type="number" min={0} max={999} defaultValue={setting.webDailyCodeLimit} className="field mt-1 w-32" />
+            <p className="mt-1 text-xs text-sub">웹에서 하루 이만큼만 코드 생성 → 초과 시 "앱에서 무제한" 유도. <b>0이면 무제한</b>. 앱은 항상 무제한.</p>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium">앱 스플래시(로딩) 이미지</label>
+            <p className="mb-2 text-xs text-sub">네이티브 앱을 켤 때 잠깐 뜨는 이미지입니다. (정사각/세로형, 로고 중앙 권장)</p>
+            <input type="hidden" name="appSplashUrl" value={appSplash} />
+            <div className="max-w-[200px]">
+              <ImageUploader value={appSplash} onChange={setAppSplash} label="스플래시 이미지" />
+            </div>
+            {appSplash && (
+              <button type="button" onClick={() => setAppSplash("")} className="mt-1 text-xs text-red-500 hover:underline">이미지 제거</button>
+            )}
+          </div>
+
+          <div>
+            <label className="text-sm font-medium">오프라인(네트워크 끊김) 안내</label>
+            <p className="mb-2 text-xs text-sub">앱에서 인터넷이 끊겼을 때 보여줄 문구입니다.</p>
+            <input name="offlineTitle" defaultValue={setting.offlineTitle ?? ""} placeholder="제목 (예: 인터넷 연결을 확인해주세요)" className="field mb-2" />
+            <textarea name="offlineMessage" defaultValue={setting.offlineMessage ?? ""} placeholder="설명 (예: 네트워크가 불안정합니다. 잠시 후 다시 시도해주세요.)" className="field h-16 resize-none" />
+          </div>
+
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" name="pushOnSale" defaultChecked={setting.pushOnSale} className="h-4 w-4" />
+            <span><b>판매 발생 시</b> 해당 회원에게 앱 푸시 자동 발송 (특정행동 트리거)</span>
+          </label>
         </div>
       </div>
 
