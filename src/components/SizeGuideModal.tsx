@@ -127,13 +127,45 @@ function guessTab(category?: string | null, name?: string | null): string {
 export default function SizeGuideModal({
   category,
   productName,
+  brand,
+  sizes = [],
+  system,
 }: {
   category?: string | null;
   productName?: string | null;
+  brand?: string | null;
+  sizes?: string[];
+  /** 이 상품의 숫자 사이즈 기준 (브랜드 본국) */
+  system?: "IT" | "FR" | null;
 }) {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState(() => guessTab(category, productName));
   const current = TABS.find((t) => t.key === tab) ?? TABS[0];
+
+  const sysCountry = system === "IT" ? "이탈리아" : system === "FR" ? "프랑스" : null;
+  const sysLabel = system === "IT" ? "이탈리아(IT)" : system === "FR" ? "프랑스(FR)" : null;
+  const numSizes = sizes.map((s) => s.trim()).filter((s) => /^\d/.test(s)); // 숫자 사이즈만
+
+  // 현재 표에서 "이 상품 사이즈"가 어느 칸(구분/한국)에 해당하는지 매핑
+  function mapForTable(tbl: Table) {
+    const sysRow = sysCountry ? tbl.rows.find((r) => r.label.includes(sysCountry)) : undefined;
+    const gubun = tbl.rows.find((r) => r.label.includes("구분"));
+    const kr = tbl.rows.find((r) => r.label.includes("한국"));
+    const cols = new Set<number>();
+    const lines: string[] = [];
+    if (sysRow) {
+      for (const sz of numSizes) {
+        const i = sysRow.values.findIndex((v) => v === sz);
+        if (i >= 0) {
+          cols.add(i);
+          const g = gubun?.values[i];
+          const k = kr?.values[i];
+          lines.push(`${sysLabel} ${sz}${g ? ` = ${g}` : ""}${k ? ` · 한국 ${k}` : ""}`);
+        }
+      }
+    }
+    return { sysRow, cols, lines };
+  }
 
   return (
     <>
@@ -172,33 +204,67 @@ export default function SizeGuideModal({
               ))}
             </div>
 
-            <div className="mb-2 border-l-4 border-ink pl-2 text-lg font-bold">{current.label}</div>
-
-            {current.tables.map((tbl, ti) => (
-              <div key={ti} className="mb-4">
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-[520px] border-collapse text-center text-sm">
-                    <tbody>
-                      {tbl.rows.map((r, ri) => (
-                        <tr key={ri} className="border-b border-line">
-                          <th className="whitespace-nowrap bg-[#f7f6f4] px-3 py-2 text-left font-bold">{r.label}</th>
-                          {r.values.map((v, vi) => (
-                            <td key={vi} className="px-3 py-2">{v}</td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                {tbl.note && (
-                  <ul className="mt-3 rounded-lg bg-[#f7f6f4] p-3 text-xs text-ink/70">
-                    {tbl.note.map((n, i) => (
-                      <li key={i}>• {n}</li>
-                    ))}
-                  </ul>
+            {/* 이 상품 사이즈 기준 안내 */}
+            {(system || numSizes.length > 0) && (
+              <div className="mb-3 rounded-lg bg-brandsoft p-3 text-xs leading-relaxed">
+                {system ? (
+                  <>
+                    이 상품{brand ? ` (${brand})` : ""}은 <b className="text-brand">{sysLabel}</b> 숫자 사이즈 기준입니다.
+                    {numSizes.length > 0 && <> 이 상품 사이즈: <b>{numSizes.join(", ")}</b></>}
+                  </>
+                ) : (
+                  <>숫자 사이즈는 <b>브랜드 본국 기준</b>입니다. 아래 표에서 확인하세요{numSizes.length > 0 ? ` (이 상품: ${numSizes.join(", ")})` : ""}.</>
                 )}
               </div>
-            ))}
+            )}
+
+            <div className="mb-2 border-l-4 border-ink pl-2 text-lg font-bold">{current.label}</div>
+
+            {current.tables.map((tbl, ti) => {
+              const m = mapForTable(tbl);
+              return (
+                <div key={ti} className="mb-4">
+                  {m.lines.length > 0 && (
+                    <div className="mb-2 rounded-lg bg-brand/10 p-2 text-xs font-bold text-brand">
+                      {m.lines.map((l, i) => (
+                        <div key={i}>🔎 {l}</div>
+                      ))}
+                    </div>
+                  )}
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[520px] border-collapse text-center text-sm">
+                      <tbody>
+                        {tbl.rows.map((r, ri) => {
+                          const isSysRow = m.sysRow === r;
+                          return (
+                            <tr key={ri} className={`border-b border-line ${isSysRow ? "bg-brand/10" : ""}`}>
+                              <th className={`whitespace-nowrap px-3 py-2 text-left font-bold ${isSysRow ? "text-brand" : "bg-[#f7f6f4]"}`}>
+                                {r.label}
+                              </th>
+                              {r.values.map((v, vi) => (
+                                <td
+                                  key={vi}
+                                  className={`px-3 py-2 ${m.cols.has(vi) ? "bg-brand/20 font-black text-brand" : ""}`}
+                                >
+                                  {v}
+                                </td>
+                              ))}
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                  {tbl.note && (
+                    <ul className="mt-3 rounded-lg bg-[#f7f6f4] p-3 text-xs text-ink/70">
+                      {tbl.note.map((n, i) => (
+                        <li key={i}>• {n}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

@@ -7,6 +7,7 @@ import { getSessionPartner } from "@/lib/auth";
 import { logProductView } from "@/lib/analytics";
 import { activeBoostForProduct } from "@/lib/timesale";
 import SizeGuideModal from "@/components/SizeGuideModal";
+import { sizeSystem, sizeSystemLabel } from "@/lib/sizeSystem";
 import CodeButton from "./CodeButton";
 import AiImageStudio from "./AiImageStudio";
 
@@ -54,6 +55,7 @@ export default async function GoodsPage({ params }: { params: { goodsNo: string 
 
   const images = parseList(product.imagesJson);
   const sizes = parseList(product.sizesJson);
+  const sizeSys = sizeSystem(product.brand); // IT | FR | null (브랜드 본국 기준)
   // 사이즈별 재고 {"L":3,"M":2}
   const sizeStock: Record<string, number> = (() => {
     try {
@@ -198,7 +200,18 @@ export default async function GoodsPage({ params }: { params: { goodsNo: string 
                   </span>
                 );
               })}
-              <SizeGuideModal category={product.category} productName={product.name} />
+              {sizeSys && (
+                <span className="ml-0.5 rounded bg-brandsoft px-1.5 py-0.5 text-[11px] font-bold text-brand">
+                  {sizeSystemLabel(sizeSys)} 기준
+                </span>
+              )}
+              <SizeGuideModal
+                category={product.category}
+                productName={product.name}
+                brand={product.brand}
+                sizes={sizes}
+                system={sizeSys}
+              />
             </dd>
           </div>
           {product.material && (
