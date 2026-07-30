@@ -64,6 +64,126 @@ function num(v: unknown): number {
   return typeof v === "bigint" ? Number(v) : Number(v ?? 0);
 }
 
+// 'YYYY-MM-DD' 에 n일 더한 날짜 문자열
+function addDays(d: string, n: number): string {
+  const dt = new Date(`${d}T00:00:00Z`);
+  dt.setUTCDate(dt.getUTCDate() + n);
+  return dt.toISOString().slice(0, 10);
+}
+
+type PF = "web" | "app" | undefined;
+const pfSql = (p: PF) => (p ? Prisma.sql`AND platform = ${p}` : Prisma.empty);
+
+// ── 1) 활성 사용자 (DAU/WAU/MAU + 고착도) ──
+export interface ActiveUsers {
+  dau: number;
+  wau: number;
+  mau: number;
+  stickiness: number; // DAU/MAU %
+}
+export async function getActiveUsers(asOf: string, platform?: PF): Promise<ActiveUsers> {
+  const mauFrom = addDays(asOf, -29);
+  const wauFrom = addDays(asOf, -6);
+  const r = await prisma.$queryRaw<{ dau: bigint; wau: bigint; mau: bigint }[]>`
+    SELECT
+      COUNT(DISTINCT "visitorId") FILTER (WHERE day = ${asOf}) AS dau,
+      COUNT(DISTINCT "visitorId") FILTER (WHERE day >= ${wauFrom} AND day <= ${asOf}) AS wau,
+      COUNT(DISTINCT "visitorId") FILTER (WHERE day >= ${mauFrom} AND day <= ${asOf}) AS mau
+    FROM "Visit"
+    WHERE day >= ${mauFrom} AND day <= ${asOf} ${pfSql(platform)}`;
+  const dau = num(r[0]?.dau), wau = num(r[0]?.wau), mau = num(r[0]?.mau);
+  return { dau, wau, mau, stickiness: mau > 0 ? (dau / mau) * 100 : 0 };
+}
+
+// ── 2) 코호트 리텐션 (첫 방문 주차별, W0~W6 잔존) ──
+export interface Cohort {
+  week: string; // 코호트 시작(월요일)
+  size: number; // W0 인원
+  retention: number[]; // [W0%, W1%, ...] 최대 7개
+  counts: number[]; // 각 주차 실인원
+}
+export async function getCohorts(asOf: string, platform?: PF): Promise<Cohort[]> {
+  const cutoff = addDays(asOf, -7 * 8); // 최근 8주 코호트
+  const pf = pfSql(platform);
+  const rows = await prisma.$queryRaw<{ cohort: string; wk: number; users: bigint }[]>`
+    WITH firsts AS (
+      SELECT "visitorId", MIN(day)::date AS fd
+      FROM "Visit" WHERE TRUE ${pf} GROUP BY "visitorId"
+    ), base AS (
+      SELECT v."visitorId",
+        date_trunc('week', f.fd)::date AS cohort_start,
+        ((v.day::date - date_trunc('week', f.fd)::date) / 7)::int AS wk
+      FROM "Visit" v JOIN firsts f ON f."visitorId" = v."visitorId"
+      WHERE TRUE ${pf}
+    )
+    SELECT to_char(cohort_start, 'YYYY-MM-DD') AS cohort, wk, COUNT(DISTINCT "visitorId") AS users
+    FROM base
+    WHERE cohort_start >= ${cutoff}::date AND wk BETWEEN 0 AND 6
+    GROUP BY cohort_start, wk
+    ORDER BY cohort_start DESC, wk ASC`;
+
+  const map = new Map<string, Map<number, number>>();
+  for (const r of rows) {
+    if (!map.has(r.cohort)) map.set(r.cohort, new Map());
+    map.get(r.cohort)!.set(r.wk, num(r.users));
+  }
+  const out: Cohort[] = [];
+  for (const [week, wkMap] of map) {
+    const size = wkMap.get(0) ?? 0;
+    const counts: number[] = [];
+    const retention: number[] = [];
+    for (let k = 0; k <= 6; k++) {
+      const c = wkMap.get(k) ?? 0;
+      counts.push(c);
+      retention.push(size > 0 ? (c / size) * 100 : 0);
+    }
+    out.push({ week, size, retention, counts });
+  }
+  return out; // 최신 코호트 먼저
+}
+
+// ── 3) 방문자 기준 퍼널 (방문→상품조회→코드생성) ──
+export interface VisitorFunnel {
+  visitors: number;
+  viewers: number; // 상품 상세 본 방문자
+  coders: number; // 코드 생성한 방문자
+}
+export async function getVisitorFunnel(from: string, to: string, platform?: PF): Promise<VisitorFunnel> {
+  const r = await prisma.$queryRaw<{ visitors: bigint; viewers: bigint; coders: bigint }[]>`
+    SELECT
+      COUNT(DISTINCT "visitorId") AS visitors,
+      COUNT(DISTINCT "visitorId") FILTER (WHERE kind = 'product') AS viewers,
+      COUNT(DISTINCT "visitorId") FILTER (WHERE label = 'code') AS coders
+    FROM "Visit"
+    WHERE day >= ${from} AND day <= ${to} ${pfSql(platform)}`;
+  return { visitors: num(r[0]?.visitors), viewers: num(r[0]?.viewers), coders: num(r[0]?.coders) };
+}
+
+// ── 4) 유입 경로 (리퍼러 · UTM 캠페인) ──
+export interface Acquisition {
+  referrers: { referrer: string; sessions: number }[];
+  campaigns: { source: string; campaign: string | null; sessions: number }[];
+  referredSessions: number; // 외부 유입 세션 합
+}
+export async function getAcquisition(from: string, to: string, platform?: PF): Promise<Acquisition> {
+  const pf = pfSql(platform);
+  const [refs, utms] = await Promise.all([
+    prisma.$queryRaw<{ referrer: string; n: number }[]>`
+      SELECT referrer, COUNT(*)::int AS n FROM "Visit"
+      WHERE day >= ${from} AND day <= ${to} AND referrer IS NOT NULL ${pf}
+      GROUP BY referrer ORDER BY n DESC LIMIT 12`,
+    prisma.$queryRaw<{ source: string; campaign: string | null; n: number }[]>`
+      SELECT "utmSource" AS source, "utmCampaign" AS campaign, COUNT(*)::int AS n FROM "Visit"
+      WHERE day >= ${from} AND day <= ${to} AND "utmSource" IS NOT NULL ${pf}
+      GROUP BY "utmSource", "utmCampaign" ORDER BY n DESC LIMIT 12`,
+  ]);
+  return {
+    referrers: refs.map((r) => ({ referrer: r.referrer, sessions: r.n })),
+    campaigns: utms.map((u) => ({ source: u.source, campaign: u.campaign, sessions: u.n })),
+    referredSessions: refs.reduce((s, r) => s + r.n, 0),
+  };
+}
+
 export interface DailyPoint {
   day: string;
   visitors: number;    // 순 방문자(유니크)

@@ -1,9 +1,19 @@
 import Link from "next/link";
 import { won } from "@/lib/format";
-import { getFunnel, getTopProducts, getDailySeries, getRetentionSummary } from "@/lib/analytics";
+import {
+  getFunnel,
+  getTopProducts,
+  getDailySeries,
+  getRetentionSummary,
+  getActiveUsers,
+  getCohorts,
+  getVisitorFunnel,
+  getAcquisition,
+} from "@/lib/analytics";
 import type { RetentionSummary } from "@/lib/analytics";
 import DateRange from "./DateRange";
 import TrafficSection from "./TrafficSection";
+import GrowthSection from "./GrowthSection";
 
 export const dynamic = "force-dynamic";
 
@@ -21,13 +31,17 @@ export default async function AdminAnalytics({
   const to = searchParams.to ?? daysAgo(0);
   const pf = searchParams.platform === "app" ? "app" : searchParams.platform === "web" ? "web" : undefined;
 
-  const [funnel, top, series, retention, webSum, appSum] = await Promise.all([
+  const [funnel, top, series, retention, webSum, appSum, active, cohorts, vFunnel, acq] = await Promise.all([
     getFunnel(from, to),
     getTopProducts(from, to, 10),
     getDailySeries(from, to, pf),
     getRetentionSummary(from, to, pf),
     getRetentionSummary(from, to, "web"),
     getRetentionSummary(from, to, "app"),
+    getActiveUsers(to, pf),
+    getCohorts(to, pf),
+    getVisitorFunnel(from, to, pf),
+    getAcquisition(from, to, pf),
   ]);
 
   // 전환율(코드생성/조회, 판매/코드생성)
@@ -73,6 +87,17 @@ export default async function AdminAnalytics({
 
       {/* 방문 · 리텐션 (일자별) */}
       <TrafficSection from={from} to={to} series={series} summary={retention} />
+
+      {/* 성장 지표: 활성사용자 · 퍼널 · 코호트 · 유입경로 */}
+      <GrowthSection
+        asOf={to}
+        active={active}
+        cohorts={cohorts}
+        funnel={vFunnel}
+        salesCount={funnel.salesCount}
+        acq={acq}
+        totalSessions={retention.sessions}
+      />
 
       {/* 퍼널 */}
       <div className="mb-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
