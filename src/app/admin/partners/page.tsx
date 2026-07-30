@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { won } from "@/lib/format";
 import { listGrades } from "@/lib/grade";
+import { getPartnerEngagement } from "@/lib/analytics";
 import PendingRow from "./PendingRow";
 import GradeSelect from "./GradeSelect";
 import SettlementCell from "./SettlementCell";
@@ -71,6 +72,9 @@ type Row = {
   saleCount: number;
   commission: number;
   totalSaleCount: number;
+  visits: number;        // 방문 횟수(세션)
+  productViews: number;  // 상품 조회수
+  lastVisitAt: Date | null;
   residentNoEnc: string | null;
   address: string | null;
   bankName: string | null;
@@ -94,6 +98,9 @@ const SORTERS: Record<string, (a: Row, b: Row) => number> = {
   linkCount: (a, b) => a.linkCount - b.linkCount,
   saleCount: (a, b) => a.saleCount - b.saleCount,
   commission: (a, b) => a.commission - b.commission,
+  visits: (a, b) => a.visits - b.visits,
+  productViews: (a, b) => a.productViews - b.productViews,
+  lastVisitAt: (a, b) => (a.lastVisitAt?.getTime() ?? 0) - (b.lastVisitAt?.getTime() ?? 0),
 };
 
 export default async function AdminPartners({ searchParams }: { searchParams: SP }) {
@@ -127,7 +134,11 @@ export default async function AdminPartners({ searchParams }: { searchParams: SP
     ];
   }
 
-  const [partners, grades, aiAgg, linkAgg, saleAgg, saleTotalAgg, pendingList] = await Promise.all([
+  // 방문/활동 지표: basis=activity면 선택 기간, 아니면 전체 누적
+  const engFrom = basis === "activity" && from ? from : undefined;
+  const engTo = basis === "activity" && to ? to : undefined;
+
+  const [partners, grades, aiAgg, linkAgg, saleAgg, saleTotalAgg, pendingList, engMap] = await Promise.all([
     prisma.partner.findMany({ where: partnerWhere }),
     listGrades(),
     prisma.tryOnImage.groupBy({
@@ -149,6 +160,7 @@ export default async function AdminPartners({ searchParams }: { searchParams: SP
     // 등급 자동판정(첫구매/일반)은 항상 전체 누적 실적 기준
     prisma.sale.groupBy({ by: ["partnerId"], _count: { _all: true } }),
     prisma.partner.findMany({ where: { status: "pending" }, orderBy: { createdAt: "desc" } }),
+    getPartnerEngagement(engFrom, engTo),
   ]);
 
   const gradeOptions = grades.map((g) => ({ id: g.id, name: g.name, percent: g.percent }));
@@ -163,6 +175,7 @@ export default async function AdminPartners({ searchParams }: { searchParams: SP
   const rows: Row[] = partners.map((p) => {
     const totalSaleCount = saleTotalMap.get(p.id) ?? 0;
     const s = saleMap.get(p.id);
+    const eng = engMap.get(p.id);
     return {
       id: p.id,
       name: p.name,
@@ -185,6 +198,9 @@ export default async function AdminPartners({ searchParams }: { searchParams: SP
       saleCount: s?._count._all ?? 0,
       commission: s?._sum.commission ?? 0,
       totalSaleCount,
+      visits: eng?.sessions ?? 0,
+      productViews: eng?.productViews ?? 0,
+      lastVisitAt: eng?.lastVisit ?? null,
       residentNoEnc: p.residentNoEnc,
       address: p.address,
       bankName: p.bankName,
@@ -200,12 +216,14 @@ export default async function AdminPartners({ searchParams }: { searchParams: SP
   const sum = rows.reduce(
     (acc, r) => ({
       loginCount: acc.loginCount + r.loginCount,
+      visits: acc.visits + r.visits,
+      productViews: acc.productViews + r.productViews,
       aiCount: acc.aiCount + r.aiCount,
       linkCount: acc.linkCount + r.linkCount,
       saleCount: acc.saleCount + r.saleCount,
       commission: acc.commission + r.commission,
     }),
-    { loginCount: 0, aiCount: 0, linkCount: 0, saleCount: 0, commission: 0 }
+    { loginCount: 0, visits: 0, productViews: 0, aiCount: 0, linkCount: 0, saleCount: 0, commission: 0 }
   );
 
   /** 현재 조건을 유지한 채 일부만 바꾼 URL */
@@ -356,7 +374,7 @@ export default async function AdminPartners({ searchParams }: { searchParams: SP
           회원 목록 <span className="text-brand">({rows.length})</span>
         </h2>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1280px] text-sm">
+          <table className="w-full min-w-[1560px] text-sm">
             <thead className="border-b border-line text-sub">
               <tr>
                 <Th k="name" label="이름" />
@@ -368,6 +386,9 @@ export default async function AdminPartners({ searchParams }: { searchParams: SP
                 <Th k="createdAt" label="가입일" />
                 <Th k="lastLoginAt" label="최근 로그인" />
                 <Th k="loginCount" label="로그인" right />
+                <Th k="visits" label="방문" right />
+                <Th k="productViews" label="상품조회" right />
+                <Th k="lastVisitAt" label="최근 방문" />
                 <Th k="aiCount" label="AI 이미지" right />
                 <Th k="linkCount" label="코드 생성" right />
                 <Th k="saleCount" label="판매" right />
@@ -377,7 +398,7 @@ export default async function AdminPartners({ searchParams }: { searchParams: SP
             <tbody>
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={13} className="py-8 text-center text-sub">
+                  <td colSpan={16} className="py-8 text-center text-sub">
                     조건에 맞는 회원이 없습니다.
                   </td>
                 </tr>
@@ -425,6 +446,9 @@ export default async function AdminPartners({ searchParams }: { searchParams: SP
                   <td className="whitespace-nowrap text-sub">{fmtDate(p.createdAt)}</td>
                   <td className="whitespace-nowrap text-sub">{fmtDateTime(p.lastLoginAt)}</td>
                   <td className="text-right tabular-nums">{p.loginCount.toLocaleString()}</td>
+                  <td className="text-right font-semibold tabular-nums text-brand">{p.visits.toLocaleString()}</td>
+                  <td className="text-right tabular-nums">{p.productViews.toLocaleString()}</td>
+                  <td className="whitespace-nowrap text-sub">{fmtDateTime(p.lastVisitAt)}</td>
                   <td className="text-right tabular-nums">{p.aiCount.toLocaleString()}</td>
                   <td className="text-right tabular-nums">{p.linkCount.toLocaleString()}</td>
                   <td className="text-right tabular-nums">{p.saleCount.toLocaleString()}</td>
@@ -441,6 +465,9 @@ export default async function AdminPartners({ searchParams }: { searchParams: SP
                     합계 ({rows.length}명)
                   </td>
                   <td className="text-right tabular-nums">{sum.loginCount.toLocaleString()}</td>
+                  <td className="text-right tabular-nums text-brand">{sum.visits.toLocaleString()}</td>
+                  <td className="text-right tabular-nums">{sum.productViews.toLocaleString()}</td>
+                  <td></td>
                   <td className="text-right tabular-nums">{sum.aiCount.toLocaleString()}</td>
                   <td className="text-right tabular-nums">{sum.linkCount.toLocaleString()}</td>
                   <td className="text-right tabular-nums">{sum.saleCount.toLocaleString()}</td>

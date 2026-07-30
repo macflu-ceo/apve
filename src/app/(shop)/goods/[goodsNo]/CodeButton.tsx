@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { issueLink } from "./actions";
 import { useAuthModal } from "@/components/auth/AuthModalProvider";
+import { trackEvent } from "@/lib/track-client";
 
 export default function CodeButton({ goodsNo }: { goodsNo: string }) {
   const { open } = useAuthModal();
@@ -20,6 +21,7 @@ export default function CodeButton({ goodsNo }: { goodsNo: string }) {
     if (res.ok) {
       setUrl(res.url);
       setCode(res.code);
+      trackEvent("click", { label: "code", goodsNo }); // 코드생성 전환 기록
     } else if (res.needAuth) {
       open("login"); // 비로그인 → 로그인 모달
     } else {

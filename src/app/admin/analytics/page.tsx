@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { won } from "@/lib/format";
-import { getFunnel, getTopProducts } from "@/lib/analytics";
+import { getFunnel, getTopProducts, getDailySeries, getRetentionSummary } from "@/lib/analytics";
 import DateRange from "./DateRange";
+import TrafficSection from "./TrafficSection";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +19,12 @@ export default async function AdminAnalytics({
   const from = searchParams.from ?? daysAgo(29);
   const to = searchParams.to ?? daysAgo(0);
 
-  const [funnel, top] = await Promise.all([getFunnel(from, to), getTopProducts(from, to, 10)]);
+  const [funnel, top, series, retention] = await Promise.all([
+    getFunnel(from, to),
+    getTopProducts(from, to, 10),
+    getDailySeries(from, to),
+    getRetentionSummary(from, to),
+  ]);
 
   // 전환율(코드생성/조회, 판매/코드생성)
   const viewToLink = funnel.productViews > 0 ? (funnel.linksCreated / funnel.productViews) * 100 : 0;
@@ -35,10 +41,13 @@ export default async function AdminAnalytics({
     <div>
       <h1 className="mb-1 text-2xl font-bold">애널리틱스</h1>
       <p className="mb-6 text-sm text-sub">
-        파트너 활성화 퍼널: <b>가입 → 상품 조회 → 내 코드 만들기 → 판매</b>. (순수 방문/유입 트래픽은 Vercel Analytics 참고)
+        <b>방문 · 리텐션</b> → 활성화 퍼널(<b>가입 → 조회 → 코드 → 판매</b>) → 인기 상품. 일자별로 기록됩니다.
       </p>
 
       <DateRange from={from} to={to} />
+
+      {/* 방문 · 리텐션 (일자별) */}
+      <TrafficSection from={from} to={to} series={series} summary={retention} />
 
       {/* 퍼널 */}
       <div className="mb-4 grid grid-cols-2 gap-4 lg:grid-cols-4">

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthModal } from "@/components/auth/AuthModalProvider";
+import { trackEvent } from "@/lib/track-client";
 
 const CHOICES = {
   gender: ["남성", "여성"],
@@ -72,6 +73,7 @@ export default function AiImageStudio({ goodsNo }: { goodsNo: string }) {
       if (data.quota) setQuota(data.quota);
       if (!res.ok) throw new Error(data.error || "생성 실패");
       setImg(data.url);
+      trackEvent("click", { label: "ai", goodsNo }); // AI이미지 생성 기록
     } catch (e) {
       setErr(e instanceof Error ? e.message : "생성 실패");
     } finally {
