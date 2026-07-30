@@ -7,6 +7,8 @@ import { getSessionPartner } from "@/lib/auth";
 import { logProductView } from "@/lib/analytics";
 import { activeBoostForProduct } from "@/lib/timesale";
 import SizeGuideModal from "@/components/SizeGuideModal";
+import ProductGallery from "@/components/ProductGallery";
+import { keepProductImages } from "@/lib/godomall/scrape";
 import { sizeSystem, sizeSystemLabel, displaySize, isOneSizeOnly } from "@/lib/sizeSystem";
 import CodeButton from "./CodeButton";
 import AiImageStudio from "./AiImageStudio";
@@ -54,6 +56,7 @@ export default async function GoodsPage({ params }: { params: { goodsNo: string 
   await logProductView(product.id, viewer?.id);
 
   const images = parseList(product.imagesJson);
+  const galleryImages = keepProductImages(images); // 공통 배너·깨진 링크 제외 (기존 상품도 즉시 적용)
   const sizes = parseList(product.sizesJson);
   const sizeSys = sizeSystem(product.brand); // IT | FR | null (브랜드 본국 기준)
   const oneSize = isOneSizeOnly(sizes); // 단일(프리) 사이즈만인지
@@ -84,7 +87,7 @@ export default async function GoodsPage({ params }: { params: { goodsNo: string 
     "@type": "Product",
     name: product.name,
     ...(product.brand ? { brand: { "@type": "Brand", name: product.brand } } : {}),
-    ...(images.length ? { image: images } : {}),
+    ...(galleryImages.length ? { image: galleryImages } : {}),
     ...(product.origin ? { countryOfOrigin: product.origin } : {}),
     ...(product.salePrice != null
       ? {
@@ -102,17 +105,12 @@ export default async function GoodsPage({ params }: { params: { goodsNo: string 
   return (
     <div className="grid gap-8 px-4 pb-12 pt-8 md:grid-cols-2 md:pt-12">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      {/* 이미지 (대표 1장만) */}
+      {/* 이미지 (스와이프 갤러리 — 공통 배너 제외) */}
       <div>
-        <div className="relative aspect-[3/4] overflow-hidden rounded-xl2 bg-[#f5f4f2]">
-          {images[0] ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={images[0]} alt={product.name} className="h-full w-full object-cover" />
-          ) : (
-            <div className="flex h-full items-center justify-center text-sub">No Image</div>
-          )}
+        <div className="relative">
+          <ProductGallery images={galleryImages} alt={product.name} />
           {tags.length > 0 && (
-            <div className="absolute bottom-3 left-3 flex flex-wrap gap-1">
+            <div className="absolute bottom-3 left-3 z-10 flex flex-wrap gap-1">
               {tags.map((t, i) => (
                 <span key={i} className="rounded-[4px] bg-ink/85 px-2 py-1 text-xs font-bold text-white">
                   {t}

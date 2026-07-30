@@ -45,6 +45,19 @@ export interface ScrapedProduct {
   sourceUrl: string;
 }
 
+/**
+ * 상품 이미지만 남긴다 — 공통 템플릿 배너(비아엘리떼 2차상단/1차하단 등)와
+ * 잘못 수집된 SNS 공유 링크(핀터레스트 등, URL 인코딩 %)를 제거.
+ */
+export function keepProductImages(urls: string[]): string[] {
+  return urls.filter(
+    (u) =>
+      !/template-images/i.test(u) &&
+      !u.includes("%") &&
+      !/pinterest|facebook|twitter|kakaocdn|instagram|\/sns\//i.test(u)
+  );
+}
+
 function decode(s: string): string {
   return s
     .replace(/&amp;/g, "&")
@@ -170,6 +183,8 @@ export async function scrapeProduct(url: string): Promise<ScrapedProduct> {
   for (const m of html.matchAll(/https?:\/\/[^"'\\]*jprimo-partners-system-bucket[^"'\\]*\.(?:jpg|jpeg|png|webp)/gi)) {
     push(m[0]);
   }
+  // 공통 배너·SNS 공유링크 제거 (상품 실제 이미지만)
+  const cleanImages = keepProductImages(images);
 
   return {
     goodsNo,
@@ -183,7 +198,7 @@ export async function scrapeProduct(url: string): Promise<ScrapedProduct> {
     sizeStock,
     options,
     material: null,
-    images,
+    images: cleanImages,
     detailHtml: null,
     sourceUrl,
   };
