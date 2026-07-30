@@ -50,19 +50,24 @@ export function sizeSystemLabel(sys: SizeSystem | null): string {
 }
 
 // 단일(프리) 사이즈 코드 — 화면엔 "ONE SIZE"로 통일해서 표시
+//  U=Unica(IT)/Unique(FR), TU=Taille Unique(FR) 모두 단일 사이즈
 const ONE_SIZE = new Set([
-  "TU", "OS", "F", "FREE", "FREESIZE", "UNI", "UNIQUE", "ONESIZE",
+  "U", "TU", "OS", "F", "FREE", "FREESIZE", "UNI", "UNIQUE", "UNICA", "ONESIZE",
   "프리", "프리사이즈", "단일", "단일사이즈",
 ]);
 
-/** 사이즈 표시용 정규화 (단일사이즈 코드 → "ONE SIZE") */
+/** 사이즈 코드 정규화 (대문자 + 영숫자·한글만 — "T.U", "one size" 등도 통일) */
+function normSize(s: string): string {
+  return s.trim().toUpperCase().replace(/[^A-Z0-9가-힣]/g, "");
+}
+
+/** 사이즈 표시용 (단일사이즈 코드 → "ONE SIZE") */
 export function displaySize(s: string): string {
-  const n = s.trim().toUpperCase().replace(/\s+/g, "");
-  return ONE_SIZE.has(n) ? "ONE SIZE" : s.trim();
+  return ONE_SIZE.has(normSize(s)) ? "ONE SIZE" : s.trim();
 }
 
 /** 이 상품이 단일(프리) 사이즈만인지 */
 export function isOneSizeOnly(sizes: string[]): boolean {
   const valid = sizes.map((s) => s.trim()).filter(Boolean);
-  return valid.length > 0 && valid.every((s) => ONE_SIZE.has(s.toUpperCase().replace(/\s+/g, "")));
+  return valid.length > 0 && valid.every((s) => ONE_SIZE.has(normSize(s)));
 }
