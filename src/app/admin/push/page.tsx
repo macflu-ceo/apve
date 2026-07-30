@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { isPushConfigured } from "@/lib/push";
 import PushComposer from "./PushComposer";
+import CancelScheduleButton from "./CancelScheduleButton";
 
 export const dynamic = "force-dynamic";
 
@@ -12,11 +13,12 @@ function fmtDateTime(d: Date) {
 const SEG_LABEL: Record<string, string> = { all: "전체", members: "회원", guests: "비회원" };
 
 export default async function AdminPush() {
-  const [total, members, byPlatform, logs] = await Promise.all([
+  const [total, members, byPlatform, logs, scheduled] = await Promise.all([
     prisma.pushToken.count({ where: { active: true } }),
     prisma.pushToken.count({ where: { active: true, partnerId: { not: null } } }),
     prisma.pushToken.groupBy({ by: ["platform"], where: { active: true }, _count: { _all: true } }),
     prisma.pushLog.findMany({ orderBy: { createdAt: "desc" }, take: 50 }),
+    prisma.scheduledPush.findMany({ where: { status: "pending" }, orderBy: { sendAt: "asc" } }),
   ]);
 
   const configured = isPushConfigured();
@@ -81,6 +83,38 @@ export default async function AdminPush() {
           </div>
         </div>
       </details>
+
+      {/* 예약된 발송 */}
+      {scheduled.length > 0 && (
+        <div className="mb-8">
+          <h2 className="mb-3 text-lg font-semibold">⏰ 예약된 발송 ({scheduled.length})</h2>
+          <div className="overflow-hidden rounded-lg border border-line">
+            <table className="w-full text-sm">
+              <thead className="bg-[#f7f6f4] text-left text-xs text-sub">
+                <tr>
+                  <th className="px-3 py-2">예약 시각</th>
+                  <th className="px-3 py-2">제목 / 내용</th>
+                  <th className="px-3 py-2">대상</th>
+                  <th className="px-3 py-2 text-right">관리</th>
+                </tr>
+              </thead>
+              <tbody>
+                {scheduled.map((s) => (
+                  <tr key={s.id} className="border-t border-line align-top">
+                    <td className="whitespace-nowrap px-3 py-2 font-medium text-brand">{fmtDateTime(s.sendAt)}</td>
+                    <td className="px-3 py-2">
+                      <div className="font-medium">{s.title}</div>
+                      <div className="line-clamp-1 text-xs text-sub">{s.body}</div>
+                    </td>
+                    <td className="whitespace-nowrap px-3 py-2">{SEG_LABEL[s.segment] ?? s.segment}</td>
+                    <td className="px-3 py-2 text-right"><CancelScheduleButton id={s.id} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* 현황(이력) */}
       <h2 className="mb-3 text-lg font-semibold">발송 현황</h2>

@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import ImageUploader from "@/components/ImageUploader";
-import { sendPushAction, sendTestPushAction } from "./actions";
+import { sendPushAction, sendTestPushAction, schedulePushAction } from "./actions";
 
 const SEGMENTS = [
   { key: "all", label: "전체 (앱 설치자 모두)" },
@@ -24,6 +24,7 @@ export default function PushComposer({ tokenCount }: { tokenCount: number }) {
 
   const [showTest, setShowTest] = useState(false);
   const [testToken, setTestToken] = useState("");
+  const [scheduleAt, setScheduleAt] = useState("");
 
   function validate() {
     if (!title.trim() || !body.trim()) {
@@ -57,6 +58,27 @@ export default function PushComposer({ tokenCount }: { tokenCount: number }) {
       const r = await sendTestPushAction({ token: testToken, title, body, url, imageUrl });
       setMsg({ ok: r.ok, text: r.message });
       if (r.ok) router.refresh();
+    });
+  }
+
+  function schedule() {
+    if (!validate()) return;
+    if (!scheduleAt) {
+      setMsg({ ok: false, text: "예약 시각을 선택하세요." });
+      return;
+    }
+    setMsg(null);
+    start(async () => {
+      const r = await schedulePushAction({ title, body, url, imageUrl, segment, sendAt: scheduleAt });
+      setMsg({ ok: r.ok, text: r.message });
+      if (r.ok) {
+        setTitle("");
+        setBody("");
+        setUrl("");
+        setImageUrl("");
+        setScheduleAt("");
+        router.refresh();
+      }
     });
   }
 
@@ -106,12 +128,27 @@ export default function PushComposer({ tokenCount }: { tokenCount: number }) {
 
       <div className="flex flex-wrap items-center gap-3">
         <button onClick={send} disabled={pending} className="btn-brand px-6">
-          {pending ? "처리 중…" : `📤 발송 (대상 ${tokenCount.toLocaleString()})`}
+          {pending ? "처리 중…" : `📤 지금 발송 (대상 ${tokenCount.toLocaleString()})`}
         </button>
         <button type="button" onClick={() => setShowTest((v) => !v)} className="btn-line px-4">
           🧪 테스트 발송
         </button>
         {msg && <span className={`text-sm ${msg.ok ? "text-green-700" : "text-red-600"}`}>{msg.text}</span>}
+      </div>
+
+      {/* 예약 발송 */}
+      <div className="flex flex-wrap items-center gap-2 rounded-xl2 border border-line bg-[#fbfaf9] p-3">
+        <span className="text-sm font-medium">⏰ 예약 발송</span>
+        <input
+          type="datetime-local"
+          value={scheduleAt}
+          onChange={(e) => setScheduleAt(e.target.value)}
+          className="field w-56"
+        />
+        <button onClick={schedule} disabled={pending || !scheduleAt} className="btn-line px-4">
+          예약 등록
+        </button>
+        <span className="text-xs text-sub">선택한 시각(한국시간)에 자동 발송됩니다.</span>
       </div>
 
       {/* 테스트 발송 (내 기기 1대에만) */}

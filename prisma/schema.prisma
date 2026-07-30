@@ -446,11 +446,35 @@ model Popup {
   imageUrl  String
   linkUrl   String?
   active    Boolean  @default(true)
+  /// 노출 플랫폼: all(웹+앱) | web(웹만) | app(앱만)
+  platform  String   @default("all")
   /// 노출 기간 (없으면 상시)
   startAt   DateTime?
   endAt     DateTime?
   sort      Int      @default(0)
   createdAt DateTime @default(now())
+}
+
+/// 예약 발송 앱 푸시 — 지정 시각에 크론이 발송
+model ScheduledPush {
+  id        String   @id @default(cuid())
+  title     String
+  body      String
+  url       String?
+  imageUrl  String?
+  /// all | members | guests
+  segment   String   @default("all")
+  /// 발송 예약 시각
+  sendAt    DateTime
+  /// pending(대기) | sent(완료) | canceled(취소) | failed
+  status    String   @default("pending")
+  target    Int      @default(0)
+  sent      Int      @default(0)
+  failed    Int      @default(0)
+  createdAt DateTime @default(now())
+  sentAt    DateTime?
+
+  @@index([status, sendAt])
 }
 
 /// 홈 히어로 배너
@@ -562,6 +586,15 @@ model SiteSetting {
   appLandingUrl  String?
   /// 앱 전용 첫판매 부스트(%p) — 웹에선 "앱에서 올리기" 유도에만 사용. 0이면 미적용
   appBoostPercent Int    @default(0)
+  /// 웹에서 하루 코드 발급(복사) 한도 — 초과 시 앱 유도. 0이면 무제한. 앱은 항상 무제한
+  webDailyCodeLimit Int  @default(3)
+  /// 앱 스플래시(로딩) 이미지 URL — 네이티브 앱 실행 시 표시
+  appSplashUrl   String?
+  /// 오프라인 에러화면 문구 (네트워크 끊김 시 앱이 보여줄 안내)
+  offlineTitle   String?
+  offlineMessage String?
+  /// 판매 발생 시 해당 회원에게 앱 푸시 자동 발송
+  pushOnSale     Boolean @default(false)
 
   updatedAt   DateTime @updatedAt
 }
