@@ -12,6 +12,8 @@ const ADMIN_MENU = [
   { href: "/admin/products", label: "상품 등록/관리" },
   { href: "/admin/banners", label: "배너 관리" },
   { href: "/admin/popups", label: "팝업 관리" },
+  { href: "/admin/onboarding", label: "첫 실행 온보딩" },
+  { href: "/admin/push", label: "앱 푸시" },
   { href: "/admin/categories", label: "메인 원형 아이콘" },
   { href: "/admin/sections", label: "홈 진열(섹션)" },
   { href: "/admin/exhibitions", label: "기획전 관리" },

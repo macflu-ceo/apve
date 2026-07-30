@@ -12,6 +12,7 @@ import TimeSaleBanner from "@/components/TimeSaleBanner";
 import { getActivePopups } from "@/lib/popup";
 import PopupLayer from "@/components/PopupLayer";
 import AppInstallBar from "@/components/AppInstallBar";
+import OnboardingOverlay from "@/components/OnboardingOverlay";
 import { getPlatform } from "@/lib/platform";
 
 const BASE_TABS = [
@@ -61,6 +62,7 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
 
   return (
     <AuthModalProvider>
+      <OnboardingOverlay />
       {popups.length > 0 && <PopupLayer popups={popups} />}
       {platform === "web" && (
         <AppInstallBar ios={setting.appIosUrl} android={setting.appAndroidUrl} landing={setting.appLandingUrl} />

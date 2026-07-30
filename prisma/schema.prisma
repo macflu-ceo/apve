@@ -142,6 +142,54 @@ model ProductView {
   @@index([productId, createdAt])
 }
 
+/// 첫 실행 온보딩 슬라이드 (이미지 + 문구) — 앱/웹 최초 진입 시 전체화면 안내
+model OnboardingSlide {
+  id        String   @id @default(cuid())
+  imageUrl  String
+  caption   String?
+  sort      Int      @default(0)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+/// 앱 푸시 기기 토큰 (웹뷰 래퍼가 FCM 토큰을 등록) — 세그먼트 발송 대상
+model PushToken {
+  id         String   @id @default(cuid())
+  /// FCM 등록 토큰 (기기별 고유)
+  token      String   @unique
+  /// ios | android | web
+  platform   String   @default("android")
+  /// 로그인 회원이면 연결(비로그인 null)
+  partnerId  String?
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  lastSeenAt DateTime @default(now())
+
+  @@index([partnerId])
+  @@index([active])
+}
+
+/// 앱 푸시 발송 이력 (현황)
+model PushLog {
+  id        String   @id @default(cuid())
+  title     String
+  body      String
+  /// 링크(딥링크/경로) — 탭 시 이동
+  url       String?
+  /// 대상 세그먼트: all | members | guests
+  segment   String   @default("all")
+  /// manual(수기) | 트리거명
+  trigger   String   @default("manual")
+  target    Int      @default(0) // 대상 토큰 수
+  sent      Int      @default(0) // 성공
+  failed    Int      @default(0) // 실패
+  /// fcm | mock (환경변수 미설정 시 mock)
+  provider  String   @default("mock")
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
 /// 방문 이벤트 로그 — 모든 페이지뷰/주요클릭을 익명 방문자ID와 함께 기록.
 /// 비로그인 방문자도 쿠키(vid)로 식별해 리텐션(재방문)·세션을 측정한다.
 /// (순수 트래픽은 Vercel Analytics, 여기선 회원 귀속·리텐션이 핵심)
