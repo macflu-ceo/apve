@@ -7,7 +7,7 @@ import { getSessionPartner } from "@/lib/auth";
 import { logProductView } from "@/lib/analytics";
 import { activeBoostForProduct } from "@/lib/timesale";
 import SizeGuideModal from "@/components/SizeGuideModal";
-import { sizeSystem, sizeSystemLabel } from "@/lib/sizeSystem";
+import { sizeSystem, sizeSystemLabel, displaySize, isOneSizeOnly } from "@/lib/sizeSystem";
 import CodeButton from "./CodeButton";
 import AiImageStudio from "./AiImageStudio";
 
@@ -56,6 +56,7 @@ export default async function GoodsPage({ params }: { params: { goodsNo: string 
   const images = parseList(product.imagesJson);
   const sizes = parseList(product.sizesJson);
   const sizeSys = sizeSystem(product.brand); // IT | FR | null (브랜드 본국 기준)
+  const oneSize = isOneSizeOnly(sizes); // 단일(프리) 사이즈만인지
   const domestic = parseList(product.tagsJson).includes("국내배송"); // 국내배송 여부
   // 사이즈별 재고 {"L":3,"M":2}
   const sizeStock: Record<string, number> = (() => {
@@ -217,12 +218,12 @@ export default async function GoodsPage({ params }: { params: { goodsNo: string 
                         : "border-line/60 text-sub line-through decoration-sub/60"
                     }`}
                   >
-                    {s}
+                    {displaySize(s)}
                     {n > 0 && <span className="ml-1 font-semibold text-brand">{n}</span>}
                   </span>
                 );
               })}
-              {sizeSys && (
+              {sizeSys && !oneSize && (
                 <span className="ml-0.5 rounded bg-brandsoft px-1.5 py-0.5 text-[11px] font-bold text-brand">
                   {sizeSystemLabel(sizeSys)} 기준
                 </span>

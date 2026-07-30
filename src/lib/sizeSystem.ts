@@ -48,3 +48,21 @@ export function sizeSystemLabel(sys: SizeSystem | null): string {
   if (sys === "FR") return "프랑스(FR)";
   return "브랜드 본국";
 }
+
+// 단일(프리) 사이즈 코드 — 화면엔 "ONE SIZE"로 통일해서 표시
+const ONE_SIZE = new Set([
+  "TU", "OS", "F", "FREE", "FREESIZE", "UNI", "UNIQUE", "ONESIZE",
+  "프리", "프리사이즈", "단일", "단일사이즈",
+]);
+
+/** 사이즈 표시용 정규화 (단일사이즈 코드 → "ONE SIZE") */
+export function displaySize(s: string): string {
+  const n = s.trim().toUpperCase().replace(/\s+/g, "");
+  return ONE_SIZE.has(n) ? "ONE SIZE" : s.trim();
+}
+
+/** 이 상품이 단일(프리) 사이즈만인지 */
+export function isOneSizeOnly(sizes: string[]): boolean {
+  const valid = sizes.map((s) => s.trim()).filter(Boolean);
+  return valid.length > 0 && valid.every((s) => ONE_SIZE.has(s.toUpperCase().replace(/\s+/g, "")));
+}
