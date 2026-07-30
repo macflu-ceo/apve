@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { trackEvent } from "@/lib/track-client";
+import { trackEvent, resolveStoreUrl } from "@/lib/track-client";
 
 /**
  * 웹에서만 노출되는 앱 다운로드 유도 바.
@@ -29,16 +29,9 @@ export default function AppInstallBar({
   if (!ios && !android && !landing) return null;
   if (hidden) return null;
 
-  function target(): string | null {
-    const ua = navigator.userAgent;
-    if (/iPhone|iPad|iPod/i.test(ua)) return ios || landing;
-    if (/Android/i.test(ua)) return android || landing;
-    return landing || ios || android; // PC
-  }
-
   function go() {
     trackEvent("click", { label: "appdownload" });
-    const url = target();
+    const url = resolveStoreUrl({ ios, android, landing });
     if (url) window.open(url, "_blank", "noopener");
   }
 

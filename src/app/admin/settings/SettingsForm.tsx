@@ -134,10 +134,12 @@ export default function SettingsForm({ setting }: { setting: S }) {
             <input name="appLandingUrl" defaultValue={setting.appLandingUrl ?? ""} placeholder="https://cashboutique.co.kr/app" className="field mt-1" />
           </div>
           <div>
-            <label className="text-sm font-medium">앱 전용 첫판매 부스트(%p)</label>
+            <label className="text-sm font-medium">앱 전용 첫판매 프리미엄(%p)</label>
             <input name="appBoostPercent" type="number" min={0} max={50} defaultValue={setting.appBoostPercent} className="field mt-1 w-32" />
             <p className="mt-1 text-xs text-sub">
-              앱에서만 첫 판매 수수료를 이만큼 더 얹습니다. <b>0이면 미적용</b>. (다음 단계에서 상세페이지 유도 버튼과 연결)
+              <b>첫구매 등급</b>에만 적용. 앱은 원요율(현재 20%) 그대로, <b>웹은 이만큼 낮게</b> 지급됩니다.
+              <br />
+              예) 10 입력 → 웹 첫판매 10% / 앱 첫판매 20%. 웹 상세페이지엔 "앱에서 올리기" 버튼이 뜹니다. <b>0이면 웹·앱 동일(미적용)</b>.
             </p>
           </div>
         </div>

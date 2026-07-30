@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { won, parseList } from "@/lib/format";
+import { getSiteSetting } from "@/lib/settings";
 import { getViewerRate } from "@/lib/grade";
+import AppUpsellButton from "@/components/AppUpsellButton";
 import { getSessionPartner } from "@/lib/auth";
 import { logProductView } from "@/lib/analytics";
 import { activeBoostForProduct } from "@/lib/timesale";
@@ -74,6 +76,16 @@ export default async function GoodsPage({ params }: { params: { goodsNo: string 
   const rate = await getViewerRate();
   const expectedCommission =
     product.salePrice != null ? Math.round((product.salePrice * rate.percent) / 100) : null;
+  // 웹에서만: 앱 전용 첫판매 프리미엄 유도 (앱 요율 기준 수수료 + 추가 이득)
+  const setting = await getSiteSetting();
+  const appCommission =
+    product.salePrice != null ? Math.round((product.salePrice * rate.appPercent) / 100) : null;
+  const showAppUpsell =
+    rate.platform === "web" &&
+    rate.appPremium > 0 &&
+    appCommission != null &&
+    expectedCommission != null &&
+    appCommission > expectedCommission;
   // 진행중 골든타임 부스트
   const boost = await activeBoostForProduct(product.id);
   const boostedCommission =
@@ -150,6 +162,17 @@ export default async function GoodsPage({ params }: { params: { goodsNo: string 
             </span>
             <span className="text-lg font-extrabold text-brand">{won(expectedCommission)}</span>
           </div>
+        )}
+
+        {/* 앱 전용 수수료 유도 (웹에서만) */}
+        {showAppUpsell && (
+          <AppUpsellButton
+            ios={setting.appIosUrl}
+            android={setting.appAndroidUrl}
+            landing={setting.appLandingUrl}
+            appAmountLabel={won(appCommission)}
+            gapLabel={`+${won(appCommission! - expectedCommission!)}`}
+          />
         )}
 
         {/* 배송 안내 */}

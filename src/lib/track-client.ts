@@ -20,3 +20,15 @@ export function trackEvent(
     /* noop */
   }
 }
+
+/** 기기별 앱 다운로드 목적지 — 모바일은 해당 스토어, PC는 랜딩 */
+export function resolveStoreUrl(u: {
+  ios: string | null;
+  android: string | null;
+  landing: string | null;
+}): string | null {
+  const ua = navigator.userAgent;
+  if (/iPhone|iPad|iPod/i.test(ua)) return u.ios || u.landing;
+  if (/Android/i.test(ua)) return u.android || u.landing;
+  return u.landing || u.ios || u.android; // PC
+}

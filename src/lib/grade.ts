@@ -4,6 +4,8 @@
 //  · 그 외(컨시어지 등): 어드민이 파트너에게 수동 지정
 import { prisma } from "@/lib/db";
 import { getSessionPartner } from "@/lib/auth";
+import { getPlatform, type Platform } from "@/lib/platform";
+import { getSiteSetting } from "@/lib/settings";
 import { cache } from "react";
 
 export const DEFAULT_GRADES = [
@@ -49,21 +51,48 @@ export async function getPartnerGrade(partnerId: string) {
   return prisma.grade.findUnique({ where: { systemKey: key } });
 }
 
-/** 상품 목록/상세에서 보여줄 수수료율 — 로그인 시 내 등급, 비로그인 시 최고 등급 */
+/**
+ * 상품 목록/상세에서 보여줄 수수료율.
+ *  · 로그인(승인) → 내 등급, 비로그인/미승인 → 최고 등급('최대 X%')
+ *  · 앱 전용 정책: '첫구매' 등급은 **앱에서 원요율(20%) 그대로**, **웹에선 부스트(%p)만큼 차감**.
+ *    (최대 표시값은 양 플랫폼 동일. 웹 상세페이지에서 '앱에서 올리기'로 유도)
+ * appPercent: 앱 기준 요율(웹이면 유도용). appPremium: 앱−웹 요율차(%p, >0이면 유도 가능)
+ */
 export async function getViewerRate(): Promise<{
   percent: number;
+  appPercent: number;
   gradeName: string | null;
   isMine: boolean;
+  platform: Platform;
+  appPremium: number;
 }> {
   await ensureDefaultGrades();
+  const platform = getPlatform();
+  const setting = await getSiteSetting();
+  const boost = Math.max(0, setting.appBoostPercent ?? 0);
   const partner = await getSessionPartner();
-  // 승인된 회원만 수수료율이 확정됨 (미승인·비로그인은 '최대'로 안내)
+
   if (partner && partner.status === "approved") {
     const g = await getPartnerGrade(partner.id);
-    if (g) return { percent: g.percent, gradeName: g.name, isMine: true };
+    if (g) {
+      const isFirst = g.systemKey === "first";
+      const appPercent = g.percent; // 앱 = 등급 원요율
+      const webPercent = isFirst ? Math.max(0, g.percent - boost) : g.percent;
+      const percent = platform === "app" ? appPercent : webPercent;
+      return {
+        percent,
+        appPercent,
+        gradeName: g.name,
+        isMine: true,
+        platform,
+        appPremium: isFirst ? appPercent - webPercent : 0,
+      };
+    }
   }
+  // 비로그인/미승인 → '최대'는 양 플랫폼 동일하게 최고 등급으로 안내
   const top = await prisma.grade.findFirst({ orderBy: { percent: "desc" } });
-  return { percent: top?.percent ?? 0, gradeName: null, isMine: false };
+  const p = top?.percent ?? 0;
+  return { percent: p, appPercent: p, gradeName: null, isMine: false, platform, appPremium: 0 };
 }
 
 /** 최고 등급의 수수료율(%) — 예상 수수료 기준값 */
