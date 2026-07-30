@@ -54,6 +54,7 @@ export interface PushMessage {
   title: string;
   body: string;
   url?: string;
+  imageUrl?: string;
 }
 
 /** 지정 토큰들에 발송. 무효 토큰(404/400)은 비활성 처리. */
@@ -86,7 +87,21 @@ export async function sendPushToTokens(
         const payload = {
           message: {
             token: t.token,
-            notification: { title: msg.title, body: msg.body },
+            notification: {
+              title: msg.title,
+              body: msg.body,
+              ...(msg.imageUrl ? { image: msg.imageUrl } : {}),
+            },
+            // 안드로이드 BigPicture · iOS 리치 알림(이미지)
+            ...(msg.imageUrl
+              ? {
+                  android: { notification: { image: msg.imageUrl } },
+                  apns: {
+                    payload: { aps: { "mutable-content": 1 } },
+                    fcm_options: { image: msg.imageUrl },
+                  },
+                }
+              : {}),
             ...(msg.url ? { data: { url: msg.url }, webpush: { fcmOptions: { link: msg.url } } } : {}),
           },
         };
@@ -128,8 +143,29 @@ export async function sendPushToSegment(
       title: msg.title,
       body: msg.body,
       url: msg.url ?? null,
+      imageUrl: msg.imageUrl ?? null,
       segment,
       trigger,
+      target: res.target,
+      sent: res.sent,
+      failed: res.failed,
+      provider: res.provider,
+    },
+  });
+  return res;
+}
+
+/** 테스트 발송 — 특정 기기 토큰 1개에만. (운영자가 본인 기기로 미리 확인) */
+export async function sendTestPush(token: string, msg: PushMessage): Promise<PushResult> {
+  const res = await sendPushToTokens([{ id: "test", token }], msg);
+  await prisma.pushLog.create({
+    data: {
+      title: msg.title,
+      body: msg.body,
+      url: msg.url ?? null,
+      imageUrl: msg.imageUrl ?? null,
+      segment: "test",
+      trigger: "test",
       target: res.target,
       sent: res.sent,
       failed: res.failed,

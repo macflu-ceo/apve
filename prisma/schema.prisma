@@ -176,6 +176,8 @@ model PushLog {
   body      String
   /// 링크(딥링크/경로) — 탭 시 이동
   url       String?
+  /// 큰 이미지 URL (푸시에 이미지 첨부 — 안드로이드 BigPicture / iOS 리치 알림)
+  imageUrl  String?
   /// 대상 세그먼트: all | members | guests
   segment   String   @default("all")
   /// manual(수기) | 트리거명

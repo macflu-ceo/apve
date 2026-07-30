@@ -47,9 +47,40 @@ export default async function AdminPush() {
 
       {/* 발송 */}
       <h2 className="mb-3 text-lg font-semibold">새 푸시 발송</h2>
-      <div className="mb-8">
+      <div className="mb-6">
         <PushComposer tokenCount={total} />
       </div>
+
+      {/* 가이드 */}
+      <details className="mb-8 rounded-xl2 border border-line bg-[#fbfaf9] p-4 text-sm">
+        <summary className="cursor-pointer font-bold">📖 앱 푸시 가이드 (열기)</summary>
+        <div className="mt-3 space-y-3 text-ink/80">
+          <div>
+            <b>1. 누구에게 가나요?</b>
+            <br />앱을 설치하고 <b>알림 허용</b>한 기기에만 갑니다. 설치·허용한 기기가 늘수록 "알림 등록 기기" 숫자가 올라가요.
+          </div>
+          <div>
+            <b>2. 이미지 사이즈</b>
+            <br />가로형 <b>2:1 (예: 1200×600)</b> 권장. 너무 세로로 길면 잘립니다. 용량은 1MB 이하가 안전해요.
+          </div>
+          <div>
+            <b>3. 탭 시 이동 링크</b>
+            <br /><code className="rounded bg-white px-1">/timesale</code>, <code className="rounded bg-white px-1">/goods/12345</code> 처럼 사이트 내부 경로를 넣으면 알림을 누를 때 그 화면으로 이동합니다. 비우면 앱 홈으로 열려요.
+          </div>
+          <div>
+            <b>4. 테스트 발송(내 기기 토큰) 얻는 법</b>
+            <br />전체 발송 전에 내 기기로 먼저 확인하세요. 토큰은:
+            <ul className="ml-4 mt-1 list-disc space-y-0.5 text-xs">
+              <li><b>앱 출시 후</b> — 내 폰에 앱 설치 → 알림 허용하면 그 기기 토큰이 자동 등록됩니다. (개발 중엔 앱에서 토큰을 로그로 찍어 복사)</li>
+              <li><b>앱 전(웹 푸시)</b> — 원하시면 <b>브라우저 알림(웹 푸시)</b>도 붙여서 "이 브라우저로 테스트"를 한 번에 되게 해드릴 수 있어요. (Firebase 웹 앱 설정 필요 — 말씀 주세요)</li>
+            </ul>
+          </div>
+          <div>
+            <b>5. 자동 발송(트리거)</b>
+            <br />"판매 발생 시", "골든타임 오픈 시" 같은 <b>특정 행동 자동 알림</b>도 붙일 수 있어요. 지금은 수기 발송이고, 트리거는 다음 단계에서 연결합니다.
+          </div>
+        </div>
+      </details>
 
       {/* 현황(이력) */}
       <h2 className="mb-3 text-lg font-semibold">발송 현황</h2>
@@ -74,8 +105,16 @@ export default async function AdminPush() {
                 <tr key={l.id} className="border-t border-line align-top">
                   <td className="whitespace-nowrap px-3 py-2 text-sub">{fmtDateTime(l.createdAt)}</td>
                   <td className="px-3 py-2">
-                    <div className="font-medium">{l.title}</div>
-                    <div className="line-clamp-1 text-xs text-sub">{l.body}</div>
+                    <div className="flex items-center gap-2">
+                      {l.imageUrl && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={l.imageUrl} alt="" className="h-8 w-8 shrink-0 rounded object-cover" />
+                      )}
+                      <div className="min-w-0">
+                        <div className="font-medium">{l.title}</div>
+                        <div className="line-clamp-1 text-xs text-sub">{l.body}</div>
+                      </div>
+                    </div>
                   </td>
                   <td className="whitespace-nowrap px-3 py-2">{SEG_LABEL[l.segment] ?? l.segment}{l.trigger !== "manual" && <span className="ml-1 rounded bg-brandsoft px-1 text-[10px]">{l.trigger}</span>}</td>
                   <td className="px-3 py-2 text-right tabular-nums">{l.target.toLocaleString()}</td>
