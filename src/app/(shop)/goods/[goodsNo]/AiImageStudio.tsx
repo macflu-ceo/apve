@@ -79,6 +79,26 @@ export default function AiImageStudio({ goodsNo }: { goodsNo: string }) {
     }
   }
 
+  // 이미지 강제 다운로드 (Blob은 타 도메인이라 <a download>가 새 탭으로 열리는 문제 회피)
+  async function downloadImage(url: string) {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("fetch failed");
+      const blob = await res.blob();
+      const objUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = objUrl;
+      a.download = `ai-${goodsNo}-${Date.now()}.png`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(objUrl);
+    } catch {
+      // CORS 등으로 실패하면 새 탭 열기 폴백
+      window.open(url, "_blank");
+    }
+  }
+
   return (
     <div className="mt-3">
       <button type="button" onClick={() => setPanel(!panel)} className="btn-line w-full">
@@ -109,9 +129,13 @@ export default function AiImageStudio({ goodsNo }: { goodsNo: string }) {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={img} alt="AI 생성 이미지" className="w-full" />
               <div className="p-2">
-                <a href={img} download={`ai-${goodsNo}.png`} target="_blank" className="btn-line block w-full text-center text-xs">
+                <button
+                  type="button"
+                  onClick={() => downloadImage(img)}
+                  className="btn-line block w-full text-center text-xs"
+                >
                   ⬇ 이미지 다운로드
-                </a>
+                </button>
               </div>
             </div>
           )}
