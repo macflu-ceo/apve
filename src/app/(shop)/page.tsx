@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import ProductCard from "@/components/ProductCard";
+import ExpandableGrid from "@/components/ExpandableGrid";
 import BannerCarousel from "@/components/BannerCarousel";
 import { getSiteSetting } from "@/lib/settings";
 import { getViewerRate } from "@/lib/grade";
@@ -82,7 +83,7 @@ export default async function HomePage() {
           {sec.products.length === 0 ? (
             <div className="rounded-xl2 bg-[#f7f7f7] p-10 text-center text-sm text-sub">진열된 상품이 없습니다.</div>
           ) : (
-            <div className="grid grid-cols-2 gap-x-3 gap-y-6 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+            <ExpandableGrid limit={15}>
               {sec.products.map((p, idx) => (
                 <ProductCard
                   key={p.id}
@@ -93,7 +94,7 @@ export default async function HomePage() {
                   rank={i === 0 && idx < 3 ? idx + 1 : undefined}
                 />
               ))}
-            </div>
+            </ExpandableGrid>
           )}
         </section>
       ))}
