@@ -3,12 +3,29 @@
 // 클라이언트에서 방문/클릭 이벤트를 서버로 보낸다. 실패는 조용히 무시.
 export function trackEvent(
   kind: "page" | "product" | "click",
-  opts: { path?: string; label?: string; goodsNo?: string } = {}
+  opts: {
+    path?: string;
+    label?: string;
+    goodsNo?: string;
+    referrer?: string;
+    utmSource?: string;
+    utmMedium?: string;
+    utmCampaign?: string;
+  } = {}
 ) {
   try {
     const path = opts.path ?? window.location.pathname;
     if (/^\/(admin|api)/.test(path)) return;
-    const payload = JSON.stringify({ path, kind, label: opts.label, goodsNo: opts.goodsNo });
+    const payload = JSON.stringify({
+      path,
+      kind,
+      label: opts.label,
+      goodsNo: opts.goodsNo,
+      referrer: opts.referrer,
+      utmSource: opts.utmSource,
+      utmMedium: opts.utmMedium,
+      utmCampaign: opts.utmCampaign,
+    });
     // keepalive: 페이지 이탈 중에도 전송 보장
     fetch("/api/track", {
       method: "POST",

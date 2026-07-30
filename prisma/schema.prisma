@@ -161,6 +161,12 @@ model Visit {
   goodsNo   String?
   /// 유입 플랫폼: web | app (웹뷰 래퍼는 커스텀 UA/쿠키로 식별) → 지표 분리
   platform  String   @default("web")
+  /// 유입 경로 — 외부 리퍼러 호스트(예: google.com, naver.com, instagram.com)
+  referrer  String?
+  /// UTM 캠페인 파라미터 (광고/마케팅 효율 측정)
+  utmSource   String?
+  utmMedium   String?
+  utmCampaign String?
   /// 세션 식별자(30분 무활동 시 새 세션) → 방문 횟수 집계
   sessionId String?
   /// KST 기준 날짜 YYYY-MM-DD (일자별 집계·유니크 계산 편의)
@@ -172,6 +178,7 @@ model Visit {
   @@index([platform, day])
   @@index([visitorId, day])
   @@index([partnerId, day])
+  @@index([utmSource, day])
 }
 
 /// 기획전 — 이름 + 상단 배너 + 골라 담은 상품들로 구성된 독립 페이지

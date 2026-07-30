@@ -17,6 +17,10 @@ export async function POST(req: Request) {
       kind?: string;
       label?: string;
       goodsNo?: string;
+      referrer?: string;
+      utmSource?: string;
+      utmMedium?: string;
+      utmCampaign?: string;
     };
 
     let path = (body.path ?? "").slice(0, 300);
@@ -32,8 +36,28 @@ export async function POST(req: Request) {
     const goodsNo = body.goodsNo ?? goodsMatch?.[1] ?? null;
 
     const { visitorId } = getOrSetVisitorId();
-    const { sessionId } = getOrSetSessionId();
+    const { sessionId, isNewSession } = getOrSetSessionId();
     const partner = await getSessionPartner();
+
+    // 유입 경로/UTM 은 세션 첫 진입에만 기록(획득 소스 1회 귀속)
+    let referrer: string | null = null;
+    let utmSource: string | null = null;
+    let utmMedium: string | null = null;
+    let utmCampaign: string | null = null;
+    if (isNewSession) {
+      const rawRef = body.referrer || req.headers.get("referer") || "";
+      const selfHost = req.headers.get("host") ?? "";
+      try {
+        const h = rawRef ? new URL(rawRef).host : "";
+        if (h && h !== selfHost) referrer = h.replace(/^www\./, "").slice(0, 80);
+      } catch {
+        /* 유효하지 않은 리퍼러 무시 */
+      }
+      const clip = (v?: string) => (v ? v.slice(0, 60) : null);
+      utmSource = clip(body.utmSource);
+      utmMedium = clip(body.utmMedium);
+      utmCampaign = clip(body.utmCampaign);
+    }
 
     await prisma.visit.create({
       data: {
@@ -45,6 +69,10 @@ export async function POST(req: Request) {
         label: body.label ? body.label.slice(0, 40) : null,
         goodsNo,
         platform: getPlatform(),
+        referrer,
+        utmSource,
+        utmMedium,
+        utmCampaign,
         day: kstDay(),
       },
     });
