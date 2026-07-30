@@ -20,6 +20,7 @@ export type CatalogSort = "new" | "sales" | "margin" | "priceHigh" | "priceLow";
 export interface CatalogFilters {
   newDays?: number; // 최근 N일 등록 신상만 (0/미지정=전체)
   brand?: string; // 브랜드명 부분일치
+  tag?: string; // 검색태그(naverTag) 부분일치 — 예: 국내배송
   minMargin?: number; // 최소 마진율 %
   inStock?: boolean; // 품절 제외
   sort?: CatalogSort; // 정렬 (기본 new)
@@ -33,6 +34,7 @@ export interface CatalogItem {
   brand: string; // 제조사=브랜드 (makerNm)
   origin: string; // 원산지
   brandCd: string;
+  searchTag: string; // 검색태그(naverTag) — 예: "국내배송"
   sellPrice: number; // 판매가
   listPrice: number; // 정가(시중가)
   costPrice: number; // 공급가(매입원가) — 내부용
@@ -61,6 +63,7 @@ export async function fetchCatalog(filters: CatalogFilters = {}): Promise<Catalo
   const url = new URL(catalogUrl());
   if (filters.newDays && filters.newDays > 0) url.searchParams.set("newDays", String(filters.newDays));
   if (filters.brand) url.searchParams.set("brand", filters.brand);
+  if (filters.tag) url.searchParams.set("tag", filters.tag);
   if (filters.minMargin && filters.minMargin > 0) url.searchParams.set("minMargin", String(filters.minMargin));
   if (filters.inStock) url.searchParams.set("inStock", "1");
   if (filters.sort) url.searchParams.set("sort", filters.sort);
@@ -86,4 +89,18 @@ export async function fetchCatalog(filters: CatalogFilters = {}): Promise<Catalo
     sort: (data?.sort as CatalogSort) ?? filters.sort ?? "new",
     list,
   };
+}
+
+/** "국내배송" 검색태그가 달린 상품들의 goodsNo 집합 (페이지 넘겨가며 전부 수집) */
+export async function fetchDomesticGoodsNos(): Promise<Set<string>> {
+  const set = new Set<string>();
+  for (let page = 1; page <= 30; page++) {
+    const r = await fetchCatalog({ tag: "국내배송", limit: 200, page });
+    for (const i of r.list) {
+      // searchTag(naverTag)에 "국내배송"이 실제로 포함된 것만 (부분일치 오탐 방지)
+      if ((i.searchTag ?? "").includes("국내배송")) set.add(i.goodsNo);
+    }
+    if (r.list.length < 200) break; // 마지막 페이지
+  }
+  return set;
 }

@@ -6,6 +6,7 @@ import { isAdmin } from "@/lib/admin";
 import { parseSeason } from "@/lib/season";
 import { refreshStock } from "@/lib/godomall/stock";
 import { upsertFromUrl, importFromLinksText, toGoodsUrl } from "@/lib/godomall/import";
+import { fetchDomesticGoodsNos } from "@/lib/godomall/catalog";
 
 /** 상품 노출/원산지/태그 수정 (수수료율은 회원 등급에 귀속) */
 export async function updateProduct(
@@ -109,5 +110,39 @@ export async function refreshAllStockAction() {
     return { ok: true, message: parts.join(" · ") };
   } catch (e) {
     return { ok: false, message: e instanceof Error ? e.message : "재고 갱신 실패" };
+  }
+}
+
+/**
+ * 국내배송 동기화 — 고도몰 검색태그(naverTag "국내배송")를 상품 태그에 반영.
+ * 국내배송 상품엔 "국내배송" 태그 추가, 아닌 상품엔 제거. (상품 상세페이지 배송표시에 사용)
+ */
+export async function syncDomesticTags() {
+  if (!isAdmin()) return { ok: false, message: "권한이 없습니다." };
+  try {
+    const domestic = await fetchDomesticGoodsNos();
+    const products = await prisma.product.findMany({ select: { id: true, goodsNo: true, tagsJson: true } });
+    let added = 0;
+    let removed = 0;
+    for (const p of products) {
+      let tags: string[] = [];
+      try {
+        const parsed = JSON.parse(p.tagsJson ?? "[]");
+        if (Array.isArray(parsed)) tags = parsed.filter((t) => typeof t === "string");
+      } catch {
+        tags = [];
+      }
+      const has = tags.includes("국내배송");
+      const shouldHave = domestic.has(p.goodsNo);
+      if (has === shouldHave) continue;
+      const next = shouldHave ? [...tags, "국내배송"] : tags.filter((t) => t !== "국내배송");
+      await prisma.product.update({ where: { id: p.id }, data: { tagsJson: JSON.stringify(next) } });
+      shouldHave ? added++ : removed++;
+    }
+    revalidatePath("/admin/products");
+    revalidatePath("/");
+    return { ok: true, message: `국내배송 동기화 — 추가 ${added} · 해제 ${removed} (고도몰 국내배송 ${domestic.size}개)` };
+  } catch (e) {
+    return { ok: false, message: e instanceof Error ? e.message : "국내배송 동기화 실패" };
   }
 }

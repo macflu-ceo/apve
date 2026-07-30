@@ -56,6 +56,7 @@ export default async function GoodsPage({ params }: { params: { goodsNo: string 
   const images = parseList(product.imagesJson);
   const sizes = parseList(product.sizesJson);
   const sizeSys = sizeSystem(product.brand); // IT | FR | null (브랜드 본국 기준)
+  const domestic = parseList(product.tagsJson).includes("국내배송"); // 국내배송 여부
   // 사이즈별 재고 {"L":3,"M":2}
   const sizeStock: Record<string, number> = (() => {
     try {
@@ -162,6 +163,27 @@ export default async function GoodsPage({ params }: { params: { goodsNo: string 
             <span className="text-lg font-extrabold text-brand">{won(expectedCommission)}</span>
           </div>
         )}
+
+        {/* 배송 안내 */}
+        <div
+          className={`mt-4 flex items-center gap-2 rounded-xl2 p-3 text-sm ${
+            domestic ? "bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200" : "bg-[#f4f1ea] text-ink/80"
+          }`}
+        >
+          {domestic ? (
+            <>
+              <span className="text-base">🇰🇷</span>
+              <span><b>국내배송</b> · 결제 후 <b>2~3일 이내</b> 도착</span>
+            </>
+          ) : (
+            <>
+              <span className="text-base">✈️</span>
+              <span>
+                {product.origin ? `${product.origin} ` : ""}<b>해외배송</b> · 통관 포함 <b>약 2주</b> 소요
+              </span>
+            </>
+          )}
+        </div>
 
         {/* 상품 정보 */}
         <dl className="mt-5 space-y-2 border-t border-line pt-5 text-sm">
