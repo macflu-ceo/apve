@@ -75,6 +75,9 @@ type Row = {
   visits: number;        // 방문 횟수(세션)
   productViews: number;  // 상품 조회수
   lastVisitAt: Date | null;
+  vAvail: number;        // 20% 바우처 — 사용가능
+  vApplied: number;      // 적용중
+  vUsed: number;         // 사용완료
   residentNoEnc: string | null;
   address: string | null;
   bankName: string | null;
@@ -99,6 +102,7 @@ const SORTERS: Record<string, (a: Row, b: Row) => number> = {
   saleCount: (a, b) => a.saleCount - b.saleCount,
   commission: (a, b) => a.commission - b.commission,
   visits: (a, b) => a.visits - b.visits,
+  vAvail: (a, b) => a.vAvail - b.vAvail,
   productViews: (a, b) => a.productViews - b.productViews,
   lastVisitAt: (a, b) => (a.lastVisitAt?.getTime() ?? 0) - (b.lastVisitAt?.getTime() ?? 0),
 };
@@ -138,7 +142,7 @@ export default async function AdminPartners({ searchParams }: { searchParams: SP
   const engFrom = basis === "activity" && from ? from : undefined;
   const engTo = basis === "activity" && to ? to : undefined;
 
-  const [partners, grades, aiAgg, linkAgg, saleAgg, saleTotalAgg, pendingList, engMap] = await Promise.all([
+  const [partners, grades, aiAgg, linkAgg, saleAgg, saleTotalAgg, pendingList, engMap, voucherAgg] = await Promise.all([
     prisma.partner.findMany({ where: partnerWhere }),
     listGrades(),
     prisma.tryOnImage.groupBy({
@@ -161,6 +165,8 @@ export default async function AdminPartners({ searchParams }: { searchParams: SP
     prisma.sale.groupBy({ by: ["partnerId"], _count: { _all: true } }),
     prisma.partner.findMany({ where: { status: "pending" }, orderBy: { createdAt: "desc" } }),
     getPartnerEngagement(engFrom, engTo),
+    // 20% 바우처는 항상 전체 누적 (기간 무관)
+    prisma.rewardVoucher.groupBy({ by: ["partnerId", "status"], _count: { _all: true } }),
   ]);
 
   const gradeOptions = grades.map((g) => ({ id: g.id, name: g.name, percent: g.percent }));
@@ -171,8 +177,18 @@ export default async function AdminPartners({ searchParams }: { searchParams: SP
   const linkMap = new Map(linkAgg.map((r) => [r.partnerId, r._count._all]));
   const saleMap = new Map(saleAgg.map((r) => [r.partnerId, r]));
   const saleTotalMap = new Map(saleTotalAgg.map((r) => [r.partnerId, r._count._all]));
+  // 파트너별 바우처 상태 집계
+  const vMap = new Map<string, { avail: number; applied: number; used: number }>();
+  for (const r of voucherAgg) {
+    const cur = vMap.get(r.partnerId) ?? { avail: 0, applied: 0, used: 0 };
+    if (r.status === "available") cur.avail += r._count._all;
+    else if (r.status === "applied") cur.applied += r._count._all;
+    else if (r.status === "used") cur.used += r._count._all;
+    vMap.set(r.partnerId, cur);
+  }
 
   const rows: Row[] = partners.map((p) => {
+    const vc = vMap.get(p.id) ?? { avail: 0, applied: 0, used: 0 };
     const totalSaleCount = saleTotalMap.get(p.id) ?? 0;
     const s = saleMap.get(p.id);
     const eng = engMap.get(p.id);
@@ -201,6 +217,9 @@ export default async function AdminPartners({ searchParams }: { searchParams: SP
       visits: eng?.sessions ?? 0,
       productViews: eng?.productViews ?? 0,
       lastVisitAt: eng?.lastVisit ?? null,
+      vAvail: vc.avail,
+      vApplied: vc.applied,
+      vUsed: vc.used,
       residentNoEnc: p.residentNoEnc,
       address: p.address,
       bankName: p.bankName,
@@ -393,12 +412,13 @@ export default async function AdminPartners({ searchParams }: { searchParams: SP
                 <Th k="linkCount" label="코드 생성" right />
                 <Th k="saleCount" label="판매" right />
                 <Th k="commission" label="수수료" right />
+                <Th k="vAvail" label="20% 바우처" right />
               </tr>
             </thead>
             <tbody>
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={16} className="py-8 text-center text-sub">
+                  <td colSpan={17} className="py-8 text-center text-sub">
                     조건에 맞는 회원이 없습니다.
                   </td>
                 </tr>
@@ -455,6 +475,17 @@ export default async function AdminPartners({ searchParams }: { searchParams: SP
                   <td className="whitespace-nowrap text-right font-semibold tabular-nums text-brand">
                     {won(p.commission)}
                   </td>
+                  <td className="whitespace-nowrap text-right text-xs tabular-nums">
+                    {p.vAvail + p.vApplied + p.vUsed === 0 ? (
+                      <span className="text-sub">-</span>
+                    ) : (
+                      <span className="inline-flex gap-1">
+                        {p.vAvail > 0 && <span className="rounded bg-emerald-100 px-1 py-0.5 font-bold text-emerald-700">가능 {p.vAvail}</span>}
+                        {p.vApplied > 0 && <span className="rounded bg-amber-100 px-1 py-0.5 font-bold text-amber-700">적용 {p.vApplied}</span>}
+                        {p.vUsed > 0 && <span className="rounded bg-line px-1 py-0.5 text-sub">완료 {p.vUsed}</span>}
+                      </span>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -472,6 +503,9 @@ export default async function AdminPartners({ searchParams }: { searchParams: SP
                   <td className="text-right tabular-nums">{sum.linkCount.toLocaleString()}</td>
                   <td className="text-right tabular-nums">{sum.saleCount.toLocaleString()}</td>
                   <td className="whitespace-nowrap text-right tabular-nums text-brand">{won(sum.commission)}</td>
+                  <td className="text-right text-xs tabular-nums text-emerald-700">
+                    가능 {rows.reduce((s, r) => s + r.vAvail, 0).toLocaleString()}
+                  </td>
                 </tr>
               </tfoot>
             )}
