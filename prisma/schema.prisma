@@ -88,6 +88,38 @@ model Partner {
   aiImages TryOnImage[]
   communityPosts CommunityPost[]
   vouchers RewardVoucher[]
+  rewardSubmissions RewardSubmission[]
+}
+
+/// 커뮤니티 카테고리 (어드민에서 추가/삭제/노출) — CommunityPost.category 가 key를 참조
+model CommunityCategory {
+  id        String   @id @default(cuid())
+  /// 게시글에 저장되는 슬러그 (예: knowhow)
+  key       String   @unique
+  label     String
+  active    Boolean  @default(true)
+  sort      Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
+/// 리뷰/홍보 인증 제출 — 커뮤니티에 공개되지 않고 관리자만 확인, 승인 시 20% 바우처 지급
+model RewardSubmission {
+  id         String   @id @default(cuid())
+  partner    Partner  @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  partnerId  String
+  /// review(리뷰인증) | promo(홍보인증)
+  type       String
+  content    String
+  imagesJson String?
+  /// pending(검토중) | approved(승인·보상지급) | rejected(반려)
+  status     String   @default("pending")
+  rewarded   Boolean  @default(false)
+  memo       String?
+  createdAt  DateTime @default(now())
+  reviewedAt DateTime?
+
+  @@index([status, createdAt])
+  @@index([partnerId, createdAt])
 }
 
 /// 커뮤니티 게시글 — 회원이 작성 (리뷰인증·홍보인증·판매노하우). 공지/가이드(Post)와 별개.

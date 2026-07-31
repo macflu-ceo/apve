@@ -2,7 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { parseList } from "@/lib/format";
 import { getSessionPartner } from "@/lib/auth";
-import { getCommunityPosts, COMMUNITY_CATEGORIES, categoryLabel, displayAuthor } from "@/lib/community";
+import { getCommunityPosts, getActiveCommunityCategories, categoryLabelMap, displayAuthor } from "@/lib/community";
 
 export const dynamic = "force-dynamic";
 
@@ -13,12 +13,15 @@ function fmt(d: Date) {
 
 export default async function CommunityPage({ searchParams }: { searchParams: { cat?: string } }) {
   const cat = searchParams.cat;
-  const [posts, pinned, partner] = await Promise.all([
+  const [posts, pinned, partner, categories, labels] = await Promise.all([
     getCommunityPosts(cat, 60),
     prisma.post.findMany({ where: { pinned: true, published: true }, orderBy: { createdAt: "desc" }, take: 3 }),
     getSessionPartner(),
+    getActiveCommunityCategories(),
+    categoryLabelMap(),
   ]);
   const canWrite = partner?.status === "approved";
+  const catLabel = (k: string) => labels.get(k) ?? k;
 
   return (
     <div className="px-4 pb-24 pt-6">
@@ -48,13 +51,15 @@ export default async function CommunityPage({ searchParams }: { searchParams: { 
         </div>
       )}
 
-      {/* 카테고리 탭 */}
-      <div className="mb-4 flex flex-wrap gap-1.5">
-        <Tab active={!cat} href="/community" label="전체" />
-        {COMMUNITY_CATEGORIES.map((c) => (
-          <Tab key={c.key} active={cat === c.key} href={`/community?cat=${c.key}`} label={c.label} />
-        ))}
-      </div>
+      {/* 카테고리 탭 (2개 이상일 때만 노출) */}
+      {categories.length > 1 && (
+        <div className="mb-4 flex flex-wrap gap-1.5">
+          <Tab active={!cat} href="/community" label="전체" />
+          {categories.map((c) => (
+            <Tab key={c.key} active={cat === c.key} href={`/community?cat=${c.key}`} label={c.label} />
+          ))}
+        </div>
+      )}
 
       {/* 목록 */}
       {posts.length === 0 ? (
@@ -79,13 +84,8 @@ export default async function CommunityPage({ searchParams }: { searchParams: { 
                   <div className="flex items-center gap-1.5">
                     {p.pinned && <span className="text-brand">📌</span>}
                     <span className="rounded bg-brandsoft px-1.5 py-0.5 text-[10px] font-bold text-brand">
-                      {categoryLabel(p.category)}
+                      {catLabel(p.category)}
                     </span>
-                    {p.rewarded && (
-                      <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-700">
-                        20% 인증
-                      </span>
-                    )}
                   </div>
                   <div className="mt-1 line-clamp-1 font-medium">{p.title}</div>
                   <div className="mt-0.5 line-clamp-1 text-xs text-sub">{p.content}</div>

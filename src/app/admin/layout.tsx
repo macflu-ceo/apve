@@ -38,6 +38,7 @@ const ADMIN_GROUPS = [
       { href: "/admin/crm", label: "CRM(메시지 발송)" },
       { href: "/admin/push", label: "앱 푸시" },
       { href: "/admin/community", label: "커뮤니티 관리" },
+      { href: "/admin/rewards", label: "리뷰·홍보 인증(보상)" },
       { href: "/admin/posts", label: "공지/가이드(게시판)" },
     ],
   },

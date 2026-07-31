@@ -6,6 +6,7 @@ import { getPartnerGrade } from "@/lib/grade";
 import LoginPromptButton from "@/components/auth/LoginPromptButton";
 import SettlementForm from "./SettlementForm";
 import NicknameEditor from "./NicknameEditor";
+import RewardSubmitBox from "./RewardSubmitBox";
 import { SETTLEMENT_POLICY } from "@/lib/terms";
 
 export const dynamic = "force-dynamic";
@@ -39,6 +40,9 @@ export default async function MyPage() {
     prisma.sale.findMany({ where: { partnerId: partner.id }, orderBy: { orderedAt: "desc" } }),
     prisma.rewardVoucher.findMany({ where: { partnerId: partner.id }, orderBy: { createdAt: "desc" } }),
   ]);
+  const submissions = isApproved
+    ? await prisma.rewardSubmission.findMany({ where: { partnerId: partner.id }, orderBy: { createdAt: "desc" }, take: 10 })
+    : [];
   // 바우처에 적용된 상품명 매핑
   const vProductIds = [...new Set(vouchers.map((v) => v.productId).filter(Boolean) as string[])];
   const vProducts = vProductIds.length
@@ -144,6 +148,16 @@ export default async function MyPage() {
 
           {/* 정산 정보 (2단계) */}
           <SettlementForm status={partner.settlementStatus} minPayout={SETTLEMENT_POLICY.minPayout} />
+
+          {/* 리뷰·홍보 인증 → 20% 바우처 */}
+          <RewardSubmitBox
+            submissions={submissions.map((s) => ({
+              id: s.id,
+              type: s.type,
+              status: s.status,
+              createdAt: new Date(s.createdAt.getTime() + 9 * 3600_000).toISOString().slice(5, 10),
+            }))}
+          />
 
           {/* 20% 보상 바우처 */}
           {vouchers.length > 0 && (

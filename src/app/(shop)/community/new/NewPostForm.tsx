@@ -3,15 +3,14 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import ImageUploader from "@/components/ImageUploader";
-import { COMMUNITY_CATEGORIES } from "@/lib/community";
 import { createCommunityPost } from "../actions";
 
-export default function NewPostForm() {
+export default function NewPostForm({ categories }: { categories: { key: string; label: string }[] }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<string | null>(null);
 
-  const [category, setCategory] = useState<string>(COMMUNITY_CATEGORIES[0].key);
+  const [category, setCategory] = useState<string>(categories[0]?.key ?? "");
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [images, setImages] = useState<string[]>([""]);
@@ -45,7 +44,7 @@ export default function NewPostForm() {
       <div>
         <label className="text-sm font-medium">카테고리</label>
         <div className="mt-1 flex flex-wrap gap-1.5">
-          {COMMUNITY_CATEGORIES.map((c) => (
+          {categories.map((c) => (
             <button
               key={c.key}
               type="button"

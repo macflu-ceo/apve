@@ -1,11 +1,14 @@
+import { Fragment } from "react";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import ProductCard from "@/components/ProductCard";
 import ExpandableGrid from "@/components/ExpandableGrid";
 import BannerCarousel from "@/components/BannerCarousel";
+import KnowhowStrip from "@/components/KnowhowStrip";
 import { getSiteSetting } from "@/lib/settings";
 import { getViewerRate } from "@/lib/grade";
 import { getActiveBoostMap } from "@/lib/timesale";
+import { getLatestCommunityPosts } from "@/lib/community";
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +37,7 @@ export default async function HomePage() {
   ]);
   const rate = await getViewerRate();
   const boostMap = await getActiveBoostMap();
+  const knowhow = await getLatestCommunityPosts(8);
 
   const banners = dbBanners.length > 0 ? dbBanners : DEFAULT_BANNERS;
   const categories = dbCategories.length > 0 ? dbCategories : DEFAULT_CHIPS;
@@ -76,7 +80,8 @@ export default async function HomePage() {
 
       {/* 섹션들 (타이틀 + 상품, 아래로 쭉) */}
       {sections.map((sec, i) => (
-        <section key={i} className="px-4 pb-10">
+        <Fragment key={i}>
+        <section className="px-4 pb-10">
           <div className="mb-1 text-xl font-black">{sec.title}</div>
           {sec.subtitle && <p className="mb-4 text-sm text-sub">{sec.subtitle}</p>}
 
@@ -97,6 +102,9 @@ export default async function HomePage() {
             </ExpandableGrid>
           )}
         </section>
+        {/* 첫 섹션 뒤에 최신 판매노하우 미리보기 삽입 */}
+        {i === 0 && <KnowhowStrip posts={knowhow} />}
+        </Fragment>
       ))}
 
       {allProducts.length === 0 && (
