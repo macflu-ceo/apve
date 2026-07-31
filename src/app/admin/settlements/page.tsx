@@ -24,13 +24,14 @@ export default async function AdminSettlements() {
   // 파트너별 집계
   const groups = new Map<
     string,
-    { partner: NonNullable<(typeof unpaid)[number]["partner"]>; count: number; gross: number }
+    { partner: NonNullable<(typeof unpaid)[number]["partner"]>; count: number; gross: number; boost: number }
   >();
   for (const s of unpaid) {
     if (!s.partner) continue;
-    const g = groups.get(s.partner.id) ?? { partner: s.partner, count: 0, gross: 0 };
+    const g = groups.get(s.partner.id) ?? { partner: s.partner, count: 0, gross: 0, boost: 0 };
     g.count += 1;
     g.gross += s.commission;
+    if (s.boost20) g.boost += 1;
     groups.set(s.partner.id, g);
   }
   const rows = [...groups.values()].sort((a, b) => b.gross - a.gross);
@@ -122,7 +123,12 @@ export default async function AdminSettlements() {
                           <span className="rounded-full bg-deal/15 px-2 py-0.5 text-xs font-bold text-deal">등록됨</span>
                         )}
                       </td>
-                      <td className="text-right tabular-nums">{r.count}건</td>
+                      <td className="text-right tabular-nums">
+                        {r.count}건
+                        {r.boost > 0 && (
+                          <span className="ml-1 rounded bg-amber-100 px-1 py-0.5 text-[10px] font-bold text-amber-700">20% {r.boost}건</span>
+                        )}
+                      </td>
                       <td className="text-right font-semibold tabular-nums text-brand">{won(r.gross)}</td>
                       <td className="text-right tabular-nums text-sub">-{won(wh)}</td>
                       <td className="text-right font-bold tabular-nums">

@@ -12,8 +12,10 @@ import SizeGuideModal from "@/components/SizeGuideModal";
 import ProductGallery from "@/components/ProductGallery";
 import { keepProductImages } from "@/lib/godomall/scrape";
 import { sizeSystem, sizeSystemLabel, displaySize, isOneSizeOnly } from "@/lib/sizeSystem";
+import { voucherCounts } from "@/lib/voucher";
 import CodeButton from "./CodeButton";
 import AiImageStudio from "./AiImageStudio";
+import VoucherApplyButton from "./VoucherApplyButton";
 
 export const dynamic = "force-dynamic";
 
@@ -56,6 +58,19 @@ export default async function GoodsPage({ params }: { params: { goodsNo: string 
   // 조회수 기록 (비차단)
   const viewer = await getSessionPartner();
   await logProductView(product.id, viewer?.id);
+
+  // 20% 바우처 상태 (승인 회원만)
+  let voucher: { available: number; appliedHere: "applied" | "used" | null } | null = null;
+  if (viewer?.status === "approved") {
+    const [counts, here] = await Promise.all([
+      voucherCounts(viewer.id),
+      prisma.rewardVoucher.findFirst({
+        where: { partnerId: viewer.id, productId: product.id, status: { in: ["applied", "used"] } },
+        select: { status: true },
+      }),
+    ]);
+    voucher = { available: counts.available, appliedHere: (here?.status as "applied" | "used" | undefined) ?? null };
+  }
 
   const images = parseList(product.imagesJson);
   const galleryImages = keepProductImages(images); // 공통 배너·깨진 링크 제외 (기존 상품도 즉시 적용)
@@ -265,6 +280,15 @@ export default async function GoodsPage({ params }: { params: { goodsNo: string 
 
         {/* 내 코드 만들기 */}
         <CodeButton goodsNo={product.goodsNo} />
+
+        {/* 20% 보상 바우처 적용 */}
+        {voucher && (
+          <VoucherApplyButton
+            goodsNo={product.goodsNo}
+            available={voucher.available}
+            appliedHere={voucher.appliedHere}
+          />
+        )}
 
         {/* AI 이미지 생성 */}
         <AiImageStudio goodsNo={product.goodsNo} />

@@ -5,6 +5,8 @@ import { partnerLink } from "@/lib/godomall/link";
 import { getSessionPartner } from "@/lib/auth";
 import { getPlatform } from "@/lib/platform";
 import { getSiteSetting } from "@/lib/settings";
+import { applyVoucherToProduct, unapplyVoucher } from "@/lib/voucher";
+import { revalidatePath } from "next/cache";
 
 type IssueResult =
   | { ok: true; url: string; code: string }
@@ -75,4 +77,32 @@ export async function issueLink(goodsNo: string): Promise<IssueResult> {
   });
 
   return { ok: true, url, code: partner.code };
+}
+
+/** 이 상품에 20% 바우처 적용 (버튼) */
+export async function applyProductVoucher(goodsNo: string) {
+  const partner = await getSessionPartner();
+  if (!partner) return { ok: false, message: "로그인이 필요합니다." };
+  if (partner.status !== "approved") return { ok: false, message: "승인된 회원만 이용할 수 있습니다." };
+  const product = await prisma.product.findUnique({ where: { goodsNo }, select: { id: true } });
+  if (!product) return { ok: false, message: "상품을 찾을 수 없습니다." };
+  const r = await applyVoucherToProduct(partner.id, product.id);
+  if (r.ok) revalidatePath(`/goods/${goodsNo}`);
+  return r;
+}
+
+/** 이 상품에 적용한 바우처 취소 (판매 전) */
+export async function unapplyProductVoucher(goodsNo: string) {
+  const partner = await getSessionPartner();
+  if (!partner) return { ok: false, message: "로그인이 필요합니다." };
+  const product = await prisma.product.findUnique({ where: { goodsNo }, select: { id: true } });
+  if (!product) return { ok: false, message: "상품을 찾을 수 없습니다." };
+  const v = await prisma.rewardVoucher.findFirst({
+    where: { partnerId: partner.id, productId: product.id, status: "applied" },
+    select: { id: true },
+  });
+  if (!v) return { ok: false, message: "적용중인 바우처가 없습니다." };
+  const r = await unapplyVoucher(partner.id, v.id);
+  if (r.ok) revalidatePath(`/goods/${goodsNo}`);
+  return r;
 }

@@ -33,10 +33,18 @@ export default async function MyPage() {
   // 첫구매/일반(시스템 등급)이 아닌 커스텀 등급 = 이미 업그레이드된 회원
   const isUpgraded = isApproved && !!myGrade && myGrade.systemKey == null;
 
-  const [links, sales] = await Promise.all([
+  const [links, sales, vouchers] = await Promise.all([
     prisma.issuedLink.findMany({ where: { partnerId: partner.id }, include: { product: true }, orderBy: { createdAt: "desc" } }),
     prisma.sale.findMany({ where: { partnerId: partner.id }, orderBy: { orderedAt: "desc" } }),
+    prisma.rewardVoucher.findMany({ where: { partnerId: partner.id }, orderBy: { createdAt: "desc" } }),
   ]);
+  // 바우처에 적용된 상품명 매핑
+  const vProductIds = [...new Set(vouchers.map((v) => v.productId).filter(Boolean) as string[])];
+  const vProducts = vProductIds.length
+    ? await prisma.product.findMany({ where: { id: { in: vProductIds } }, select: { id: true, name: true } })
+    : [];
+  const vProductName = new Map(vProducts.map((p) => [p.id, p.name]));
+  const vAvail = vouchers.filter((v) => v.status === "available").length;
   // 매출·수익은 취소/반품 제외
   const validSales = sales.filter((s) => s.status !== "canceled");
   const totalAmount = validSales.reduce((s, x) => s + x.amount, 0);
@@ -133,6 +141,44 @@ export default async function MyPage() {
           {/* 정산 정보 (2단계) */}
           <SettlementForm status={partner.settlementStatus} minPayout={SETTLEMENT_POLICY.minPayout} />
 
+          {/* 20% 보상 바우처 */}
+          {vouchers.length > 0 && (
+            <section>
+              <h2 className="mb-1 text-lg font-semibold">⭐ 내 20% 바우처</h2>
+              <p className="mb-3 text-xs text-sub">
+                커뮤니티 보상으로 받은 20% 바우처입니다. 원하는 상품 상세에서 <b>적용</b>하면 그 상품 <b>최초 판매 1건</b>에 20%가 적용돼요.
+              </p>
+              <div className="mb-2 rounded-xl2 bg-amber-50 p-3 text-sm ring-1 ring-amber-200">
+                사용 가능: <b className="text-amber-700">{vAvail}개</b>
+                {vAvail > 0 && <span className="text-amber-700/80"> · 상품 상세페이지에서 적용하세요</span>}
+              </div>
+              <ul className="space-y-1.5">
+                {vouchers.map((v) => {
+                  const label =
+                    v.status === "available"
+                      ? { t: "사용 가능", c: "bg-emerald-100 text-emerald-700" }
+                      : v.status === "applied"
+                        ? { t: "적용 중", c: "bg-amber-100 text-amber-700" }
+                        : { t: "사용 완료", c: "bg-line text-sub" };
+                  return (
+                    <li key={v.id} className="card flex items-center justify-between gap-2 p-3 text-sm">
+                      <div className="min-w-0">
+                        <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${label.c}`}>{label.t}</span>
+                        <span className="ml-2 text-xs text-sub">{v.reason}</span>
+                        {v.productId && (
+                          <div className="mt-0.5 truncate text-xs">
+                            → {vProductName.get(v.productId) ?? "상품"}
+                            {v.status === "used" && <span className="ml-1 font-bold text-amber-700">20% 적용됨</span>}
+                          </div>
+                        )}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          )}
+
           {/* 판매내역 */}
           <section>
             <h2 className="mb-3 text-lg font-semibold">판매내역</h2>
@@ -164,6 +210,9 @@ export default async function MyPage() {
                           <td className="whitespace-nowrap text-right tabular-nums">{won(s.amount)}</td>
                           <td className="whitespace-nowrap text-right font-semibold tabular-nums text-brand">
                             {s.status === "canceled" ? "-" : won(s.commission)}
+                            {s.boost20 && (
+                              <span className="ml-1 rounded bg-amber-100 px-1 py-0.5 text-[10px] font-bold text-amber-700">20%</span>
+                            )}
                           </td>
                           <td className={`whitespace-nowrap text-xs font-bold ${st.cls}`}>{st.label}</td>
                         </tr>
