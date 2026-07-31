@@ -159,17 +159,21 @@ export default async function MyPage() {
             }))}
           />
 
-          {/* 20% 보상 바우처 */}
-          {vouchers.length > 0 && (
-            <section>
-              <h2 className="mb-1 text-lg font-semibold">⭐ 내 20% 바우처</h2>
-              <p className="mb-3 text-xs text-sub">
-                커뮤니티 보상으로 받은 20% 바우처입니다. 원하는 상품 상세에서 <b>적용</b>하면 그 상품 <b>최초 판매 1건</b>에 20%가 적용돼요.
-              </p>
-              <div className="mb-2 rounded-xl2 bg-amber-50 p-3 text-sm ring-1 ring-amber-200">
-                사용 가능: <b className="text-amber-700">{vAvail}개</b>
-                {vAvail > 0 && <span className="text-amber-700/80"> · 상품 상세페이지에서 적용하세요</span>}
-              </div>
+          {/* 20% 보상 바우처 (항상 표시) */}
+          <section>
+            <h2 className="mb-1 text-lg font-semibold">⭐ 내 20% 바우처</h2>
+            <p className="mb-3 text-xs text-sub">
+              인증 보상으로 받은 20% 바우처입니다. 원하는 상품 상세에서 <b>적용</b>하면 그 상품 <b>최초 판매 1건</b>에 20%가 적용돼요.
+            </p>
+            <div className="mb-2 rounded-xl2 bg-amber-50 p-3 text-sm ring-1 ring-amber-200">
+              사용 가능: <b className="text-amber-700">{vAvail}개</b>
+              {vAvail > 0 ? (
+                <span className="text-amber-700/80"> · 상품 상세페이지에서 적용하세요</span>
+              ) : (
+                <span className="text-amber-700/80"> · 위에서 리뷰·홍보 인증을 제출하면 받을 수 있어요</span>
+              )}
+            </div>
+            {vouchers.length > 0 && (
               <ul className="space-y-1.5">
                 {vouchers.map((v) => {
                   const label =
@@ -194,8 +198,8 @@ export default async function MyPage() {
                   );
                 })}
               </ul>
-            </section>
-          )}
+            )}
+          </section>
 
           {/* 판매내역 */}
           <section>

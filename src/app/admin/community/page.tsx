@@ -27,6 +27,7 @@ export default async function AdminCommunity() {
     author: displayAuthor(p.partner),
     hidden: p.hidden,
     pinned: p.pinned,
+    rewarded: p.rewarded,
     hasImage: !!p.imagesJson,
     createdAt: fmt(p.createdAt),
   }));
@@ -51,6 +52,7 @@ export default async function AdminCommunity() {
             <thead className="bg-[#f7f6f4] text-left text-xs text-sub">
               <tr>
                 <th className="px-3 py-2">글</th>
+                <th className="px-3 py-2 text-center">보상</th>
                 <th className="px-3 py-2 text-right">관리</th>
               </tr>
             </thead>

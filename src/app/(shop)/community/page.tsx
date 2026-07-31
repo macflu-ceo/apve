@@ -89,8 +89,9 @@ export default async function CommunityPage({ searchParams }: { searchParams: { 
                   </div>
                   <div className="mt-1 line-clamp-1 font-medium">{p.title}</div>
                   <div className="mt-0.5 line-clamp-1 text-xs text-sub">{p.content}</div>
-                  <div className="mt-1 text-[11px] text-sub">
-                    {displayAuthor(p.partner)} · {fmt(p.createdAt)}
+                  <div className="mt-1 flex items-center gap-2 text-[11px] text-sub">
+                    <span>{displayAuthor(p.partner)} · {fmt(p.createdAt)}</span>
+                    <span className="ml-auto">❤️ {p._count.likes} · 💬 {p._count.comments}</span>
                   </div>
                 </div>
               </Link>

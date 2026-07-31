@@ -23,6 +23,21 @@ export async function approveReward(id: string) {
   return { ok: true, message: "승인하고 20% 바우처를 지급했습니다." };
 }
 
+/** 아이디로 회원에게 20% 바우처 직접 지급 */
+export async function grantVoucherByUsername(username: string, count: number) {
+  if (!isAdmin()) return { ok: false, message: "권한이 없습니다." };
+  const u = username.trim();
+  if (!u) return { ok: false, message: "회원 아이디를 입력하세요." };
+  const n = Math.max(1, Math.min(20, Math.floor(count) || 1));
+  const partner = await prisma.partner.findUnique({ where: { username: u }, select: { id: true, name: true } });
+  if (!partner) return { ok: false, message: "해당 아이디의 회원이 없습니다." };
+  await prisma.rewardVoucher.createMany({
+    data: Array.from({ length: n }, () => ({ partnerId: partner.id, reason: "운영자 직접 지급" })),
+  });
+  revalidatePath("/admin/rewards");
+  return { ok: true, message: `${partner.name} 님에게 ${n}개 지급했습니다.` };
+}
+
 export async function rejectReward(id: string) {
   if (!isAdmin()) return { ok: false, message: "권한이 없습니다." };
   await prisma.rewardSubmission.update({ where: { id }, data: { status: "rejected", reviewedAt: new Date() } });

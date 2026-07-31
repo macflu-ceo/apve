@@ -89,6 +89,7 @@ model Partner {
   communityPosts CommunityPost[]
   vouchers RewardVoucher[]
   rewardSubmissions RewardSubmission[]
+  communityComments CommunityComment[]
 }
 
 /// 커뮤니티 카테고리 (어드민에서 추가/삭제/노출) — CommunityPost.category 가 key를 참조
@@ -142,7 +143,35 @@ model CommunityPost {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  comments  CommunityComment[]
+  likes     CommunityLike[]
+
   @@index([category, createdAt])
+}
+
+/// 커뮤니티 댓글
+model CommunityComment {
+  id        String   @id @default(cuid())
+  post      CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId    String
+  partner   Partner  @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  partnerId String
+  content   String
+  createdAt DateTime @default(now())
+
+  @@index([postId, createdAt])
+}
+
+/// 커뮤니티 좋아요 (회원당 글 1개)
+model CommunityLike {
+  id        String   @id @default(cuid())
+  post      CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId    String
+  partnerId String
+  createdAt DateTime @default(now())
+
+  @@unique([postId, partnerId])
+  @@index([postId])
 }
 
 /// 20% 수수료 보상 바우처 — 커뮤니티 기여 보상. 회원이 특정 상품에 적용하면 그 상품 최초 1판매에 20% 적용.

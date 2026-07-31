@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { parseList } from "@/lib/format";
 import { displayAuthor } from "@/lib/community";
 import RewardRow, { type Row } from "./RewardRow";
+import ManualGrant from "./ManualGrant";
 
 export const dynamic = "force-dynamic";
 
@@ -35,6 +36,8 @@ export default async function AdminRewards() {
       <p className="mb-6 text-sm text-sub">
         회원이 마이페이지에서 제출한 <b>리뷰·홍보 인증</b>입니다. (커뮤니티엔 공개 안 됨) 승인하면 <b>20% 바우처</b>가 지급돼요.
       </p>
+
+      <ManualGrant />
 
       {rows.length === 0 ? (
         <div className="card p-8 text-sm text-sub">제출된 인증이 없습니다.</div>

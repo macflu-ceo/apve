@@ -52,7 +52,10 @@ export async function getCommunityPosts(category?: string, take = 50) {
     where,
     orderBy: [{ pinned: "desc" }, { createdAt: "desc" }],
     take,
-    include: { partner: { select: { nickname: true, name: true } } },
+    include: {
+      partner: { select: { nickname: true, name: true } },
+      _count: { select: { likes: true, comments: true } },
+    },
   });
 }
 
