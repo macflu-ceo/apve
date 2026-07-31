@@ -31,6 +31,8 @@ model Partner {
   username     String   @unique
   passwordHash String
   name         String
+  /// 커뮤니티 표시용 닉네임 (선택, 고유)
+  nickname     String?  @unique
   phone        String?
   email        String?
   /// 실명(본인)인증 완료 여부
@@ -82,6 +84,54 @@ model Partner {
   links IssuedLink[]
   sales Sale[]
   aiImages TryOnImage[]
+  communityPosts CommunityPost[]
+  vouchers RewardVoucher[]
+}
+
+/// 커뮤니티 게시글 — 회원이 작성 (리뷰인증·홍보인증·판매노하우). 공지/가이드(Post)와 별개.
+model CommunityPost {
+  id        String   @id @default(cuid())
+  partner   Partner  @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  partnerId String
+  /// review(리뷰인증) | promo(홍보인증) | knowhow(판매노하우)
+  category  String
+  title     String
+  content   String
+  /// 첨부 이미지 (JSON 배열) — 리뷰/홍보 인증샷
+  imagesJson String?
+  /// 운영자가 숨김 처리
+  hidden    Boolean  @default(false)
+  /// 상단 고정
+  pinned    Boolean  @default(false)
+  /// 이 글로 20% 바우처를 지급했는지 (중복 지급 방지 표시)
+  rewarded  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category, createdAt])
+}
+
+/// 20% 수수료 보상 바우처 — 커뮤니티 기여 보상. 회원이 특정 상품에 적용하면 그 상품 최초 1판매에 20% 적용.
+model RewardVoucher {
+  id        String   @id @default(cuid())
+  partner   Partner  @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  partnerId String
+  /// 지급 사유 (예: "리뷰인증 보상")
+  reason    String   @default("커뮤니티 보상")
+  /// 보상 근거가 된 커뮤니티 글 (선택)
+  sourcePostId String?
+  /// available(사용가능) | applied(상품에 적용중, 판매 대기) | used(판매로 소진)
+  status    String   @default("available")
+  /// 적용한 상품 (applied/used일 때)
+  productId String?
+  /// 소진된 판매 (used일 때) — 이 판매가 20% 적용됨
+  saleId    String?  @unique
+  createdAt DateTime @default(now())
+  appliedAt DateTime?
+  usedAt    DateTime?
+
+  @@index([partnerId, status])
+  @@index([status, partnerId, productId])
 }
 
 /// 플랫폼에 노출되는 상품 (원천: 고도몰 상품)
@@ -350,6 +400,8 @@ model Sale {
   paidOutAt   DateTime?
   /// 판매 알림톡 발송 시각 (중복 발송 방지)
   notifiedAt  DateTime?
+  /// 20% 보상 바우처가 적용된 판매인지 (정산 페이지 배지)
+  boost20     Boolean   @default(false)
 
   @@index([partnerId, orderedAt])
   @@index([status, paidOut])

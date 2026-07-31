@@ -28,6 +28,7 @@ export async function signup(input: {
   username: string;
   password: string;
   name: string;
+  nickname: string;
   email: string;
   phone: string;
   ci: string | null;
@@ -43,6 +44,9 @@ export async function signup(input: {
   if (input.password.length < 6) return { ok: false, message: "비밀번호는 6자 이상이어야 합니다." };
   if (!input.name.trim() || !input.phone.trim())
     return { ok: false, message: "이름과 휴대폰번호를 입력하세요." };
+  const nickname = input.nickname.trim();
+  if (!nickname || nickname.length < 2 || nickname.length > 12)
+    return { ok: false, message: "닉네임은 2~12자로 입력하세요." };
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.email.trim()))
     return { ok: false, message: "이메일을 정확히 입력하세요." };
   if (!input.ci) return { ok: false, message: "휴대폰 본인인증을 먼저 완료하세요." };
@@ -51,6 +55,8 @@ export async function signup(input: {
 
   const dup = await prisma.partner.findUnique({ where: { username } });
   if (dup) return { ok: false, message: "이미 사용 중인 아이디입니다." };
+  const dupNick = await prisma.partner.findUnique({ where: { nickname } });
+  if (dupNick) return { ok: false, message: "이미 사용 중인 닉네임입니다." };
 
   const now = new Date();
   const created = await prisma.partner.create({
@@ -58,6 +64,7 @@ export async function signup(input: {
       username,
       passwordHash: hashPassword(input.password),
       name: input.name.trim(),
+      nickname,
       email: input.email.trim(),
       phone: input.phone.trim(),
       verified: true,

@@ -17,6 +17,7 @@ import { getPlatform } from "@/lib/platform";
 
 const BASE_TABS = [
   { href: "/", label: "추천상품" },
+  { href: "/community", label: "커뮤니티" },
   { href: "/board?category=공지", label: "공지" },
   { href: "/board?category=가이드", label: "가이드" },
 ];

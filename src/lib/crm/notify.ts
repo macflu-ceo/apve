@@ -131,8 +131,11 @@ export async function notifyCommissionMilestones(): Promise<number> {
 }
 
 /** 판매 동기화 후 한 번에 실행 */
-export async function runSaleTriggers(): Promise<{ sale: number; milestone: number }> {
+export async function runSaleTriggers(): Promise<{ sale: number; milestone: number; boosted: number }> {
+  // 20% 바우처 소진(적용된 상품의 최초 판매에 20% 적용)을 알림 전에 처리 → 알림 금액도 정확
+  const { consumeVouchersForSales } = await import("@/lib/voucher");
+  const boosted = await consumeVouchersForSales();
   const sale = await notifyNewSales();
   const milestone = await notifyCommissionMilestones();
-  return { sale, milestone };
+  return { sale, milestone, boosted };
 }

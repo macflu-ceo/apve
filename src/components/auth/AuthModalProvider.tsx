@@ -41,7 +41,7 @@ function AuthModal({ mode, setMode, close }: { mode: Mode; setMode: (m: Mode) =>
   const [lpw, setLpw] = useState("");
 
   // 회원가입
-  const [s, setS] = useState({ username: "", password: "", name: "", email: "", phone: "" });
+  const [s, setS] = useState({ username: "", password: "", name: "", nickname: "", email: "", phone: "" });
   const [ci, setCi] = useState<string | null>(null);
   const [agree, setAgree] = useState({
     service: false,
@@ -168,6 +168,7 @@ function AuthModal({ mode, setMode, close }: { mode: Mode; setMode: (m: Mode) =>
             <input className="field" placeholder="아이디 (영문/숫자 4~20자)" value={s.username} onChange={(e) => setS({ ...s, username: e.target.value })} />
             <input className="field" type="password" placeholder="비밀번호 (6자 이상)" value={s.password} onChange={(e) => setS({ ...s, password: e.target.value })} />
             <input className="field" placeholder="이름(실명)" value={s.name} onChange={(e) => setS({ ...s, name: e.target.value })} />
+            <input className="field" placeholder="닉네임 (커뮤니티 표시용, 2~12자)" value={s.nickname} onChange={(e) => setS({ ...s, nickname: e.target.value })} />
             <input className="field" type="email" placeholder="이메일" value={s.email} onChange={(e) => setS({ ...s, email: e.target.value })} />
             <div className="flex gap-2">
               <input className="field flex-1" placeholder="휴대폰번호" value={s.phone} onChange={(e) => setS({ ...s, phone: e.target.value })} />
