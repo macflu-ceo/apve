@@ -78,6 +78,9 @@ type Row = {
   vAvail: number;        // 20% 바우처 — 사용가능
   vApplied: number;      // 적용중
   vUsed: number;         // 사용완료
+  cPosts: number;        // 커뮤니티 글 수
+  cComments: number;     // 댓글 수
+  cLikes: number;        // 누른 좋아요 수
   residentNoEnc: string | null;
   address: string | null;
   bankName: string | null;
@@ -103,6 +106,7 @@ const SORTERS: Record<string, (a: Row, b: Row) => number> = {
   commission: (a, b) => a.commission - b.commission,
   visits: (a, b) => a.visits - b.visits,
   vAvail: (a, b) => a.vAvail - b.vAvail,
+  cPosts: (a, b) => a.cPosts - b.cPosts,
   productViews: (a, b) => a.productViews - b.productViews,
   lastVisitAt: (a, b) => (a.lastVisitAt?.getTime() ?? 0) - (b.lastVisitAt?.getTime() ?? 0),
 };
@@ -142,7 +146,7 @@ export default async function AdminPartners({ searchParams }: { searchParams: SP
   const engFrom = basis === "activity" && from ? from : undefined;
   const engTo = basis === "activity" && to ? to : undefined;
 
-  const [partners, grades, aiAgg, linkAgg, saleAgg, saleTotalAgg, pendingList, engMap, voucherAgg] = await Promise.all([
+  const [partners, grades, aiAgg, linkAgg, saleAgg, saleTotalAgg, pendingList, engMap, voucherAgg, cPostAgg, cCommentAgg, cLikeAgg] = await Promise.all([
     prisma.partner.findMany({ where: partnerWhere }),
     listGrades(),
     prisma.tryOnImage.groupBy({
@@ -167,7 +171,14 @@ export default async function AdminPartners({ searchParams }: { searchParams: SP
     getPartnerEngagement(engFrom, engTo),
     // 20% 바우처는 항상 전체 누적 (기간 무관)
     prisma.rewardVoucher.groupBy({ by: ["partnerId", "status"], _count: { _all: true } }),
+    // 커뮤니티 활동 (전체 누적)
+    prisma.communityPost.groupBy({ by: ["partnerId"], _count: { _all: true } }),
+    prisma.communityComment.groupBy({ by: ["partnerId"], _count: { _all: true } }),
+    prisma.communityLike.groupBy({ by: ["partnerId"], _count: { _all: true } }),
   ]);
+  const cPostMap = new Map(cPostAgg.map((r) => [r.partnerId, r._count._all]));
+  const cCommentMap = new Map(cCommentAgg.map((r) => [r.partnerId, r._count._all]));
+  const cLikeMap = new Map(cLikeAgg.map((r) => [r.partnerId, r._count._all]));
 
   const gradeOptions = grades.map((g) => ({ id: g.id, name: g.name, percent: g.percent }));
   const firstName = grades.find((g) => g.systemKey === "first")?.name ?? "첫구매";
@@ -220,6 +231,9 @@ export default async function AdminPartners({ searchParams }: { searchParams: SP
       vAvail: vc.avail,
       vApplied: vc.applied,
       vUsed: vc.used,
+      cPosts: cPostMap.get(p.id) ?? 0,
+      cComments: cCommentMap.get(p.id) ?? 0,
+      cLikes: cLikeMap.get(p.id) ?? 0,
       residentNoEnc: p.residentNoEnc,
       address: p.address,
       bankName: p.bankName,
@@ -393,7 +407,7 @@ export default async function AdminPartners({ searchParams }: { searchParams: SP
           회원 목록 <span className="text-brand">({rows.length})</span>
         </h2>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1560px] text-sm">
+          <table className="w-full min-w-[1780px] text-sm">
             <thead className="border-b border-line text-sub">
               <tr>
                 <Th k="name" label="이름" />
@@ -413,12 +427,13 @@ export default async function AdminPartners({ searchParams }: { searchParams: SP
                 <Th k="saleCount" label="판매" right />
                 <Th k="commission" label="수수료" right />
                 <Th k="vAvail" label="20% 바우처" right />
+                <Th k="cPosts" label="커뮤니티" right />
               </tr>
             </thead>
             <tbody>
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={17} className="py-8 text-center text-sub">
+                  <td colSpan={18} className="py-8 text-center text-sub">
                     조건에 맞는 회원이 없습니다.
                   </td>
                 </tr>
@@ -486,6 +501,13 @@ export default async function AdminPartners({ searchParams }: { searchParams: SP
                       </span>
                     )}
                   </td>
+                  <td className="whitespace-nowrap text-right text-xs tabular-nums text-ink/70">
+                    {p.cPosts + p.cComments + p.cLikes === 0 ? (
+                      <span className="text-sub">-</span>
+                    ) : (
+                      <span>글 {p.cPosts} · 댓 {p.cComments} · ♥ {p.cLikes}</span>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -505,6 +527,9 @@ export default async function AdminPartners({ searchParams }: { searchParams: SP
                   <td className="whitespace-nowrap text-right tabular-nums text-brand">{won(sum.commission)}</td>
                   <td className="text-right text-xs tabular-nums text-emerald-700">
                     가능 {rows.reduce((s, r) => s + r.vAvail, 0).toLocaleString()}
+                  </td>
+                  <td className="text-right text-xs tabular-nums text-ink/70">
+                    글 {rows.reduce((s, r) => s + r.cPosts, 0)} · 댓 {rows.reduce((s, r) => s + r.cComments, 0)}
                   </td>
                 </tr>
               </tfoot>

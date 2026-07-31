@@ -21,7 +21,6 @@ const BASE_TABS = [
   { href: "/board?category=공지", label: "공지" },
   { href: "/board?category=가이드", label: "가이드" },
 ];
-const UPGRADE_TAB = { href: "/concierge", label: "멤버십 업그레이드" };
 
 function TopIcon({ path, label, href }: { path: string; label: string; href: string }) {
   return (
@@ -59,7 +58,7 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
   // 이미 상위 등급(컨시어지 등 = systemKey 없는 커스텀 등급)이면 업그레이드 메뉴를 감춘다
   const grade = partner ? await getPartnerGrade(partner.id) : null;
   const upgraded = !!grade && grade.systemKey == null;
-  const tabs = upgraded ? BASE_TABS : [...BASE_TABS, UPGRADE_TAB];
+  const tabs = BASE_TABS; // 멤버십 업그레이드는 마이페이지에서 (상단 탭 제거)
 
   return (
     <AuthModalProvider>
