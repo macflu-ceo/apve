@@ -148,7 +148,7 @@ export default function PushComposer({ tokenCount }: { tokenCount: number }) {
         <button onClick={schedule} disabled={pending || !scheduleAt} className="btn-line px-4">
           예약 등록
         </button>
-        <span className="text-xs text-sub">선택한 시각(한국시간)에 자동 발송됩니다.</span>
+        <span className="text-xs text-sub">선택한 시각(한국시간)에 발송 예약. (자동발송 크론 연결 필요 — 미연결 시 시각 도래분을 확인 후 수동 처리)</span>
       </div>
 
       {/* 테스트 발송 (내 기기 1대에만) */}
