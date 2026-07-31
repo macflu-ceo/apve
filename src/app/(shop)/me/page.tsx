@@ -5,6 +5,7 @@ import { getCurrentPartner } from "@/lib/session";
 import { getPartnerGrade } from "@/lib/grade";
 import LoginPromptButton from "@/components/auth/LoginPromptButton";
 import SettlementForm from "./SettlementForm";
+import NicknameEditor from "./NicknameEditor";
 import { SETTLEMENT_POLICY } from "@/lib/terms";
 
 export const dynamic = "force-dynamic";
@@ -82,6 +83,9 @@ export default async function MyPage() {
           )}
         </p>
       </div>
+
+      {/* 커뮤니티 닉네임 (최초 1회 변경) */}
+      <NicknameEditor nickname={partner.nickname} changed={partner.nicknameChanged} />
 
       {/* 상위 등급(컨시어지 등)은 업그레이드 CTA 대신 현재 멤버십을 보여준다 */}
       {isUpgraded ? (

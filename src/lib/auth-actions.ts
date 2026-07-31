@@ -1,9 +1,25 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
-import { hashPassword, verifyPassword, setSession, clearSession } from "@/lib/auth";
+import { hashPassword, verifyPassword, setSession, clearSession, getSessionPartner } from "@/lib/auth";
 import { verifyIdentity, verifyPortoneIdentity } from "@/lib/identity";
 import { TERMS_VERSION } from "@/lib/terms";
+
+/** 닉네임 설정/변경 — 마이페이지에서 최초 1회만 허용 */
+export async function changeNickname(nickname: string) {
+  const partner = await getSessionPartner();
+  if (!partner) return { ok: false, message: "로그인이 필요합니다." };
+  if (partner.nicknameChanged) return { ok: false, message: "닉네임은 최초 1회만 변경할 수 있어요." };
+  const n = nickname.trim();
+  if (n.length < 2 || n.length > 12) return { ok: false, message: "닉네임은 2~12자로 입력하세요." };
+  const dup = await prisma.partner.findUnique({ where: { nickname: n }, select: { id: true } });
+  if (dup && dup.id !== partner.id) return { ok: false, message: "이미 사용 중인 닉네임입니다." };
+  await prisma.partner.update({ where: { id: partner.id }, data: { nickname: n, nicknameChanged: true } });
+  revalidatePath("/me");
+  revalidatePath("/community");
+  return { ok: true, message: "닉네임이 설정되었습니다." };
+}
 
 /** 본인인증 — mock 경로 (이름+전화만으로 통과, 개발용) */
 export async function requestIdentity(name: string, phone: string) {

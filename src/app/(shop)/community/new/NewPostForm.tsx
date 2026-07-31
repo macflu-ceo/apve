@@ -65,10 +65,10 @@ export default function NewPostForm() {
 
       <div>
         <label className="text-sm font-medium">사진 (선택, 최대 4장)</label>
-        <div className="mt-1 flex flex-wrap gap-2">
+        <div className="mt-1 space-y-3">
           {images.map((img, i) => (
-            <div key={i} className="w-24">
-              <ImageUploader value={img} onChange={(u) => setImage(i, u)} />
+            <div key={i} className="max-w-md">
+              <ImageUploader value={img} onChange={(u) => setImage(i, u)} label={`사진 ${i + 1}`} />
             </div>
           ))}
         </div>

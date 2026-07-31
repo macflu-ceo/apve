@@ -33,6 +33,8 @@ model Partner {
   name         String
   /// 커뮤니티 표시용 닉네임 (선택, 고유)
   nickname     String?  @unique
+  /// 마이페이지에서 닉네임을 1회 변경했는지 (최초 1회만 허용)
+  nicknameChanged Boolean @default(false)
   phone        String?
   email        String?
   /// 실명(본인)인증 완료 여부
