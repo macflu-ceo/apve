@@ -13,6 +13,16 @@ export function middleware(req: NextRequest) {
       sameSite: "lax",
     });
   }
+  // 방문자 식별 쿠키(vid)를 페이지 진입 시점에 확실히 심는다.
+  // (기존엔 track fetch에서만 세팅 → keepalive/쿠키 미적용으로 매 방문이 새 사람으로 잡히던 문제 방지)
+  if (!req.cookies.get("vid")) {
+    res.cookies.set("vid", crypto.randomUUID(), {
+      path: "/",
+      maxAge: 60 * 60 * 24 * 365,
+      sameSite: "lax",
+      httpOnly: true,
+    });
+  }
   return res;
 }
 
