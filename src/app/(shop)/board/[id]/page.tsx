@@ -48,11 +48,7 @@ export default async function BoardDetail({ params }: { params: { id: string } }
         </div>
       )}
 
-      {post.content && (
-        <div className="mt-5 whitespace-pre-wrap text-[15px] leading-relaxed text-ink/85">{post.content}</div>
-      )}
-
-      {/* 본문 이미지 (풀폭 스택 — 긴 이벤트 이미지) */}
+      {/* 본문 이미지 (풀폭 스택 — 긴 통이미지). 이미지 먼저, 텍스트는 아래로. */}
       {images.length > 0 && (
         <div className="mt-5 space-y-2">
           {images.map((src, i) => (
@@ -60,6 +56,10 @@ export default async function BoardDetail({ params }: { params: { id: string } }
             <img key={i} src={src} alt="" className="w-full rounded-lg" />
           ))}
         </div>
+      )}
+
+      {post.content && (
+        <div className="mt-5 whitespace-pre-wrap text-[15px] leading-relaxed text-ink/85">{post.content}</div>
       )}
     </div>
   );
