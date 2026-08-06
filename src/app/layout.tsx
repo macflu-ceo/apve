@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Analytics } from "@vercel/analytics/next";
 import Tracker from "@/components/Tracker";
 import { getSiteSetting } from "@/lib/settings";
@@ -20,6 +20,13 @@ const SITE_NAME = "돈버는 명품샵";
 const TITLE = "돈버는 명품샵 | 명품 어필리에이트 판매 사이트";
 const DESCRIPTION =
   "코드 하나로 명품을 판매하는 어필리에이트 사이트. 재고 없이 명품 상품 링크를 발급해 판매하고 수익을 올리세요. 이탈리아 부티크 직수입 정품, 럭셔리 컨시어지 멤버십.";
+
+// 앱(웹뷰) 노치·다이나믹아일랜드 대응 — 안전영역 인셋 활성화
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
 
 export async function generateMetadata(): Promise<Metadata> {
   // 어드민에서 등록한 링크 미리보기(OG) 이미지 (없으면 이미지 없이)

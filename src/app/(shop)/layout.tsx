@@ -59,6 +59,7 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
   const grade = partner ? await getPartnerGrade(partner.id) : null;
   const upgraded = !!grade && grade.systemKey == null;
   const tabs = BASE_TABS; // 멤버십 업그레이드는 마이페이지에서 (상단 탭 제거)
+  const showTimeSaleBanner = !!(timeSale && timeSale.state !== "off"); // 마진업 바 노출 여부
 
   return (
     <AuthModalProvider>
@@ -81,7 +82,7 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
         />
       )}
       <header className="sticky top-0 z-40 border-b border-line bg-white">
-        <div className="mx-auto flex max-w-shell items-center gap-6 px-4 py-3">
+        <div className={`mx-auto flex max-w-shell items-center gap-6 px-4 py-3 ${showTimeSaleBanner ? "" : "pt-[max(0.75rem,env(safe-area-inset-top))]"}`}>
           <Link href="/" className="shrink-0" aria-label={setting.siteName}>
             <Logo height={22} />
           </Link>
@@ -101,11 +102,11 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
       <main className="mx-auto max-w-shell pb-24 md:pb-0">{children}</main>
 
       {/* 하단 탭바 (모바일 전용) */}
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-white md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-white pb-[env(safe-area-inset-bottom)] md:hidden">
         <div className="mx-auto grid max-w-shell grid-cols-4">
           <BottomTab href="/" label="홈" path="M3 11l9-8 9 8M5 10v10h14V10" />
           <BottomTab href="/category" label="카테고리" path="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z" />
-          <BottomTab href="/me" label="찜" path="M12 21s-7-4.5-9.5-8.5A5 5 0 0112 6a5 5 0 019.5 6.5C19 16.5 12 21 12 21z" />
+          <BottomTab href="/community" label="커뮤니티" path="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z" />
           <BottomTab href="/me" label="내정보" path="M12 12a4 4 0 100-8 4 4 0 000 8zM4 20a8 8 0 0116 0" />
         </div>
       </nav>
