@@ -45,12 +45,25 @@ export default function BannerCarousel({
     setReady(true);
   }, []);
 
-  useEffect(() => { recalc(index); }, [index, recalc, N]);
+  useEffect(() => {
+    recalc(index);
+    // 레이아웃/폰트/이미지 안정 후 한 번 더 (웹뷰·노치 등 측정 타이밍 대응)
+    const r1 = requestAnimationFrame(() => recalc(index));
+    const t = setTimeout(() => recalc(index), 250);
+    return () => { cancelAnimationFrame(r1); clearTimeout(t); };
+  }, [index, recalc, N]);
 
   useEffect(() => {
+    const container = containerRef.current;
     const onResize = () => recalc(index);
     window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
+    // 컨테이너 크기가 바뀌면(회전·앱 안전영역 반영 등) 즉시 재중앙정렬
+    const ro = container ? new ResizeObserver(onResize) : null;
+    if (container && ro) ro.observe(container);
+    return () => {
+      window.removeEventListener("resize", onResize);
+      ro?.disconnect();
+    };
   }, [index, recalc]);
 
   // 자동 전환 (항상 앞으로)
