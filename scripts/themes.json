@@ -1,0 +1,138 @@
+{
+  "_doc": "주간 MD 테마 큐. 로테이션이 pointer(현재 주차)를 소비. 남은 테마 2개 이하가 되면 다음 배치 기획. select는 상품 선정 기준(카탈로그 필터/DB 규칙).",
+  "startDate": "2026-08-03",
+  "cadence": "weekly",
+  "pointer": 1,
+  "themes": [
+    {
+      "week": 1, "range": "8/3–8/9", "key": "summer-final",
+      "title": "썸머 파이널 세일", "hero": "여름 막바지, 지금 가장 많이 내렸다",
+      "subtitle": "시즌오프 특가 · 놓치면 손해", "why": "늦여름 시즌오프. 여름 재고 소진 + 할인 소구가 가장 강한 시점.",
+      "select": { "type": "discount", "minRate": 30, "inStock": true, "limit": 40 },
+      "levers": {
+        "homeSection": "‘썸머 파이널 특가’ 섹션을 홈 최상단으로, 할인율순 정렬",
+        "exhibition": "‘썸머 파이널 세일’ 기획전 신설 + 원형아이콘 연결",
+        "banner": "메인 히어로: 할인 강조(레드/코럴) 배너 1장",
+        "popup": "‘최대 N% 시즌오프’ 진입 팝업(웹/앱)",
+        "crm": "활성+휴면 세그에 ‘여름 막바지 특가’ 푸시 1발"
+      }
+    },
+    {
+      "week": 2, "range": "8/10–8/16", "key": "fw-preview",
+      "title": "F/W 신상 프리뷰", "hero": "가을 신상, 남들보다 먼저",
+      "subtitle": "새로 들어온 F/W 셀렉션", "why": "8월은 럭셔리 F/W 신상 입고 개막. 얼리어답터 셀러의 선점 욕구 자극.",
+      "select": { "type": "new", "inStock": true, "limit": 40 },
+      "levers": {
+        "homeSection": "‘F/W 신상’ 섹션 상단, 신상순 정렬",
+        "exhibition": "‘F/W 신상 프리뷰’ 기획전 + 아이콘",
+        "banner": "히어로: ‘가을 신상 먼저 만나기’ 무드 배너",
+        "popup": "신상 알림 팝업(가벼운 배지형)",
+        "crm": "활성 셀러에 ‘신상 먼저 공유하고 선점’ 푸시"
+      }
+    },
+    {
+      "week": 3, "range": "8/17–8/23", "key": "prada-week",
+      "title": "프라다 위크", "hero": "이번 주는 프라다",
+      "subtitle": "PRADA 신상부터 스테디까지", "why": "DB 내 프라다 물량 풍부. 브랜드 집중 위크로 탐색 편의 + 화제성.",
+      "select": { "type": "brand", "brand": "Prada", "sort": "new", "inStock": true, "limit": 30 },
+      "levers": {
+        "homeSection": "‘프라다 위크’ 섹션 상단",
+        "exhibition": "‘프라다 신상 모음전’ 상단 노출 + 아이콘 우선",
+        "banner": "히어로: 프라다 무드(브랜드 로고 없이) 배너",
+        "popup": "프라다 위크 예고 팝업",
+        "crm": "‘프라다 좋아할 셀러’ 세그 푸시"
+      }
+    },
+    {
+      "week": 4, "range": "8/24–8/30", "key": "itbag",
+      "title": "잇백 컬렉션", "hero": "명품의 시작은 가방부터",
+      "subtitle": "데일리백 · 잇백 셀렉트", "why": "가방은 명품 진입 1순위·상시 수요. 카테고리 집중으로 전환률 방어.",
+      "select": { "type": "category", "keywords": ["bag", "백", "handbag", "가방", "minibag", "tote", "shoulder"], "sort": "sales", "inStock": true, "limit": 40 },
+      "levers": {
+        "homeSection": "‘이번 주 잇백’ 섹션 상단(인기순)",
+        "exhibition": "‘잇백 컬렉션’ 기획전 + 아이콘",
+        "banner": "히어로: 가방 클로즈업 배너",
+        "popup": "(선택) 타임세일 예고만",
+        "crm": "‘가방 관심’ 세그 + 전체 활성 푸시"
+      }
+    },
+    {
+      "week": 5, "range": "8/31–9/6", "key": "early-autumn",
+      "title": "초가을 데일리룩", "hero": "환절기, 가볍게 걸치기 좋은",
+      "subtitle": "니트 · 가디건 · 경량 아우터", "why": "환절기 레이어링 수요 시작. 의류 카테고리로 객단가·다양성 확장.",
+      "select": { "type": "category", "keywords": ["knit", "니트", "cardigan", "가디건", "sweater", "jacket", "자켓"], "sort": "new", "inStock": true, "limit": 40 },
+      "levers": {
+        "homeSection": "‘초가을 데일리룩’ 섹션",
+        "exhibition": "‘초가을 레이어링’ 기획전 + 아이콘",
+        "banner": "히어로: 가을 톤(브라운/베이지) 무드",
+        "popup": "(선택)",
+        "crm": "전체 활성 ‘환절기 준비’ 푸시"
+      }
+    },
+    {
+      "week": 6, "range": "9/7–9/13", "key": "premium-highend",
+      "title": "프리미엄 하이엔드 위크", "hero": "가장 프리미엄한 하이엔드",
+      "subtitle": "최상위 브랜드 셀렉션", "why": "추석 상여·선물 예산 상승 직전. 고단가=셀러 수수료액 극대화.",
+      "select": { "type": "priceHigh", "inStock": true, "limit": 30 },
+      "levers": {
+        "homeSection": "‘프리미엄 하이엔드’ 섹션 상단",
+        "exhibition": "‘프리미엄 하이엔드’ 기획전(기존) 리프레시 + 아이콘 우선",
+        "banner": "히어로: 딥톤+골드 프리미엄 배너",
+        "popup": "‘하이엔드 위크’ 팝업",
+        "crm": "VIP·활성 세그 ‘고수수료 프리미엄’ 푸시"
+      }
+    },
+    {
+      "week": 7, "range": "9/14–9/20", "key": "chuseok-gift",
+      "title": "추석 명품 선물", "hero": "마음을 전하는 명품 선물",
+      "subtitle": "지갑 · 카드지갑 · 스카프 · 액세서리", "why": "추석(9/25) 2주 전, 선물 수요 피크 시작. 선물하기 좋은 중가 아이템 집중.",
+      "select": { "type": "category", "keywords": ["wallet", "지갑", "card", "카드", "scarf", "스카프", "accessor", "액세서리", "벨트", "belt"], "sort": "sales", "inStock": true, "limit": 40 },
+      "levers": {
+        "homeSection": "‘추석 선물 셀렉트’ 섹션 상단",
+        "exhibition": "‘추석 명품 선물’ 기획전 + 아이콘",
+        "banner": "히어로: 추석/선물 무드(리본·기프트)",
+        "popup": "‘추석 전 배송’ 마감 안내 팝업",
+        "crm": "전체 ‘추석 선물 지금 준비’ 푸시 + 배송마감 리마인드"
+      }
+    },
+    {
+      "week": 8, "range": "9/21–9/27", "key": "chuseok-self",
+      "title": "추석 연휴, 셀프 기프트", "hero": "긴 연휴, 나를 위한 명품",
+      "subtitle": "막판 선물 + 자기보상 셀렉션", "why": "추석 당일 주간·긴 연휴. 막판 선물 + 연휴 자기보상 소비 동시 공략.",
+      "select": { "type": "mixed", "parts": [{ "type": "sales", "limit": 20 }, { "type": "priceHigh", "limit": 20 }], "inStock": true, "limit": 40 },
+      "levers": {
+        "homeSection": "‘연휴 셀프기프트’ 섹션",
+        "exhibition": "‘추석 명품 선물’ 유지 + ‘셀프 기프트’ 서브",
+        "banner": "히어로: 연휴 무드",
+        "popup": "연휴 배송 일정 안내",
+        "crm": "활성+휴면 ‘연휴 특가/셀프기프트’ 푸시"
+      }
+    },
+    {
+      "week": 9, "range": "9/28–10/4", "key": "outerwear",
+      "title": "가을 아우터", "hero": "완연한 가을, 아우터의 계절",
+      "subtitle": "트렌치 · 자켓 · 코트", "why": "기온 하락으로 아우터 시즌 개막. 고단가 의류로 GMV 견인.",
+      "select": { "type": "category", "keywords": ["coat", "코트", "trench", "트렌치", "jacket", "자켓", "outer", "아우터", "blazer"], "sort": "new", "inStock": true, "limit": 40 },
+      "levers": {
+        "homeSection": "‘가을 아우터’ 섹션 상단",
+        "exhibition": "‘가을 아우터’ 기획전 + 아이콘",
+        "banner": "히어로: 트렌치/코트 무드",
+        "popup": "(선택)",
+        "crm": "전체 활성 ‘가을 아우터 지금’ 푸시"
+      }
+    },
+    {
+      "week": 10, "range": "10/5–10/11", "key": "shoes-boots",
+      "title": "슈즈 & 부츠 시즌", "hero": "발끝부터 바뀌는 계절",
+      "subtitle": "로퍼 · 부츠 · 힐", "why": "가을 신발 교체 수요. 카테고리 마무리 + 다음 블프 워밍업 직전.",
+      "select": { "type": "category", "keywords": ["shoes", "슈즈", "boot", "부츠", "loafer", "로퍼", "pump", "힐", "heel", "sneaker", "스니커"], "sort": "sales", "inStock": true, "limit": 40 },
+      "levers": {
+        "homeSection": "‘슈즈 & 부츠’ 섹션 상단",
+        "exhibition": "‘가을 슈즈’ 기획전 + 아이콘",
+        "banner": "히어로: 부츠/슈즈 무드",
+        "popup": "(선택)",
+        "crm": "전체 활성 ‘가을 신발 교체’ 푸시"
+      }
+    }
+  ]
+}
