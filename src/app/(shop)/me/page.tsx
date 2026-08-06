@@ -7,6 +7,7 @@ import LoginPromptButton from "@/components/auth/LoginPromptButton";
 import SettlementForm from "./SettlementForm";
 import NicknameEditor from "./NicknameEditor";
 import RewardSubmitBox from "./RewardSubmitBox";
+import DeleteAccountButton from "./DeleteAccountButton";
 import { SETTLEMENT_POLICY } from "@/lib/terms";
 
 export const dynamic = "force-dynamic";
@@ -268,6 +269,9 @@ export default async function MyPage() {
           </section>
         </>
       )}
+
+      {/* 회원 탈퇴 (모든 로그인 회원) */}
+      <DeleteAccountButton />
     </div>
   );
 }
