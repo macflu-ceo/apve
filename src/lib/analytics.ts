@@ -412,10 +412,11 @@ const CTA_LABELS: Record<string, string> = {
 };
 
 export async function getAppCtaPerformance(from: string, to: string): Promise<AppCtaRow[]> {
+  // 고유 방문자 기준 — 같은 사람이 여러 번 봐도 1명. "본 사람 중 누른 %"를 정확히.
   const rows = await prisma.$queryRaw<{ label: string; impressions: bigint; clicks: bigint }[]>`
     SELECT label,
-      COUNT(*) FILTER (WHERE kind = 'impression') AS impressions,
-      COUNT(*) FILTER (WHERE kind = 'click') AS clicks
+      COUNT(DISTINCT "visitorId") FILTER (WHERE kind = 'impression') AS impressions,
+      COUNT(DISTINCT "visitorId") FILTER (WHERE kind = 'click') AS clicks
     FROM "Visit"
     WHERE label LIKE 'app_cta_%' AND day >= ${from} AND day <= ${to}
     GROUP BY label`;
@@ -432,7 +433,8 @@ export async function getAppCtaPerformance(from: string, to: string): Promise<Ap
         ctr: impressions > 0 ? Math.round((clicks / impressions) * 1000) / 10 : 0,
       };
     })
-    .sort((a, b) => b.clicks - a.clicks);
+    // 전환율 높은 방식이 위로 (노출 없는 건 맨 아래)
+    .sort((a, b) => (b.impressions > 0 ? b.ctr : -1) - (a.impressions > 0 ? a.ctr : -1) || b.clicks - a.clicks);
 }
 
 /** 웹 → 앱 전환 퍼널. 각 단계는 고유 방문자/회원 기준. */

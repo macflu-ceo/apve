@@ -201,47 +201,78 @@ function AppFunnelSection({ f }: { f: import("@/lib/analytics").AppFunnel }) {
   );
 }
 
-/** 앱 유도 장치별 성과 표 — 어느 장치가 앱으로 잘 전환됐는지 */
+/** 앱 유도 장치별 성과 표 — 어느 방식이 앱 전환을 잘 시키고 어떤 게 저조한지 (고유 인원 기준) */
 function AppCtaSection({ rows }: { rows: import("@/lib/analytics").AppCtaRow[] }) {
-  const totalClicks = rows.reduce((s, r) => s + r.clicks, 0);
+  const scored = rows.filter((r) => r.impressions > 0); // 전환율 산출 가능한 방식(이미 전환율 내림차순 정렬)
+  const best = scored[0];
+  const worst = scored.length > 1 ? scored[scored.length - 1] : undefined;
+  const maxCtr = Math.max(...scored.map((r) => r.ctr), 1);
   return (
     <div className="mb-8">
-      <h2 className="mb-1 text-lg font-bold">앱 유도 성과</h2>
+      <h2 className="mb-1 text-lg font-bold">앱 유도 성과 — 방식별 전환율</h2>
       <p className="mb-3 text-xs text-sub">
-        웹 → 앱 유도 장치별 <b>노출 → 클릭(스토어 이동) 전환율</b>. 어느 장치가 사람들을 앱으로 잘 밀어냈는지 비교하세요.
+        각 유도 방식을 <b>본 사람(고유) 중 몇 %가 앱으로 넘어갔나</b>. 전환율 높은 순. 잘되는 방식은 늘리고 저조한 건 교체·제거.
       </p>
       {rows.length === 0 ? (
-        <div className="card p-6 text-sm text-sub">아직 앱 유도 클릭·노출 기록이 없습니다. (스토어 URL 설정 후 집계 시작)</div>
+        <div className="card p-6 text-sm text-sub">아직 앱 유도 기록이 없습니다. (앱 출시·스토어 URL 설정 후 집계 시작)</div>
       ) : (
-        <div className="card overflow-x-auto p-0">
-          <table className="w-full min-w-[520px] text-sm">
-            <thead className="border-b border-line text-left text-sub">
-              <tr>
-                <th className="px-4 py-3">장치</th>
-                <th className="px-4 py-3 text-right">노출</th>
-                <th className="px-4 py-3 text-right">클릭</th>
-                <th className="px-4 py-3 text-right">전환율</th>
-                <th className="px-4 py-3 text-right">클릭 비중</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r.source} className="border-b border-line last:border-0">
-                  <td className="px-4 py-3 font-semibold">
-                    {r.label}
-                    <span className="ml-2 text-[10px] text-sub">app_cta_{r.source}</span>
-                  </td>
-                  <td className="px-4 py-3 text-right tabular-nums">{r.impressions.toLocaleString()}</td>
-                  <td className="px-4 py-3 text-right font-bold tabular-nums text-brand">{r.clicks.toLocaleString()}</td>
-                  <td className="px-4 py-3 text-right tabular-nums">{r.impressions > 0 ? `${r.ctr}%` : "-"}</td>
-                  <td className="px-4 py-3 text-right tabular-nums text-sub">
-                    {totalClicks > 0 ? `${Math.round((r.clicks / totalClicks) * 100)}%` : "-"}
-                  </td>
+        <>
+          {best && (
+            <div className="mb-3 flex flex-wrap gap-2 text-xs">
+              <span className="rounded-full bg-emerald-100 px-3 py-1.5 font-semibold text-emerald-700">
+                🥇 가장 잘 전환: {best.label} <b>{best.ctr}%</b>
+              </span>
+              {worst && (
+                <span className="rounded-full bg-red-50 px-3 py-1.5 font-semibold text-red-600">
+                  ⚠️ 가장 저조: {worst.label} <b>{worst.ctr}%</b>
+                </span>
+              )}
+            </div>
+          )}
+          <div className="card overflow-x-auto p-0">
+            <table className="w-full min-w-[560px] text-sm">
+              <thead className="border-b border-line text-left text-sub">
+                <tr>
+                  <th className="px-4 py-3">유도 방식</th>
+                  <th className="px-4 py-3 text-right">본 사람</th>
+                  <th className="px-4 py-3 text-right">넘어간 사람</th>
+                  <th className="px-4 py-3">전환율 (본 사람 중)</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {rows.map((r) => {
+                  const hasImp = r.impressions > 0;
+                  const isBest = hasImp && r === best;
+                  return (
+                    <tr key={r.source} className="border-b border-line last:border-0">
+                      <td className="px-4 py-3 font-semibold">
+                        {r.label}
+                        <span className="ml-2 text-[10px] text-sub">app_cta_{r.source}</span>
+                      </td>
+                      <td className="px-4 py-3 text-right tabular-nums">{r.impressions.toLocaleString()}</td>
+                      <td className="px-4 py-3 text-right font-bold tabular-nums text-brand">{r.clicks.toLocaleString()}</td>
+                      <td className="px-4 py-3">
+                        {hasImp ? (
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 flex-1 overflow-hidden rounded-full bg-line/60">
+                              <div
+                                className={`h-full rounded-full ${isBest ? "bg-emerald-500" : "bg-brand"}`}
+                                style={{ width: `${Math.max((r.ctr / maxCtr) * 100, r.ctr > 0 ? 4 : 0)}%` }}
+                              />
+                            </div>
+                            <span className="w-12 shrink-0 text-right text-xs font-bold tabular-nums">{r.ctr}%</span>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-sub">노출 데이터 없음</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
     </div>
   );
