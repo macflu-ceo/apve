@@ -1,6 +1,7 @@
 "use client";
 
-import { trackEvent, resolveStoreUrl } from "@/lib/track-client";
+import { useEffect } from "react";
+import { trackAppCta, resolveStoreUrl } from "@/lib/track-client";
 
 /**
  * 상품 상세 '수수료 올리기 → 앱 다운로드' 유도 버튼 (웹 전용).
@@ -19,8 +20,13 @@ export default function AppUpsellButton({
   appAmountLabel: string; // 앱 기준 예상 수수료 (예: "39,000원")
   gapLabel: string; // 추가 이득 (예: "+13,000원")
 }) {
+  // 노출 기록(장치: 수수료 업셀)
+  useEffect(() => {
+    trackAppCta("upsell", "impression");
+  }, []);
+
   function go() {
-    trackEvent("click", { label: "upsell_appdownload" });
+    trackAppCta("upsell", "click");
     const url = resolveStoreUrl({ ios, android, landing });
     if (url) window.open(url, "_blank", "noopener");
     else alert("앱 출시 후 이용하실 수 있어요.");

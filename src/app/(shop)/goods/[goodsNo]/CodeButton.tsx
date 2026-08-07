@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { issueLink } from "./actions";
 import { useAuthModal } from "@/components/auth/AuthModalProvider";
-import { trackEvent, resolveStoreUrl } from "@/lib/track-client";
+import { trackEvent, trackAppCta, resolveStoreUrl } from "@/lib/track-client";
 
 export default function CodeButton({ goodsNo }: { goodsNo: string }) {
   const { open } = useAuthModal();
@@ -29,7 +29,8 @@ export default function CodeButton({ goodsNo }: { goodsNo: string }) {
     } else if (res.needApp) {
       // 웹 일일 한도 초과 → 앱 유도
       setAppUpsell({ msg: res.message, ios: res.ios ?? null, android: res.android ?? null, landing: res.landing ?? null });
-      trackEvent("click", { label: "code_limit_hit", goodsNo });
+      trackAppCta("codelimit", "impression", goodsNo); // 한도 도달(노출)
+
     } else {
       setError(res.message);
     }
@@ -37,7 +38,7 @@ export default function CodeButton({ goodsNo }: { goodsNo: string }) {
 
   function goApp() {
     if (!appUpsell) return;
-    trackEvent("click", { label: "code_limit_appdownload", goodsNo });
+    trackAppCta("codelimit", "click", goodsNo);
     const target = resolveStoreUrl({ ios: appUpsell.ios, android: appUpsell.android, landing: appUpsell.landing });
     if (target) window.open(target, "_blank", "noopener");
     else alert("앱 출시 후 이용하실 수 있어요.");

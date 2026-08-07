@@ -8,7 +8,7 @@ import { getPlatform } from "@/lib/platform";
 
 export const dynamic = "force-dynamic";
 
-const KINDS = new Set(["page", "product", "click"]);
+const KINDS = new Set(["page", "product", "click", "impression"]);
 
 export async function POST(req: Request) {
   try {

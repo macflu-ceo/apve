@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { trackEvent, resolveStoreUrl } from "@/lib/track-client";
+import { trackAppCta, resolveStoreUrl } from "@/lib/track-client";
 
 /**
  * 웹에서만 노출되는 앱 다운로드 유도 바.
@@ -26,11 +26,16 @@ export default function AppInstallBar({
     else setHidden(false);
   }, []);
 
+  // 노출 기록(장치: 상단 바) — 바가 실제로 보일 때 1회
+  useEffect(() => {
+    if (!hidden && (ios || android || landing)) trackAppCta("topbar", "impression");
+  }, [hidden, ios, android, landing]);
+
   if (!ios && !android && !landing) return null;
   if (hidden) return null;
 
   function go() {
-    trackEvent("click", { label: "appdownload" });
+    trackAppCta("topbar", "click");
     const url = resolveStoreUrl({ ios, android, landing });
     if (url) window.open(url, "_blank", "noopener");
   }
