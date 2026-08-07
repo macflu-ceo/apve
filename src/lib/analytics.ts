@@ -403,3 +403,40 @@ export async function getTopProducts(from: string, to: string, take = 10) {
 
   return { byViews, byLinks };
 }
+
+/** 앱 유도(CTA) 장치별 성과 — 노출/클릭/전환율. label=app_cta_<source> 기반. */
+export type AppCtaRow = { source: string; label: string; impressions: number; clicks: number; ctr: number };
+
+const CTA_LABELS: Record<string, string> = {
+  topbar: "상단 앱설치 바",
+  upsell: "수수료 20%↑ 버튼",
+  codelimit: "코드복사 한도 도달",
+  pop5: "행동 5회 팝업",
+  pop20: "행동 20회 팝업",
+  pop40: "행동 40회 팝업",
+  popup: "일반 팝업",
+};
+
+export async function getAppCtaPerformance(from: string, to: string): Promise<AppCtaRow[]> {
+  const rows = await prisma.$queryRaw<{ label: string; impressions: bigint; clicks: bigint }[]>`
+    SELECT label,
+      COUNT(*) FILTER (WHERE kind = 'impression') AS impressions,
+      COUNT(*) FILTER (WHERE kind = 'click') AS clicks
+    FROM "Visit"
+    WHERE label LIKE 'app_cta_%' AND day >= ${from} AND day <= ${to}
+    GROUP BY label`;
+  return rows
+    .map((r) => {
+      const source = r.label.replace(/^app_cta_/, "");
+      const impressions = num(r.impressions);
+      const clicks = num(r.clicks);
+      return {
+        source,
+        label: CTA_LABELS[source] ?? source,
+        impressions,
+        clicks,
+        ctr: impressions > 0 ? Math.round((clicks / impressions) * 1000) / 10 : 0,
+      };
+    })
+    .sort((a, b) => b.clicks - a.clicks);
+}

@@ -9,6 +9,7 @@ import {
   getCohorts,
   getVisitorFunnel,
   getAcquisition,
+  getAppCtaPerformance,
 } from "@/lib/analytics";
 import type { RetentionSummary } from "@/lib/analytics";
 import DateRange from "./DateRange";
@@ -31,7 +32,7 @@ export default async function AdminAnalytics({
   const to = searchParams.to ?? daysAgo(0);
   const pf = searchParams.platform === "app" ? "app" : searchParams.platform === "web" ? "web" : undefined;
 
-  const [funnel, top, series, retention, webSum, appSum, active, cohorts, vFunnel, acq] = await Promise.all([
+  const [funnel, top, series, retention, webSum, appSum, active, cohorts, vFunnel, acq, appCta] = await Promise.all([
     getFunnel(from, to),
     getTopProducts(from, to, 10),
     getDailySeries(from, to, pf),
@@ -42,6 +43,7 @@ export default async function AdminAnalytics({
     getCohorts(to, pf),
     getVisitorFunnel(from, to, pf),
     getAcquisition(from, to, pf),
+    getAppCtaPerformance(from, to),
   ]);
 
   // 전환율(코드생성/조회, 판매/코드생성)
@@ -126,11 +128,60 @@ export default async function AdminAnalytics({
         </div>
       </div>
 
+      {/* 앱 유도 성과 (장치별 노출·클릭·전환율) */}
+      <AppCtaSection rows={appCta} />
+
       {/* 인기 상품 */}
       <div className="grid gap-6 lg:grid-cols-2">
         <TopTable title="조회수 TOP 10" rows={top.byViews} metric="views" />
         <TopTable title="코드생성 TOP 10" rows={top.byLinks} metric="links" />
       </div>
+    </div>
+  );
+}
+
+/** 앱 유도 장치별 성과 표 — 어느 장치가 앱으로 잘 전환됐는지 */
+function AppCtaSection({ rows }: { rows: import("@/lib/analytics").AppCtaRow[] }) {
+  const totalClicks = rows.reduce((s, r) => s + r.clicks, 0);
+  return (
+    <div className="mb-8">
+      <h2 className="mb-1 text-lg font-bold">앱 유도 성과</h2>
+      <p className="mb-3 text-xs text-sub">
+        웹 → 앱 유도 장치별 <b>노출 → 클릭(스토어 이동) 전환율</b>. 어느 장치가 사람들을 앱으로 잘 밀어냈는지 비교하세요.
+      </p>
+      {rows.length === 0 ? (
+        <div className="card p-6 text-sm text-sub">아직 앱 유도 클릭·노출 기록이 없습니다. (스토어 URL 설정 후 집계 시작)</div>
+      ) : (
+        <div className="card overflow-x-auto p-0">
+          <table className="w-full min-w-[520px] text-sm">
+            <thead className="border-b border-line text-left text-sub">
+              <tr>
+                <th className="px-4 py-3">장치</th>
+                <th className="px-4 py-3 text-right">노출</th>
+                <th className="px-4 py-3 text-right">클릭</th>
+                <th className="px-4 py-3 text-right">전환율</th>
+                <th className="px-4 py-3 text-right">클릭 비중</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.source} className="border-b border-line last:border-0">
+                  <td className="px-4 py-3 font-semibold">
+                    {r.label}
+                    <span className="ml-2 text-[10px] text-sub">app_cta_{r.source}</span>
+                  </td>
+                  <td className="px-4 py-3 text-right tabular-nums">{r.impressions.toLocaleString()}</td>
+                  <td className="px-4 py-3 text-right font-bold tabular-nums text-brand">{r.clicks.toLocaleString()}</td>
+                  <td className="px-4 py-3 text-right tabular-nums">{r.impressions > 0 ? `${r.ctr}%` : "-"}</td>
+                  <td className="px-4 py-3 text-right tabular-nums text-sub">
+                    {totalClicks > 0 ? `${Math.round((r.clicks / totalClicks) * 100)}%` : "-"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
