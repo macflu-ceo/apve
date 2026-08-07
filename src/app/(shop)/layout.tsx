@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getSiteSetting } from "@/lib/settings";
+import { grantAppInstallVoucher } from "@/lib/voucher";
 import { getSessionPartner } from "@/lib/auth";
 import AuthModalProvider from "@/components/auth/AuthModalProvider";
 import AuthNav from "@/components/auth/AuthNav";
@@ -56,6 +57,11 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
   ]);
 
   const platform = getPlatform(); // web | app (앱 웹뷰면 다운로드 유도 숨김)
+
+  // 앱 첫 로그인 사용자 → 앱 설치 보상 20% 바우처 1회 지급(원자적, 중복 없음)
+  if (platform === "app" && partner) {
+    await grantAppInstallVoucher(partner.id).catch(() => {});
+  }
 
   // 이미 상위 등급(컨시어지 등 = systemKey 없는 커스텀 등급)이면 업그레이드 메뉴를 감춘다
   const grade = partner ? await getPartnerGrade(partner.id) : null;

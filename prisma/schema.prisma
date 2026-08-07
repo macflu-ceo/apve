@@ -46,6 +46,8 @@ model Partner {
   /// 고도몰 URL 뒤에 붙는 고유 파라미터. 승인 시 어드민이 고도몰에서 발급해 부여.
   code         String?  @unique
   active       Boolean  @default(true)
+  /// 앱 설치 보상 바우처 지급 완료 여부 (앱 첫 로그인 시 1회 지급)
+  appInstallRewarded Boolean @default(false)
   createdAt    DateTime @default(now())
 
   /// 마지막 로그인 시각 / 누적 로그인 횟수 (어드민 회원 통계)

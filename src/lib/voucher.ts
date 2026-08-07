@@ -9,6 +9,24 @@ export async function grantVoucher(partnerId: string, reason: string, sourcePost
   });
 }
 
+export const APP_INSTALL_REASON = "앱 설치 보상";
+
+/**
+ * 앱 첫 로그인 사용자에게 20% 바우처 1회 지급 (앱 설치 유도 보상).
+ * Partner.appInstallRewarded 플래그를 원자적으로 false→true 로 뒤집은 요청만 지급 → 중복/경합 방지.
+ * 앱(platform=app)에서 로그인된 회원 페이지 로드 시 호출.
+ */
+export async function grantAppInstallVoucher(partnerId: string): Promise<boolean> {
+  // updateMany + 조건부 where 는 원자적 — 동시에 여러 요청이 와도 1건만 count===1
+  const flip = await prisma.partner.updateMany({
+    where: { id: partnerId, appInstallRewarded: false },
+    data: { appInstallRewarded: true },
+  });
+  if (flip.count !== 1) return false;
+  await grantVoucher(partnerId, APP_INSTALL_REASON);
+  return true;
+}
+
 export interface VoucherCounts {
   available: number;
   applied: number;
