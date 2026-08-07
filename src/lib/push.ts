@@ -57,6 +57,13 @@ export interface PushMessage {
   imageUrl?: string;
 }
 
+/** 알림 링크에 pushId를 심어 열람(탭) 귀속. url이 없으면 홈(/)으로. 상대/절대 모두 처리. */
+function withPushId(url: string | undefined, pushId: string): string {
+  const base = url && url.trim() ? url.trim() : "/";
+  const sep = base.includes("?") ? "&" : "?";
+  return `${base}${sep}pushId=${pushId}`;
+}
+
 /** 지정 토큰들에 발송. 무효 토큰(404/400)은 비활성 처리. */
 export async function sendPushToTokens(
   tokens: { id: string; token: string }[],
@@ -137,8 +144,9 @@ export async function sendPushToSegment(
   if (segment === "guests") where.partnerId = null;
 
   const tokens = await prisma.pushToken.findMany({ where, select: { id: true, token: true } });
-  const res = await sendPushToTokens(tokens, msg);
-  await prisma.pushLog.create({
+
+  // 로그를 먼저 만들어 id를 확보 → 알림 링크에 pushId를 심어 열람(탭)을 귀속한다.
+  const log = await prisma.pushLog.create({
     data: {
       title: msg.title,
       body: msg.body,
@@ -146,11 +154,17 @@ export async function sendPushToSegment(
       imageUrl: msg.imageUrl ?? null,
       segment,
       trigger,
-      target: res.target,
-      sent: res.sent,
-      failed: res.failed,
-      provider: res.provider,
+      target: 0,
+      sent: 0,
+      failed: 0,
+      provider: "mock",
     },
+  });
+  const linkUrl = withPushId(msg.url, log.id);
+  const res = await sendPushToTokens(tokens, { ...msg, url: linkUrl });
+  await prisma.pushLog.update({
+    where: { id: log.id },
+    data: { target: res.target, sent: res.sent, failed: res.failed, provider: res.provider },
   });
   return res;
 }

@@ -131,6 +131,7 @@ export default async function AdminPush() {
                 <th className="px-3 py-2 text-right">발송</th>
                 <th className="px-3 py-2 text-right">성공</th>
                 <th className="px-3 py-2 text-right">실패</th>
+                <th className="px-3 py-2 text-right">열람</th>
                 <th className="px-3 py-2">방식</th>
               </tr>
             </thead>
@@ -154,6 +155,14 @@ export default async function AdminPush() {
                   <td className="px-3 py-2 text-right tabular-nums">{l.target.toLocaleString()}</td>
                   <td className="px-3 py-2 text-right tabular-nums text-green-700">{l.sent.toLocaleString()}</td>
                   <td className="px-3 py-2 text-right tabular-nums text-red-500">{l.failed.toLocaleString()}</td>
+                  <td className="px-3 py-2 text-right tabular-nums font-semibold text-brand">
+                    {l.opened.toLocaleString()}
+                    {l.sent > 0 && l.opened > 0 && (
+                      <span className="ml-1 text-[10px] font-normal text-sub">
+                        {Math.round((l.opened / l.sent) * 100)}%
+                      </span>
+                    )}
+                  </td>
                   <td className="px-3 py-2">
                     <span className={`rounded px-1.5 py-0.5 text-[10px] ${l.provider === "fcm" ? "bg-green-100 text-green-700" : "bg-line text-sub"}`}>
                       {l.provider === "fcm" ? "실발송" : "테스트"}

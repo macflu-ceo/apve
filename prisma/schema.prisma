@@ -298,11 +298,27 @@ model PushLog {
   target    Int      @default(0) // 대상 토큰 수
   sent      Int      @default(0) // 성공
   failed    Int      @default(0) // 실패
+  /// 열람(탭)한 고유 인원 수 — PushOpen 기준
+  opened    Int      @default(0)
   /// fcm | mock (환경변수 미설정 시 mock)
   provider  String   @default("mock")
   createdAt DateTime @default(now())
+  opens     PushOpen[]
 
   @@index([createdAt])
+}
+
+/// 푸시 열람(탭) 기록 — 발송 1건당 방문자별 1회(고유 인원 집계)
+model PushOpen {
+  id        String   @id @default(cuid())
+  pushLogId String
+  log       PushLog  @relation(fields: [pushLogId], references: [id], onDelete: Cascade)
+  /// 익명 방문자ID(vid) 또는 회원ID — 중복 열람 제거용
+  visitorId String
+  createdAt DateTime @default(now())
+
+  @@unique([pushLogId, visitorId])
+  @@index([pushLogId])
 }
 
 /// 방문 이벤트 로그 — 모든 페이지뷰/주요클릭을 익명 방문자ID와 함께 기록.

@@ -13,6 +13,7 @@ import { getActivePopups } from "@/lib/popup";
 import PopupLayer from "@/components/PopupLayer";
 import AppInstallBar from "@/components/AppInstallBar";
 import AppEngagementGate from "@/components/AppEngagementGate";
+import PushOpenReporter from "@/components/PushOpenReporter";
 import OnboardingOverlay from "@/components/OnboardingOverlay";
 import { getPlatform } from "@/lib/platform";
 
@@ -65,6 +66,7 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
   return (
     <AuthModalProvider>
       <OnboardingOverlay />
+      <PushOpenReporter />
       {popups.length > 0 && <PopupLayer popups={popups} />}
       {platform === "web" && (
         <>
