@@ -1,6 +1,6 @@
 // MD 데일리 리포트 빌더 — 전일(KST) 기준 핵심 지표 텍스트 생성
 import { prisma } from "@/lib/db";
-import { getFunnel, getVisitorFunnel, getAcquisition, getRetentionSummary } from "@/lib/analytics";
+import { getFunnel, getVisitorFunnel, getAcquisition, getRetentionSummary, getAppCtaPerformance } from "@/lib/analytics";
 import { readFileSync } from "node:fs";
 
 const KST = 9 * 3600 * 1000;
@@ -48,7 +48,7 @@ export async function buildDailyReport(dateStr?: string): Promise<DailyReport> {
   const safe = async <T>(p: Promise<T>, fb: T): Promise<T> => p.catch(() => fb);
   const emptyVF = { visitors: 0, viewers: 0, coders: 0 };
   const range = { gte: new Date(y + "T00:00:00+09:00"), lte: new Date(y + "T23:59:59+09:00") };
-  const [funnel, funnelPrev, vfAll, vfWeb, vfApp, acq, ret7, installs, canceled, totalSales] = await Promise.all([
+  const [funnel, funnelPrev, vfAll, vfWeb, vfApp, acq, ret7, installs, canceled, totalSales, ctaY] = await Promise.all([
     safe(getFunnel(y, y), { signups: 0, productViews: 0, linksCreated: 0, salesCount: 0, salesAmount: 0, commission: 0 }),
     safe(getFunnel(prev, prev), { signups: 0, productViews: 0, linksCreated: 0, salesCount: 0, salesAmount: 0, commission: 0 }),
     safe(getVisitorFunnel(y, y), { ...emptyVF }),
@@ -59,10 +59,13 @@ export async function buildDailyReport(dateStr?: string): Promise<DailyReport> {
     safe(prisma.pushToken.count({ where: { createdAt: range } }), 0),
     safe(prisma.sale.count({ where: { orderedAt: range, status: "canceled" } }), 0),
     safe(prisma.sale.count({ where: { orderedAt: range } }), 0),
+    safe(getAppCtaPerformance(y, y), [] as { source: string; label: string; impressions: number; clicks: number; ctr: number }[]),
   ]);
 
   const totalVisits = vfWeb.visitors + vfApp.visitors || vfAll.visitors;
   const appShare = pct(vfApp.visitors, totalVisits);
+  const ctaClicks = ctaY.reduce((a, r) => a + r.clicks, 0);
+  const webToAppRate = pct(installs, vfWeb.visitors);
   const convLinkToSale = pct(funnel.salesCount, funnel.linksCreated);
   const convPrev = pct(funnelPrev.salesCount, funnelPrev.linksCreated);
   const cancelRate = pct(canceled, totalSales);
@@ -86,7 +89,7 @@ export async function buildDailyReport(dateStr?: string): Promise<DailyReport> {
   L.push(`━ 셀러 활동`);
   L.push(`· 활성 공유셀러 ${vfAll.coders}명 · 링크생성 ${funnel.linksCreated} · 상품조회 ${funnel.productViews}`);
   L.push(`━ 앱`);
-  L.push(`· 신규설치(토큰) ${installs} · 앱비중 ${appShare.toFixed(0)}% · 웹→앱 전환율 —(계측예정)`);
+  L.push(`· 앱유도클릭 ${ctaClicks} · 신규설치 ${installs} · 앱비중 ${appShare.toFixed(0)}% · 웹→앱 ${webToAppRate.toFixed(1)}%`);
   L.push(`━ 리텐션(7일)`);
   L.push(`· 재방문율 ${ret7.returnRate.toFixed(0)}% · 회원방문 ${ret7.loggedInVisitors}`);
   L.push(alerts.length ? `⚠️ ${alerts.join(" / ")}` : `✅ 이상징후 없음`);
