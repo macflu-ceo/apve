@@ -10,6 +10,7 @@ import {
   getVisitorFunnel,
   getAcquisition,
   getAppCtaPerformance,
+  getAppConversionFunnel,
 } from "@/lib/analytics";
 import type { RetentionSummary } from "@/lib/analytics";
 import DateRange from "./DateRange";
@@ -32,7 +33,7 @@ export default async function AdminAnalytics({
   const to = searchParams.to ?? daysAgo(0);
   const pf = searchParams.platform === "app" ? "app" : searchParams.platform === "web" ? "web" : undefined;
 
-  const [funnel, top, series, retention, webSum, appSum, active, cohorts, vFunnel, acq, appCta] = await Promise.all([
+  const [funnel, top, series, retention, webSum, appSum, active, cohorts, vFunnel, acq, appCta, appFunnel] = await Promise.all([
     getFunnel(from, to),
     getTopProducts(from, to, 10),
     getDailySeries(from, to, pf),
@@ -44,6 +45,7 @@ export default async function AdminAnalytics({
     getVisitorFunnel(from, to, pf),
     getAcquisition(from, to, pf),
     getAppCtaPerformance(from, to),
+    getAppConversionFunnel(from, to),
   ]);
 
   // 전환율(코드생성/조회, 판매/코드생성)
@@ -128,6 +130,9 @@ export default async function AdminAnalytics({
         </div>
       </div>
 
+      {/* 웹 → 앱 전환 퍼널 */}
+      <AppFunnelSection f={appFunnel} />
+
       {/* 앱 유도 성과 (장치별 노출·클릭·전환율) */}
       <AppCtaSection rows={appCta} />
 
@@ -136,6 +141,62 @@ export default async function AdminAnalytics({
         <TopTable title="조회수 TOP 10" rows={top.byViews} metric="views" />
         <TopTable title="코드생성 TOP 10" rows={top.byLinks} metric="links" />
       </div>
+    </div>
+  );
+}
+
+/** 웹 → 앱 전환 퍼널 — 유도 노출 → 클릭 → 앱 접속 → 설치완료(고유 인원) */
+function AppFunnelSection({ f }: { f: import("@/lib/analytics").AppFunnel }) {
+  const steps = [
+    { label: "앱 유도 노출", sub: "유도를 본 방문자", value: f.ctaImpressions, base: true },
+    { label: "앱 유도 클릭", sub: "스토어로 이동", value: f.ctaClicks },
+    { label: "앱 접속", sub: "실제 앱으로 들어온 방문자", value: f.appVisitors },
+    { label: "설치 완료", sub: "앱 첫 로그인(보상 지급)", value: f.installs },
+  ];
+  const top = Math.max(f.ctaImpressions, 1);
+  const pct = (n: number, d: number) => (d > 0 ? Math.round((n / d) * 1000) / 10 : 0);
+  const empty = f.ctaImpressions + f.ctaClicks + f.appVisitors + f.installs === 0;
+  return (
+    <div className="mb-8">
+      <h2 className="mb-1 text-lg font-bold">웹 → 앱 전환 퍼널</h2>
+      <p className="mb-3 text-xs text-sub">
+        유도 노출 → 클릭 → 앱 접속 → <b>설치 완료(첫 앱 로그인)</b>까지 고유 인원 기준. 단계별로 얼마나 빠지는지 본다.
+      </p>
+      {empty ? (
+        <div className="card p-6 text-sm text-sub">아직 앱 전환 기록이 없습니다. (앱 출시·스토어 URL 설정 후 집계 시작)</div>
+      ) : (
+        <div className="card p-5">
+          <div className="space-y-2.5">
+            {steps.map((s, i) => {
+              const prev = i > 0 ? steps[i - 1].value : s.value;
+              const width = Math.max((s.value / top) * 100, s.value > 0 ? 4 : 0);
+              return (
+                <div key={s.label} className="flex items-center gap-3">
+                  <div className="w-28 shrink-0 text-right text-xs">
+                    <div className="font-semibold">{s.label}</div>
+                    <div className="text-[10px] text-sub">{s.sub}</div>
+                  </div>
+                  <div className="relative h-9 flex-1 overflow-hidden rounded-lg bg-line/60">
+                    <div
+                      className="flex h-full items-center rounded-lg bg-gradient-to-r from-brand/80 to-brand px-3 text-xs font-bold text-white"
+                      style={{ width: `${width}%`, minWidth: s.value > 0 ? "2.5rem" : 0 }}
+                    >
+                      {s.value.toLocaleString()}
+                    </div>
+                  </div>
+                  <div className="w-16 shrink-0 text-xs tabular-nums text-sub">
+                    {i === 0 ? "기준" : `${pct(s.value, prev)}%`}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="mt-4 border-t border-line pt-3 text-xs text-sub">
+            전체 전환율(노출→설치): <b className="text-brand">{pct(f.installs, f.ctaImpressions)}%</b>
+            <span className="ml-2">· 오른쪽 %는 직전 단계 대비 잔존율</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

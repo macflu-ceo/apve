@@ -4,18 +4,6 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 
-/** 상품 조회 1건 기록 (상세페이지 진입). 실패해도 무시(비차단). */
-export async function logProductView(productId: string, partnerId?: string | null) {
-  try {
-    await prisma.$transaction([
-      prisma.productView.create({ data: { productId, partnerId: partnerId ?? null } }),
-      prisma.product.update({ where: { id: productId }, data: { views: { increment: 1 } } }),
-    ]);
-  } catch {
-    // 조회 로깅 실패는 페이지 렌더를 막지 않는다
-  }
-}
-
 function kstStart(d: string) {
   return new Date(`${d}T00:00:00+09:00`);
 }
@@ -40,7 +28,8 @@ export async function getFunnel(from: string, to: string): Promise<FunnelResult>
 
   const [signups, productViews, linksCreated, sales] = await Promise.all([
     prisma.partner.count({ where: { createdAt: range } }),
-    prisma.productView.count({ where: { createdAt: range } }),
+    // 상품 조회는 실제 브라우저 방문(Visit kind=product) 기준 (봇 오염된 ProductView 폐기)
+    prisma.visit.count({ where: { createdAt: range, kind: "product" } }),
     prisma.issuedLink.count({ where: { createdAt: range } }),
     prisma.sale.aggregate({
       where: { orderedAt: range, status: "confirmed" },
@@ -444,4 +433,38 @@ export async function getAppCtaPerformance(from: string, to: string): Promise<Ap
       };
     })
     .sort((a, b) => b.clicks - a.clicks);
+}
+
+/** 웹 → 앱 전환 퍼널. 각 단계는 고유 방문자/회원 기준. */
+export type AppFunnel = {
+  ctaImpressions: number; // 앱 유도를 본 고유 방문자
+  ctaClicks: number;      // 앱 유도를 클릭한 고유 방문자
+  appVisitors: number;    // 실제 앱으로 접속한 고유 방문자
+  installs: number;       // 앱 설치 보상(첫 앱 로그인) 지급 수 = 전환 완료
+};
+
+const APP_INSTALL_REASON = "앱 설치 보상";
+
+export async function getAppConversionFunnel(from: string, to: string): Promise<AppFunnel> {
+  const [ctaRows, appRows, installs] = await Promise.all([
+    prisma.$queryRaw<{ impressions: bigint; clicks: bigint }[]>`
+      SELECT
+        COUNT(DISTINCT "visitorId") FILTER (WHERE kind = 'impression') AS impressions,
+        COUNT(DISTINCT "visitorId") FILTER (WHERE kind = 'click') AS clicks
+      FROM "Visit"
+      WHERE label LIKE 'app_cta_%' AND day >= ${from} AND day <= ${to}`,
+    prisma.$queryRaw<{ n: bigint }[]>`
+      SELECT COUNT(DISTINCT "visitorId") AS n FROM "Visit"
+      WHERE platform = 'app' AND day >= ${from} AND day <= ${to}`,
+    prisma.rewardVoucher.count({
+      where: { reason: APP_INSTALL_REASON, createdAt: { gte: kstStart(from), lte: kstEnd(to) } },
+    }),
+  ]);
+  const c = ctaRows[0] ?? { impressions: 0n, clicks: 0n };
+  return {
+    ctaImpressions: num(c.impressions),
+    ctaClicks: num(c.clicks),
+    appVisitors: num(appRows[0]?.n ?? 0n),
+    installs,
+  };
 }
