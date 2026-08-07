@@ -348,18 +348,18 @@ export interface RankedProduct {
   links: number;
 }
 
-/** 기간별 인기 상품 — 조회수 / 코드생성수 상위 */
+/** 기간별 인기 상품 — 조회수(고유 방문자) / 코드생성수 상위
+ * 조회수는 실제 브라우저 방문(Visit kind=product)의 고유 방문자 수로 집계한다.
+ * (서버 무한기록 ProductView는 봇에 오염돼 폐기 — 클라이언트 Visit은 봇 필터 적용됨) */
 export async function getTopProducts(from: string, to: string, take = 10) {
   const range = { gte: kstStart(from), lte: kstEnd(to) };
 
-  const [viewsAgg, linkAgg] = await Promise.all([
-    prisma.productView.groupBy({
-      by: ["productId"],
-      where: { createdAt: range },
-      _count: { _all: true },
-      orderBy: { _count: { productId: "desc" } },
-      take,
-    }),
+  const [viewRows, linkAgg] = await Promise.all([
+    prisma.$queryRaw<{ goodsNo: string; viewers: bigint }[]>`
+      SELECT "goodsNo", COUNT(DISTINCT "visitorId") AS viewers
+      FROM "Visit"
+      WHERE kind = 'product' AND "goodsNo" IS NOT NULL AND day >= ${from} AND day <= ${to}
+      GROUP BY "goodsNo" ORDER BY viewers DESC LIMIT ${take}`,
     prisma.issuedLink.groupBy({
       by: ["productId"],
       where: { createdAt: range },
@@ -369,34 +369,39 @@ export async function getTopProducts(from: string, to: string, take = 10) {
     }),
   ]);
 
-  const ids = [...new Set([...viewsAgg.map((v) => v.productId), ...linkAgg.map((l) => l.productId)])];
-  const products = await prisma.product.findMany({
-    where: { id: { in: ids } },
-    select: { id: true, goodsNo: true, name: true, brand: true },
-  });
-  const pmap = new Map(products.map((p) => [p.id, p]));
-  const viewMap = new Map(viewsAgg.map((v) => [v.productId, v._count._all]));
-  const linkMap = new Map(linkAgg.map((l) => [l.productId, l._count._all]));
+  const goodsNos = viewRows.map((v) => v.goodsNo);
+  const linkIds = linkAgg.map((l) => l.productId);
+  const [byGoods, byId] = await Promise.all([
+    goodsNos.length
+      ? prisma.product.findMany({ where: { goodsNo: { in: goodsNos } }, select: { id: true, goodsNo: true, name: true, brand: true } })
+      : Promise.resolve([]),
+    linkIds.length
+      ? prisma.product.findMany({ where: { id: { in: linkIds } }, select: { id: true, goodsNo: true, name: true, brand: true } })
+      : Promise.resolve([]),
+  ]);
+  const goodsMap = new Map(byGoods.map((p) => [p.goodsNo, p]));
+  const idMap = new Map(byId.map((p) => [p.id, p]));
+  const viewerMap = new Map(viewRows.map((v) => [v.goodsNo, num(v.viewers)]));
 
-  const byViews: RankedProduct[] = viewsAgg.map((v) => {
-    const p = pmap.get(v.productId);
+  const byViews: RankedProduct[] = viewRows.map((v) => {
+    const p = goodsMap.get(v.goodsNo);
     return {
-      id: v.productId,
-      goodsNo: p?.goodsNo ?? "-",
-      name: p?.name ?? "(삭제됨)",
+      id: p?.id ?? v.goodsNo,
+      goodsNo: v.goodsNo,
+      name: p?.name ?? "(미동기화 상품)",
       brand: p?.brand ?? null,
-      views: v._count._all,
-      links: linkMap.get(v.productId) ?? 0,
+      views: num(v.viewers),
+      links: 0,
     };
   });
   const byLinks: RankedProduct[] = linkAgg.map((l) => {
-    const p = pmap.get(l.productId);
+    const p = idMap.get(l.productId);
     return {
       id: l.productId,
       goodsNo: p?.goodsNo ?? "-",
       name: p?.name ?? "(삭제됨)",
       brand: p?.brand ?? null,
-      views: viewMap.get(l.productId) ?? 0,
+      views: p?.goodsNo ? viewerMap.get(p.goodsNo) ?? 0 : 0,
       links: l._count._all,
     };
   });

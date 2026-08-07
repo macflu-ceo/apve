@@ -6,7 +6,6 @@ import { getSiteSetting } from "@/lib/settings";
 import { getViewerRate } from "@/lib/grade";
 import AppUpsellButton from "@/components/AppUpsellButton";
 import { getSessionPartner } from "@/lib/auth";
-import { logProductView } from "@/lib/analytics";
 import { activeBoostForProduct } from "@/lib/timesale";
 import SizeGuideModal from "@/components/SizeGuideModal";
 import ProductGallery from "@/components/ProductGallery";
@@ -55,9 +54,9 @@ export default async function GoodsPage({ params }: { params: { goodsNo: string 
   const product = await prisma.product.findUnique({ where: { goodsNo: params.goodsNo } });
   if (!product) notFound();
 
-  // 조회수 기록 (비차단)
+  // 상품 조회는 클라이언트 <Tracker>가 Visit(kind=product)로 기록한다(봇 필터 적용).
+  // 서버 렌더마다 무조건 기록하던 방식(logProductView)은 봇 오염으로 폐기.
   const viewer = await getSessionPartner();
-  await logProductView(product.id, viewer?.id);
 
   // 20% 바우처 상태 (승인 회원만)
   let voucher: { available: number; appliedHere: "applied" | "used" | null } | null = null;

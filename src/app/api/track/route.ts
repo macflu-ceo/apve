@@ -3,7 +3,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSessionPartner } from "@/lib/auth";
-import { getOrSetVisitorId, getOrSetSessionId, kstDay } from "@/lib/visitor";
+import { getOrSetVisitorId, getOrSetSessionId, kstDay, isBotUA } from "@/lib/visitor";
 import { getPlatform } from "@/lib/platform";
 
 export const dynamic = "force-dynamic";
@@ -12,6 +12,10 @@ const KINDS = new Set(["page", "product", "click", "impression"]);
 
 export async function POST(req: Request) {
   try {
+    // 봇·크롤러·헤드리스는 집계에서 제외 (데이터 오염 방지)
+    if (isBotUA(req.headers.get("user-agent"))) {
+      return NextResponse.json({ ok: true }, { status: 204 });
+    }
     const body = (await req.json().catch(() => ({}))) as {
       path?: string;
       kind?: string;

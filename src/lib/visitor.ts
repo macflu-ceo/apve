@@ -6,6 +6,18 @@ const VID = "vid"; // 장기 방문자 식별 (리텐션)
 const VSID = "vsid"; // 세션 식별 (30분 무활동 시 새 세션 → 방문횟수)
 const SESSION_MIN = 30;
 
+/**
+ * 봇·크롤러·헤드리스 판별. 이런 UA는 애널리틱스에 기록하지 않는다(데이터 오염 방지).
+ * 검색엔진 봇, 소셜 미리보기, 헤드리스 브라우저(스크린샷), 각종 HTTP 클라이언트를 거른다.
+ */
+const BOT_RE =
+  /bot|crawl|spider|slurp|mediapartners|facebookexternalhit|embedly|quora|pinterest|bitlybot|redditbot|telegram|whatsapp|slackbot|discordbot|headless|phantomjs|puppeteer|playwright|lighthouse|chrome-lighthouse|python-requests|axios|node-fetch|okhttp|curl|wget|go-http|java\/|libwww|httpclient|scrapy|bytespider|petalbot|dataforseo|semrush|ahrefs|mj12bot|dotbot|yandex|baiduspider|googlebot|bingbot|applebot|duckduckbot/i;
+
+export function isBotUA(ua: string | null | undefined): boolean {
+  if (!ua) return true; // UA 없음 = 정상 브라우저 아님 → 봇 취급
+  return BOT_RE.test(ua);
+}
+
 /** KST 기준 오늘 날짜 YYYY-MM-DD */
 export function kstDay(d: Date = new Date()): string {
   return new Date(d.getTime() + 9 * 3600_000).toISOString().slice(0, 10);
