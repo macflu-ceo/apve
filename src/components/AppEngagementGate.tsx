@@ -25,6 +25,8 @@ export default function AppEngagementGate({
 }) {
   const [active, setActive] = useState<{ source: string } | null>(null);
   const shownRef = useRef<Set<number>>(new Set());
+  // 스토어 URL이 없으면(앱 미출시) 팝업을 아예 띄우지 않는다
+  const hasStore = !!(ios || android || landing);
 
   useEffect(() => {
     try {
@@ -36,6 +38,7 @@ export default function AppEngagementGate({
   }, []);
 
   useEffect(() => {
+    if (!hasStore) return; // 앱 미출시 중엔 카운트·팝업 비활성
     const onEngage = () => {
       let count = 0;
       try {
@@ -57,7 +60,7 @@ export default function AppEngagementGate({
     };
     window.addEventListener("cta-engage", onEngage);
     return () => window.removeEventListener("cta-engage", onEngage);
-  }, []);
+  }, [hasStore]);
 
   // 노출 기록
   useEffect(() => {

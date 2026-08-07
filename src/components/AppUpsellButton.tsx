@@ -20,10 +20,14 @@ export default function AppUpsellButton({
   appAmountLabel: string; // 앱 기준 예상 수수료 (예: "39,000원")
   gapLabel: string; // 추가 이득 (예: "+13,000원")
 }) {
+  // 스토어 URL이 설정되기 전(앱 미출시)엔 유도 자체를 숨긴다
+  const hasStore = !!(ios || android || landing);
   // 노출 기록(장치: 수수료 업셀)
   useEffect(() => {
-    trackAppCta("upsell", "impression");
-  }, []);
+    if (hasStore) trackAppCta("upsell", "impression");
+  }, [hasStore]);
+
+  if (!hasStore) return null;
 
   function go() {
     trackAppCta("upsell", "click");
