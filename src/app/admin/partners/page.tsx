@@ -81,6 +81,10 @@ type Row = {
   cPosts: number;        // 커뮤니티 글 수
   cComments: number;     // 댓글 수
   cLikes: number;        // 누른 좋아요 수
+  appLastAt: Date | null; // 앱으로 접속한 마지막 시각
+  appUser: boolean;       // 앱 사용 이력(앱 방문 or 푸시토큰 보유)
+  lastPlatform: string | null; // 마지막 접속 기기 web|app
+  pushOn: boolean;        // 앱 푸시 수신(활성 토큰 보유)
   residentNoEnc: string | null;
   address: string | null;
   bankName: string | null;
@@ -109,6 +113,9 @@ const SORTERS: Record<string, (a: Row, b: Row) => number> = {
   cPosts: (a, b) => a.cPosts - b.cPosts,
   productViews: (a, b) => a.productViews - b.productViews,
   lastVisitAt: (a, b) => (a.lastVisitAt?.getTime() ?? 0) - (b.lastVisitAt?.getTime() ?? 0),
+  appUser: (a, b) => Number(a.appUser) - Number(b.appUser),
+  appLastAt: (a, b) => (a.appLastAt?.getTime() ?? 0) - (b.appLastAt?.getTime() ?? 0),
+  pushOn: (a, b) => Number(a.pushOn) - Number(b.pushOn),
 };
 
 export default async function AdminPartners({ searchParams }: { searchParams: SP }) {
@@ -146,7 +153,7 @@ export default async function AdminPartners({ searchParams }: { searchParams: SP
   const engFrom = basis === "activity" && from ? from : undefined;
   const engTo = basis === "activity" && to ? to : undefined;
 
-  const [partners, grades, aiAgg, linkAgg, saleAgg, saleTotalAgg, pendingList, engMap, voucherAgg, cPostAgg, cCommentAgg, cLikeAgg] = await Promise.all([
+  const [partners, grades, aiAgg, linkAgg, saleAgg, saleTotalAgg, pendingList, engMap, voucherAgg, cPostAgg, cCommentAgg, cLikeAgg, appVisitAgg, pushAgg, lastPlatformRows] = await Promise.all([
     prisma.partner.findMany({ where: partnerWhere }),
     listGrades(),
     prisma.tryOnImage.groupBy({
@@ -175,10 +182,23 @@ export default async function AdminPartners({ searchParams }: { searchParams: SP
     prisma.communityPost.groupBy({ by: ["partnerId"], _count: { _all: true } }),
     prisma.communityComment.groupBy({ by: ["partnerId"], _count: { _all: true } }),
     prisma.communityLike.groupBy({ by: ["partnerId"], _count: { _all: true } }),
+    // 앱 사용 흔적: 앱 플랫폼 방문의 마지막 시각 (전체 누적)
+    prisma.visit.groupBy({ by: ["partnerId"], where: { platform: "app", partnerId: { not: null } }, _max: { createdAt: true } }),
+    // 푸시 수신 상태: 활성 토큰 보유 회원
+    prisma.pushToken.groupBy({ by: ["partnerId"], where: { active: true, partnerId: { not: null } }, _count: { _all: true } }),
+    // 마지막 접속 플랫폼(가장 최근 방문의 web/app)
+    prisma.$queryRaw<{ partnerId: string; platform: string }[]>`
+      SELECT DISTINCT ON ("partnerId") "partnerId", platform
+      FROM "Visit" WHERE "partnerId" IS NOT NULL
+      ORDER BY "partnerId", "createdAt" DESC`,
   ]);
   const cPostMap = new Map(cPostAgg.map((r) => [r.partnerId, r._count._all]));
   const cCommentMap = new Map(cCommentAgg.map((r) => [r.partnerId, r._count._all]));
   const cLikeMap = new Map(cLikeAgg.map((r) => [r.partnerId, r._count._all]));
+  // 앱/푸시 지표 맵
+  const appLastMap = new Map(appVisitAgg.filter((r) => r.partnerId).map((r) => [r.partnerId as string, r._max.createdAt]));
+  const pushSet = new Set(pushAgg.filter((r) => r.partnerId).map((r) => r.partnerId as string));
+  const lastPlatformMap = new Map(lastPlatformRows.map((r) => [r.partnerId, r.platform]));
 
   const gradeOptions = grades.map((g) => ({ id: g.id, name: g.name, percent: g.percent }));
   const firstName = grades.find((g) => g.systemKey === "first")?.name ?? "첫구매";
@@ -234,6 +254,10 @@ export default async function AdminPartners({ searchParams }: { searchParams: SP
       cPosts: cPostMap.get(p.id) ?? 0,
       cComments: cCommentMap.get(p.id) ?? 0,
       cLikes: cLikeMap.get(p.id) ?? 0,
+      appLastAt: appLastMap.get(p.id) ?? null,
+      appUser: appLastMap.has(p.id) || pushSet.has(p.id),
+      lastPlatform: lastPlatformMap.get(p.id) ?? null,
+      pushOn: pushSet.has(p.id),
       residentNoEnc: p.residentNoEnc,
       address: p.address,
       bankName: p.bankName,
@@ -407,7 +431,7 @@ export default async function AdminPartners({ searchParams }: { searchParams: SP
           회원 목록 <span className="text-brand">({rows.length})</span>
         </h2>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1780px] text-sm">
+          <table className="w-full min-w-[2140px] text-sm">
             <thead className="border-b border-line text-sub">
               <tr>
                 <Th k="name" label="이름" />
@@ -422,6 +446,10 @@ export default async function AdminPartners({ searchParams }: { searchParams: SP
                 <Th k="visits" label="방문" right />
                 <Th k="productViews" label="상품조회" right />
                 <Th k="lastVisitAt" label="최근 방문" />
+                <Th k="appUser" label="앱설치" />
+                <Th k="appLastAt" label="앱 최근접속" />
+                <th className="whitespace-nowrap px-2 py-2 text-left font-normal">최근기기</th>
+                <Th k="pushOn" label="푸시" />
                 <Th k="aiCount" label="AI 이미지" right />
                 <Th k="linkCount" label="코드 생성" right />
                 <Th k="saleCount" label="판매" right />
@@ -433,7 +461,7 @@ export default async function AdminPartners({ searchParams }: { searchParams: SP
             <tbody>
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={18} className="py-8 text-center text-sub">
+                  <td colSpan={22} className="py-8 text-center text-sub">
                     조건에 맞는 회원이 없습니다.
                   </td>
                 </tr>
@@ -484,6 +512,30 @@ export default async function AdminPartners({ searchParams }: { searchParams: SP
                   <td className="text-right font-semibold tabular-nums text-brand">{p.visits.toLocaleString()}</td>
                   <td className="text-right tabular-nums">{p.productViews.toLocaleString()}</td>
                   <td className="whitespace-nowrap text-sub">{fmtDateTime(p.lastVisitAt)}</td>
+                  <td className="whitespace-nowrap">
+                    {p.appUser ? (
+                      <span className="rounded bg-brandsoft px-1.5 py-0.5 text-[10px] font-bold text-brand">앱</span>
+                    ) : (
+                      <span className="text-sub">-</span>
+                    )}
+                  </td>
+                  <td className="whitespace-nowrap text-sub">{fmtDateTime(p.appLastAt)}</td>
+                  <td className="whitespace-nowrap">
+                    {p.lastPlatform === "app" ? (
+                      <span className="text-brand">앱</span>
+                    ) : p.lastPlatform === "web" ? (
+                      <span className="text-sub">웹</span>
+                    ) : (
+                      <span className="text-sub">-</span>
+                    )}
+                  </td>
+                  <td className="whitespace-nowrap">
+                    {p.pushOn ? (
+                      <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700">ON</span>
+                    ) : (
+                      <span className="text-sub">off</span>
+                    )}
+                  </td>
                   <td className="text-right tabular-nums">{p.aiCount.toLocaleString()}</td>
                   <td className="text-right tabular-nums">{p.linkCount.toLocaleString()}</td>
                   <td className="text-right tabular-nums">{p.saleCount.toLocaleString()}</td>
@@ -520,6 +572,10 @@ export default async function AdminPartners({ searchParams }: { searchParams: SP
                   <td className="text-right tabular-nums">{sum.loginCount.toLocaleString()}</td>
                   <td className="text-right tabular-nums text-brand">{sum.visits.toLocaleString()}</td>
                   <td className="text-right tabular-nums">{sum.productViews.toLocaleString()}</td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
                   <td></td>
                   <td className="text-right tabular-nums">{sum.aiCount.toLocaleString()}</td>
                   <td className="text-right tabular-nums">{sum.linkCount.toLocaleString()}</td>
