@@ -7,7 +7,26 @@ import { couponState, dday } from "@/lib/coupon";
 import CouponActions from "./CouponActions";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "특별 이용 권한 · VIA ÉLITE", robots: { index: false } };
+
+// 카톡·SNS 공유 미리보기(Open Graph)를 쿠폰별로 개인화 — "컨시어지 · 매장 특별 이용 권한"
+export async function generateMetadata({ params }: { params: { id: string } }) {
+  const c = await prisma.coupon.findUnique({
+    where: { id: params.id },
+    select: { conciergeName: true, customerName: true, benefitText: true, store: { select: { name: true } } },
+  });
+  if (!c) return { title: "특별 이용 권한 · VIA ÉLITE", robots: { index: false } };
+  const h = await headers();
+  const origin = `${h.get("x-forwarded-proto") ?? "https"}://${h.get("host") ?? "www.cashboutique.co.kr"}`;
+  const title = `${c.conciergeName} · ${c.store.name} 특별 이용 권한`;
+  const description = `${c.customerName}님을 위한 ${c.benefitText}`;
+  return {
+    title,
+    description,
+    robots: { index: false },
+    openGraph: { title, description, type: "website", images: [{ url: `${origin}/og-privilege.png`, width: 1200, height: 630 }] },
+    twitter: { card: "summary_large_image", title, description, images: [`${origin}/og-privilege.png`] },
+  };
+}
 
 const won = (n: number) => n.toLocaleString("ko-KR");
 
