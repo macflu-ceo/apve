@@ -31,10 +31,13 @@ export default async function MyPage() {
   }
 
   const isApproved = partner.status === "approved";
+  const isConcierge = partner.conciergeNo != null; // 컨시어지 자격(수수료 등급과 별개)
   const myGrade = isApproved ? await getPartnerGrade(partner.id) : null;
-  const grade = isApproved ? myGrade?.name ?? "어필리에이터" : "승인대기중";
-  // 첫구매/일반(시스템 등급)이 아닌 커스텀 등급 = 이미 업그레이드된 회원
-  const isUpgraded = isApproved && !!myGrade && myGrade.systemKey == null;
+  const autoGrade = isApproved ? myGrade?.name ?? "어필리에이터" : "승인대기중";
+  // 컨시어지면 분류를 '컨시어지'로 표시(첫구매 20% 커미션은 그대로 적용)
+  const grade = isConcierge ? "컨시어지" : autoGrade;
+  // 컨시어지이거나 커스텀 등급이면 가입 CTA 대신 현재 상태를 보여준다
+  const isUpgraded = isConcierge || (isApproved && !!myGrade && myGrade.systemKey == null);
 
   const [links, sales, vouchers] = await Promise.all([
     prisma.issuedLink.findMany({ where: { partnerId: partner.id }, include: { product: true }, orderBy: { createdAt: "desc" } }),
@@ -92,8 +95,16 @@ export default async function MyPage() {
       {/* 커뮤니티 닉네임 (최초 1회 변경) */}
       <NicknameEditor nickname={partner.nickname} changed={partner.nicknameChanged} />
 
-      {/* 상위 등급(컨시어지 등)은 업그레이드 CTA 대신 현재 멤버십을 보여준다 */}
-      {isUpgraded ? (
+      {/* 컨시어지는 전용 센터로, 커스텀 등급은 현재 멤버십, 그 외는 가입 CTA */}
+      {isConcierge ? (
+        <Link href="/concierge" className="flex items-center justify-between rounded-xl2 bg-gradient-to-br from-[#2C3A30] to-[#222C25] p-5 text-white">
+          <div>
+            <div className="text-base font-black">컨시어지 센터</div>
+            <div className="mt-0.5 text-xs font-semibold text-white/70">매장 링크·상품카드·전용 공지 바로가기</div>
+          </div>
+          <span className="text-xl">→</span>
+        </Link>
+      ) : isUpgraded ? (
         <div className="flex items-center justify-between rounded-xl2 bg-gradient-to-br from-[#efe6df] to-[#d8c3b3] p-5">
           <div>
             <div className="text-base font-black text-ink">{myGrade!.name} 멤버십</div>
