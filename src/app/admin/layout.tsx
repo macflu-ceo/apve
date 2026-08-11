@@ -53,6 +53,16 @@ const ADMIN_GROUPS = [
     ],
   },
   {
+    group: "컨시어지",
+    items: [
+      { href: "/admin/concierge-members", label: "컨시어지 임명" },
+      { href: "/admin/concierge-notices", label: "전용 공지" },
+      { href: "/admin/concierge-stores", label: "매장 관리" },
+      { href: "/admin/concierge-coupons", label: "쿠폰·집계" },
+      { href: "/admin/concierge-reservations", label: "방문 예약" },
+    ],
+  },
+  {
     group: "설정",
     items: [{ href: "/admin/settings", label: "계정정보/설정" }],
   },
