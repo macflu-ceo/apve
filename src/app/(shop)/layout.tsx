@@ -14,6 +14,9 @@ import { getActivePopups } from "@/lib/popup";
 import PopupLayer from "@/components/PopupLayer";
 import AppInstallBar from "@/components/AppInstallBar";
 import AppEngagementGate from "@/components/AppEngagementGate";
+import AppSideQr from "@/components/AppSideQr";
+import { headers } from "next/headers";
+import QRCode from "qrcode";
 import PushOpenReporter from "@/components/PushOpenReporter";
 import OnboardingOverlay from "@/components/OnboardingOverlay";
 import { getPlatform } from "@/lib/platform";
@@ -59,6 +62,15 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
 
   const platform = getPlatform(); // web | app (앱 웹뷰면 다운로드 유도 숨김)
 
+  // 데스크톱 사이드 QR용 — 스토어 URL이 있을 때만 /app 스마트링크 QR 생성
+  const hasStore = !!(setting.appIosUrl || setting.appAndroidUrl || setting.appLandingUrl);
+  let sideQr = "";
+  if (platform === "web" && hasStore) {
+    const h = await headers();
+    const origin = `${h.get("x-forwarded-proto") ?? "https"}://${h.get("host") ?? "www.cashboutique.co.kr"}`;
+    sideQr = await QRCode.toDataURL(`${origin}/app?src=sideqr`, { margin: 1, width: 256 });
+  }
+
   // 앱 첫 로그인 사용자 → 앱 설치 보상 20% 바우처 1회 지급(원자적, 중복 없음)
   if (platform === "app" && partner) {
     await grantAppInstallVoucher(partner.id).catch(() => {});
@@ -79,6 +91,7 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
         <>
           <AppInstallBar ios={setting.appIosUrl} android={setting.appAndroidUrl} landing={setting.appLandingUrl} />
           <AppEngagementGate ios={setting.appIosUrl} android={setting.appAndroidUrl} landing={setting.appLandingUrl} />
+          {sideQr && <AppSideQr qr={sideQr} ios={setting.appIosUrl} android={setting.appAndroidUrl} landing={setting.appLandingUrl} />}
         </>
       )}
       {timeSale && timeSale.state !== "off" && (

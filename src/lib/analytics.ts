@@ -403,6 +403,7 @@ export type AppCtaRow = { source: string; label: string; impressions: number; cl
 
 const CTA_LABELS: Record<string, string> = {
   topbar: "상단 앱설치 바",
+  sideqr: "데스크톱 사이드 QR",
   upsell: "수수료 20%↑ 버튼",
   codelimit: "코드복사 한도 도달",
   pop5: "행동 5회 팝업",
