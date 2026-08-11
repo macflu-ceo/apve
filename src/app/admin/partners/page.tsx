@@ -4,6 +4,7 @@ import { won } from "@/lib/format";
 import { listGrades } from "@/lib/grade";
 import { getPartnerEngagement } from "@/lib/analytics";
 import PendingRow from "./PendingRow";
+import ForceDeleteButton from "./ForceDeleteButton";
 import GradeSelect from "./GradeSelect";
 import SettlementCell from "./SettlementCell";
 import { decryptSensitive, maskResidentNo, maskAccount } from "@/lib/crypto";
@@ -469,12 +470,15 @@ export default async function AdminPartners({ searchParams }: { searchParams: SP
               {rows.map((p) => (
                 <tr key={p.id} className="border-b border-line align-middle">
                   <td className="whitespace-nowrap py-2 font-medium">
-                    {p.name}
-                    {p.status !== "approved" && (
-                      <span className="ml-1 rounded bg-line px-1 text-[10px] text-sub">
-                        {p.status === "pending" ? "대기" : "반려"}
-                      </span>
-                    )}
+                    <div className="flex items-center gap-1">
+                      {p.name}
+                      {p.status !== "approved" && (
+                        <span className="rounded bg-line px-1 text-[10px] text-sub">
+                          {p.status === "pending" ? "대기" : "반려"}
+                        </span>
+                      )}
+                    </div>
+                    {p.status !== "rejected" && <ForceDeleteButton id={p.id} name={p.name} />}
                   </td>
                   <td className="whitespace-nowrap text-sub">@{p.username}</td>
                   <td className="whitespace-nowrap text-sub">{p.phone ?? "-"}</td>

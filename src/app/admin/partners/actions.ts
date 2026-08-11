@@ -1,8 +1,37 @@
 "use server";
 
+import crypto from "crypto";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { notifySignupApproved } from "@/lib/crm/events";
+
+/** 강제 탈퇴 — 관리자가 회원을 탈퇴 처리(개인정보 즉시 파기 + 로그인 차단).
+ * 거래·정산 기록(FK)은 남기되 개인 식별정보는 모두 익명화. 회원 본인 탈퇴와 동일 처리. */
+export async function forceDeletePartner(id: string) {
+  await prisma.partner.update({
+    where: { id },
+    data: {
+      active: false,
+      status: "rejected",
+      name: "탈퇴회원",
+      nickname: null,
+      phone: null,
+      email: null,
+      ci: null,
+      residentNoEnc: null,
+      address: null,
+      bankName: null,
+      bankAccount: null,
+      accountHolder: null,
+      idCardUrl: null,
+      bankbookUrl: null,
+      conciergeNo: null,
+      passwordHash: "deleted:" + crypto.randomBytes(16).toString("hex"),
+    },
+  });
+  revalidatePath("/admin/partners");
+  return { ok: true, message: "강제 탈퇴 처리되었습니다." };
+}
 
 /** 가입 신청 승인 — 고도몰에서 발급한 코드를 입력해 부여하고 활성화 */
 export async function approvePartner(id: string, code: string) {
