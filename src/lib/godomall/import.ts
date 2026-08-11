@@ -7,6 +7,7 @@ import { scrapeProduct } from "@/lib/godomall/scrape";
 import { fetchStockOne, toSizeStock } from "@/lib/godomall/stock";
 import { extractGoodsNo } from "@/lib/godomall/link";
 import { parseSeason } from "@/lib/season";
+import { conciergePrice } from "@/lib/pricing";
 
 /** goodsNo → 고도몰 상품 상세 URL */
 export function goodsViewUrl(goodsNo: string): string {
@@ -56,7 +57,8 @@ export async function upsertFromUrl(url: string): Promise<{ goodsNo: string; nam
     category: s.category,
     season: parseSeason(s.name),
     listPrice: s.listPrice,
-    salePrice: s.salePrice,
+    salePrice: conciergePrice(s.salePrice), // 원본가에서 5% 낮춰 등록
+
     stock,
     sizesJson: JSON.stringify(sizes),
     sizeStockJson: JSON.stringify(sizeStock),
