@@ -19,7 +19,6 @@ import { headers } from "next/headers";
 import QRCode from "qrcode";
 import PushOpenReporter from "@/components/PushOpenReporter";
 import OnboardingOverlay from "@/components/OnboardingOverlay";
-import AppSplash from "@/components/AppSplash";
 import { getPlatform } from "@/lib/platform";
 
 const BASE_TABS = [
@@ -85,7 +84,6 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
 
   return (
     <AuthModalProvider>
-      {platform === "app" && setting.appSplashUrl && <AppSplash src={setting.appSplashUrl} />}
       <OnboardingOverlay />
       <PushOpenReporter />
       {popups.length > 0 && <PopupLayer popups={popups} />}
