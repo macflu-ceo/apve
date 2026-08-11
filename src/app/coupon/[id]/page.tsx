@@ -34,8 +34,9 @@ export default async function CouponPage({ params }: { params: { id: string } })
         <div id="privilege-card" style={{ background: "#2C3A30", color: "#EDE8DC" }} className="relative overflow-hidden rounded p-7">
           {/* 1 로고 */}
           <div className="text-center">
-            <div style={{ fontFamily: "Georgia,serif", letterSpacing: "0.26em" }} className="text-[21px] font-semibold text-white">VIA ÉLITE</div>
-            <div style={{ letterSpacing: "0.3em" }} className="mt-1 text-[8px] text-[#EDE8DC]/50">STORE PRIVILEGE</div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/via-elite-logo-white.png" alt="VIA ÉLITE" className="mx-auto h-5 w-auto" />
+            <div style={{ letterSpacing: "0.3em" }} className="mt-2 text-[8px] text-[#EDE8DC]/50">STORE PRIVILEGE</div>
           </div>
           <div className="my-5 h-px" style={{ background: "linear-gradient(90deg,transparent,rgba(220,195,138,.4),transparent)" }} />
 
