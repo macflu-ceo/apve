@@ -144,21 +144,18 @@ export async function sendPushToSegment(
   if (segment === "guests") where.partnerId = null;
 
   const tokens = await prisma.pushToken.findMany({ where, select: { id: true, token: true } });
+  return dispatch(tokens, msg, segment, trigger);
+}
 
-  // 로그를 먼저 만들어 id를 확보 → 알림 링크에 pushId를 심어 열람(탭)을 귀속한다.
+/** 공용 발송 — 로그 먼저 만들어 pushId(열람 귀속) 심고 전송 후 결과 반영 */
+async function dispatch(
+  tokens: { id: string; token: string }[],
+  msg: PushMessage,
+  segment: string,
+  trigger: string
+): Promise<PushResult> {
   const log = await prisma.pushLog.create({
-    data: {
-      title: msg.title,
-      body: msg.body,
-      url: msg.url ?? null,
-      imageUrl: msg.imageUrl ?? null,
-      segment,
-      trigger,
-      target: 0,
-      sent: 0,
-      failed: 0,
-      provider: "mock",
-    },
+    data: { title: msg.title, body: msg.body, url: msg.url ?? null, imageUrl: msg.imageUrl ?? null, segment, trigger, target: 0, sent: 0, failed: 0, provider: "mock" },
   });
   const linkUrl = withPushId(msg.url, log.id);
   const res = await sendPushToTokens(tokens, { ...msg, url: linkUrl });
@@ -167,6 +164,23 @@ export async function sendPushToSegment(
     data: { target: res.target, sent: res.sent, failed: res.failed, provider: res.provider },
   });
   return res;
+}
+
+/** 특정 회원 등급에게만 발송 (예: '매장' 등급 → 예약 알림, '관리자' 등급 → 관리 메시지) */
+export async function sendPushToGrade(gradeId: string, gradeName: string, msg: PushMessage, trigger = "manual"): Promise<PushResult> {
+  const partners = await prisma.partner.findMany({ where: { gradeId, active: true }, select: { id: true } });
+  const ids = partners.map((p) => p.id);
+  const tokens = ids.length
+    ? await prisma.pushToken.findMany({ where: { active: true, partnerId: { in: ids } }, select: { id: true, token: true } })
+    : [];
+  return dispatch(tokens, msg, `등급:${gradeName}`, trigger);
+}
+
+/** 등급 이름으로 발송 (없으면 무시). 트리거·서버 내부용. */
+export async function sendPushToGradeName(gradeName: string, msg: PushMessage, trigger = "manual"): Promise<PushResult | null> {
+  const grade = await prisma.grade.findUnique({ where: { name: gradeName }, select: { id: true, name: true } });
+  if (!grade) return null;
+  return sendPushToGrade(grade.id, grade.name, msg, trigger);
 }
 
 /** 특정 회원의 기기들에 발송 (개별 로그는 남기지 않음 — 트리거에서 집계). */

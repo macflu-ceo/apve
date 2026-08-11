@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { isAdmin } from "@/lib/admin";
-import { sendPushToSegment, sendTestPush, type PushSegment } from "@/lib/push";
+import { sendPushToSegment, sendPushToGrade, sendTestPush, type PushSegment } from "@/lib/push";
 
 export async function sendPushAction(input: {
   title: string;
@@ -11,20 +11,25 @@ export async function sendPushAction(input: {
   url: string;
   imageUrl: string;
   segment: string;
+  gradeId?: string; // segment==="grade" 일 때
 }) {
   if (!isAdmin()) return { ok: false, message: "권한이 없습니다." };
   const title = input.title.trim();
   const body = input.body.trim();
   if (!title || !body) return { ok: false, message: "제목과 내용을 입력하세요." };
 
-  const segment: PushSegment =
-    input.segment === "members" || input.segment === "guests" ? input.segment : "all";
+  const msg = { title, body, url: input.url.trim() || undefined, imageUrl: input.imageUrl.trim() || undefined };
 
-  const res = await sendPushToSegment(
-    segment,
-    { title, body, url: input.url.trim() || undefined, imageUrl: input.imageUrl.trim() || undefined },
-    "manual"
-  );
+  let res;
+  if (input.segment === "grade") {
+    if (!input.gradeId) return { ok: false, message: "등급을 선택하세요." };
+    const grade = await prisma.grade.findUnique({ where: { id: input.gradeId }, select: { id: true, name: true } });
+    if (!grade) return { ok: false, message: "등급을 찾을 수 없습니다." };
+    res = await sendPushToGrade(grade.id, grade.name, msg, "manual");
+  } else {
+    const segment: PushSegment = input.segment === "members" || input.segment === "guests" ? input.segment : "all";
+    res = await sendPushToSegment(segment, msg, "manual");
+  }
   revalidatePath("/admin/push");
 
   const note =

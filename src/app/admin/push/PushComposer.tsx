@@ -9,9 +9,10 @@ const SEGMENTS = [
   { key: "all", label: "전체 (앱 설치자 모두)" },
   { key: "members", label: "회원 (로그인 연결)" },
   { key: "guests", label: "비회원 (미로그인)" },
+  { key: "grade", label: "특정 등급 (예: 매장·관리자)" },
 ];
 
-export default function PushComposer({ tokenCount }: { tokenCount: number }) {
+export default function PushComposer({ tokenCount, grades }: { tokenCount: number; grades: { id: string; name: string }[] }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -21,6 +22,7 @@ export default function PushComposer({ tokenCount }: { tokenCount: number }) {
   const [url, setUrl] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [segment, setSegment] = useState("all");
+  const [gradeId, setGradeId] = useState(grades[0]?.id ?? "");
 
   const [showTest, setShowTest] = useState(false);
   const [testToken, setTestToken] = useState("");
@@ -39,7 +41,7 @@ export default function PushComposer({ tokenCount }: { tokenCount: number }) {
     if (!confirm(`'${SEGMENTS.find((s) => s.key === segment)?.label}' 에게 지금 발송할까요?`)) return;
     setMsg(null);
     start(async () => {
-      const r = await sendPushAction({ title, body, url, imageUrl, segment });
+      const r = await sendPushAction({ title, body, url, imageUrl, segment, gradeId: segment === "grade" ? gradeId : undefined });
       setMsg({ ok: r.ok, text: r.message });
       if (r.ok) {
         setTitle("");
@@ -63,6 +65,10 @@ export default function PushComposer({ tokenCount }: { tokenCount: number }) {
 
   function schedule() {
     if (!validate()) return;
+    if (segment === "grade") {
+      setMsg({ ok: false, text: "특정 등급 대상은 즉시 발송만 지원해요 (예약 발송 미지원)." });
+      return;
+    }
     if (!scheduleAt) {
       setMsg({ ok: false, text: "예약 시각을 선택하세요." });
       return;
@@ -98,6 +104,17 @@ export default function PushComposer({ tokenCount }: { tokenCount: number }) {
           </select>
         </label>
       </div>
+      {segment === "grade" && (
+        <label className="flex flex-col gap-1">
+          <span className="text-sm font-medium">등급 선택</span>
+          <select value={gradeId} onChange={(e) => setGradeId(e.target.value)} className="field">
+            {grades.length === 0 ? <option value="">(등급 없음 — 등급/수수료율에서 먼저 생성)</option> : grades.map((g) => (
+              <option key={g.id} value={g.id}>{g.name}</option>
+            ))}
+          </select>
+          <span className="text-xs text-sub">이 등급인 회원 중 앱 알림에 동의한 사람에게만 갑니다. (예: 매장·관리자)</span>
+        </label>
+      )}
 
       <label className="flex flex-col gap-1">
         <span className="text-sm font-medium">내용</span>

@@ -13,12 +13,13 @@ function fmtDateTime(d: Date) {
 const SEG_LABEL: Record<string, string> = { all: "전체", members: "회원", guests: "비회원" };
 
 export default async function AdminPush() {
-  const [total, members, byPlatform, logs, scheduled] = await Promise.all([
+  const [total, members, byPlatform, logs, scheduled, grades] = await Promise.all([
     prisma.pushToken.count({ where: { active: true } }),
     prisma.pushToken.count({ where: { active: true, partnerId: { not: null } } }),
     prisma.pushToken.groupBy({ by: ["platform"], where: { active: true }, _count: { _all: true } }),
     prisma.pushLog.findMany({ orderBy: { createdAt: "desc" }, take: 50 }),
     prisma.scheduledPush.findMany({ where: { status: "pending" }, orderBy: { sendAt: "asc" } }),
+    prisma.grade.findMany({ orderBy: { sort: "asc" }, select: { id: true, name: true } }),
   ]);
 
   const configured = isPushConfigured();
@@ -50,7 +51,7 @@ export default async function AdminPush() {
       {/* 발송 */}
       <h2 className="mb-3 text-lg font-semibold">새 푸시 발송</h2>
       <div className="mb-6">
-        <PushComposer tokenCount={total} />
+        <PushComposer tokenCount={total} grades={grades} />
       </div>
 
       {/* 가이드 */}
