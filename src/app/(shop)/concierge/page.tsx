@@ -1,7 +1,9 @@
 import { getCurrentPartner } from "@/lib/session";
 import { listActiveQuestions } from "@/lib/concierge";
+import { getConciergeViewer } from "@/lib/concierge-access";
 import { parseList } from "@/lib/format";
 import ApplyModal from "./ApplyModal";
+import ConciergeHub from "./ConciergeHub";
 
 export const dynamic = "force-dynamic";
 
@@ -11,6 +13,10 @@ const TIERS = [
 ];
 
 export default async function ConciergePage() {
+  // 컨시어지 자격이면 전용 허브(도구 3종)로, 아니면 아래 가입 랜딩으로
+  const concierge = await getConciergeViewer();
+  if (concierge) return <ConciergeHub name={concierge.name} conciergeNo={concierge.conciergeNo} />;
+
   const partner = await getCurrentPartner();
   const questions = (await listActiveQuestions()).map((q) => ({
     id: q.id,

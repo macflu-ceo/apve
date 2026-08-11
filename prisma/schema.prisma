@@ -48,6 +48,8 @@ model Partner {
   active       Boolean  @default(true)
   /// 앱 설치 보상 바우처 지급 완료 여부 (앱 첫 로그인 시 1회 지급)
   appInstallRewarded Boolean @default(false)
+  /// 컨시어지 번호(예: 1 → 코드 001). 값이 있으면 '컨시어지' 자격 = 매장링크·상품카드 접근 권한
+  conciergeNo  Int?     @unique
   createdAt    DateTime @default(now())
 
   /// 마지막 로그인 시각 / 누적 로그인 횟수 (어드민 회원 통계)
@@ -747,4 +749,80 @@ model TryOnImage {
   createdAt DateTime @default(now())
 
   @@index([partnerId, createdAt])
+}
+
+// ─────────────────────────────────────────────
+// 컨시어지 전용 — 매장 특별 이용 권한(STORE PRIVILEGE) + 상품카드 + 공지
+// ─────────────────────────────────────────────
+
+/// 오프라인 매장 (청담 등). code 2자리(cd)로 쿠폰코드·고객화면 매장정보 자동 결정.
+model Store {
+  id        String   @id @default(cuid())
+  code      String   @unique          // cd, ap … (쿠폰코드 앞 2자리)
+  name      String                     // 비아엘리떼 청담점
+  address   String?
+  hours     String?                    // 11:00 – 20:00
+  mapUrl    String?                    // 길찾기 링크
+  /// 매장 스캔페이지 접근 PIN (해시). 매장 직원이 태블릿에서 입력.
+  pinHash   String?
+  active    Boolean  @default(true)
+  sort      Int      @default(0)
+  coupons   Coupon[]
+  createdAt DateTime @default(now())
+}
+
+/// 매장 특별 이용 권한(쿠폰). id=공개 링크용 추측불가 랜덤. code=표시용 cd001cp-0731.
+model Coupon {
+  id            String   @id @default(cuid())
+  code          String   @unique
+  storeId       String
+  store         Store    @relation(fields: [storeId], references: [id])
+  conciergeId   String                    // 발급 컨시어지 partnerId
+  conciergeNo   Int                        // 001
+  conciergeName String
+  priceType     String                     // cp(마진 있음) | ws(마진 없음)
+  serial        Int                        // 발급 일련번호 (매장+컨시어지 범위 채번)
+  customerName  String                     // 고객 화면 중앙 각인(복제방지)
+  customerPhone String                     // 예약확인·본인확인용(고객화면 미노출)
+  benefitText   String                     // 정가 대비 최대 70% 전용가
+  brandsText    String?                    // 구찌·프라다 전 품목
+  conditions    String?                    // 이용조건(줄바꿈=항목)
+  startAt       DateTime
+  endAt         DateTime
+  status        String   @default("issued") // issued | used | canceled
+  usedAt        DateTime?
+  usedStorePin  Boolean  @default(false)   // 매장 PIN으로 처리됨
+  purchaseAmount Int?                       // 사용처리 시 구매금액(집계, 선택)
+  reservation   CouponReservation?
+  createdAt     DateTime @default(now())
+
+  @@index([storeId, status])
+  @@index([conciergeId])
+  @@index([createdAt])
+}
+
+/// 매장 방문 예약 (쿠폰 1건당 최대 1개)
+model CouponReservation {
+  id        String   @id @default(cuid())
+  couponId  String   @unique
+  coupon    Coupon   @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  date      String                        // YYYY-MM-DD
+  time      String                        // HH:MM
+  status    String   @default("reserved") // reserved | visited | noshow | canceled
+  createdAt DateTime @default(now())
+
+  @@index([date])
+}
+
+/// 컨시어지 전용 공지 (파일 첨부·다운로드 지원)
+model ConciergeNotice {
+  id         String   @id @default(cuid())
+  title      String
+  content    String
+  imagesJson String?                       // 본문 이미지 URL 배열(JSON)
+  filesJson  String?                       // 첨부파일 [{name,url,size}] (JSON) — 다운로드
+  pinned     Boolean  @default(false)
+  published  Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }

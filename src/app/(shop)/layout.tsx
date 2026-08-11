@@ -21,6 +21,7 @@ import { getPlatform } from "@/lib/platform";
 const BASE_TABS = [
   { href: "/", label: "추천상품" },
   { href: "/community", label: "커뮤니티" },
+  { href: "/concierge", label: "컨시어지" },
   { href: "/board?category=공지", label: "공지" },
   { href: "/board?category=가이드", label: "가이드" },
 ];
@@ -119,6 +120,7 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
           <BottomTab href="/" label="홈" path="M3 11l9-8 9 8M5 10v10h14V10" />
           <BottomTab href="/category" label="카테고리" path="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z" />
           <BottomTab href="/community" label="커뮤니티" path="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z" />
+          <BottomTab href="/concierge" label="컨시어지" path="M12 2l2.5 5 5.5.8-4 3.9.9 5.5L12 20l-4.9 2.6.9-5.5-4-3.9 5.5-.8z" />
           <BottomTab href="/me" label="내정보" path="M12 12a4 4 0 100-8 4 4 0 000 8zM4 20a8 8 0 0116 0" />
         </div>
       </nav>
