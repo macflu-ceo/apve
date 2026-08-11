@@ -107,7 +107,7 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
           colorTo={timeSale.ts.colorTo}
         />
       )}
-      <header className="sticky top-0 z-40 border-b border-line bg-white">
+      <header className="sticky top-0 z-50 border-b border-line bg-white">
         <div className={`mx-auto flex max-w-shell items-center gap-6 px-4 py-3 ${showTimeSaleBanner ? "" : "pt-[max(0.75rem,env(safe-area-inset-top))]"}`}>
           <Link href="/" className="shrink-0" aria-label={setting.siteName}>
             <Logo height={22} />
@@ -129,7 +129,7 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
 
       {/* 하단 탭바 (모바일 전용) */}
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-white pb-[env(safe-area-inset-bottom)] md:hidden">
-        <div className="mx-auto grid max-w-shell grid-cols-4">
+        <div className="mx-auto grid max-w-shell grid-cols-5">
           <BottomTab href="/" label="홈" path="M3 11l9-8 9 8M5 10v10h14V10" />
           <BottomTab href="/category" label="카테고리" path="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z" />
           <BottomTab href="/community" label="커뮤니티" path="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z" />
