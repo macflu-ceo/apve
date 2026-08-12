@@ -24,6 +24,7 @@ export default async function AdminGrades() {
           percent: g.percent,
           sort: g.sort,
           systemKey: g.systemKey,
+          isConcierge: g.isConcierge,
           count: g._count.partners,
         }))}
       />

@@ -56,11 +56,36 @@ export async function rejectPartner(id: string) {
   return { ok: true, message: "반려되었습니다." };
 }
 
-/** 회원 등급 수동 지정 (null이면 실적 기반 자동 판정으로 되돌림) */
+/** 회원 등급 수동 지정 (null이면 실적 기반 자동 판정으로 되돌림)
+ * 컨시어지 등급(systemKey 없는 커스텀 등급)으로 지정하면 컨시어지 번호를 자동 부여하고,
+ * 다른 등급/자동으로 바꾸면 컨시어지 자격을 해제한다 → 등급 하나로 컨시어지 on/off. */
 export async function setPartnerGrade(id: string, gradeId: string | null) {
-  await prisma.partner.update({ where: { id }, data: { gradeId } });
+  const grade = gradeId ? await prisma.grade.findUnique({ where: { id: gradeId } }) : null;
+  const isConciergeGrade = !!grade && grade.isConcierge; // 등급의 컨시어지 권한 플래그로 정확히 판정
+  const partner = await prisma.partner.findUnique({ where: { id }, select: { conciergeNo: true } });
+
+  if (isConciergeGrade && partner?.conciergeNo == null) {
+    // 컨시어지로 승격 → 다음 번호 원자적 부여 (경합 시 unique 제약으로 재시도)
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const max = await prisma.partner.aggregate({ _max: { conciergeNo: true } });
+      const next = (max._max.conciergeNo ?? 0) + 1 + attempt;
+      try {
+        await prisma.partner.update({ where: { id }, data: { gradeId, conciergeNo: next } });
+        break;
+      } catch (e) {
+        if (attempt === 4) throw e; // 5회 실패 시 에러 전파
+      }
+    }
+  } else if (!isConciergeGrade && partner?.conciergeNo != null) {
+    // 컨시어지 등급이 아닌 걸로 변경 → 자격 해제
+    await prisma.partner.update({ where: { id }, data: { gradeId, conciergeNo: null } });
+  } else {
+    await prisma.partner.update({ where: { id }, data: { gradeId } });
+  }
+
   revalidatePath("/admin/partners");
   revalidatePath("/me");
+  revalidatePath("/concierge");
 }
 
 /** 정산 정보 확인 완료 처리 */

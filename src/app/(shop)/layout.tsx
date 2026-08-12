@@ -96,6 +96,8 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
           {sideQr && <AppSideQr qr={sideQr} ios={setting.appIosUrl} android={setting.appAndroidUrl} landing={setting.appLandingUrl} />}
         </>
       )}
+      {/* 마진업세일 배너 + 헤더를 하나로 상단 고정 → 최상단 요소가 safe-area를 받아 상태바와 안 겹침 */}
+      <div className="sticky top-0 z-50 bg-white">
       {timeSale && timeSale.state !== "off" && (
         <TimeSaleBanner
           title={timeSale.ts.title}
@@ -109,7 +111,7 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
           colorTo={timeSale.ts.colorTo}
         />
       )}
-      <header className="sticky top-0 z-50 border-b border-line bg-white">
+      <header className="border-b border-line bg-white">
         <div className={`mx-auto flex max-w-shell items-center gap-6 px-4 py-3 ${showTimeSaleBanner ? "" : "pt-[max(0.75rem,env(safe-area-inset-top))]"}`}>
           <Link href="/" className="shrink-0" aria-label={setting.siteName}>
             <Logo height={22} />
@@ -126,6 +128,7 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
         {/* 탭 (모바일/태블릿) */}
         <ShopNavMobile tabs={tabs} />
       </header>
+      </div>
 
       <main className="mx-auto max-w-shell pb-24 md:pb-0">{children}</main>
 

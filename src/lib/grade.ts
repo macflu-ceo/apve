@@ -9,9 +9,9 @@ import { getSiteSetting } from "@/lib/settings";
 import { cache } from "react";
 
 export const DEFAULT_GRADES = [
-  { name: "첫구매", percent: 20, systemKey: "first", sort: 0 },
-  { name: "일반", percent: 7, systemKey: "normal", sort: 1 },
-  { name: "컨시어지", percent: 13, systemKey: null as string | null, sort: 2 },
+  { name: "첫구매", percent: 20, systemKey: "first", sort: 0, isConcierge: false },
+  { name: "일반", percent: 7, systemKey: "normal", sort: 1, isConcierge: false },
+  { name: "컨시어지", percent: 13, systemKey: null as string | null, sort: 2, isConcierge: true },
 ];
 
 /** 기본 등급 3개가 없으면 생성 (요청당 1회 메모이즈 — 매 호출 DB조회 방지) */

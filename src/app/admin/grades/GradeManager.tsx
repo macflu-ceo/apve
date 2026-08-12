@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createGrade, updateGrade, deleteGrade } from "./actions";
 
-type G = { id: string; name: string; percent: number; sort: number; systemKey: string | null; count: number };
+type G = { id: string; name: string; percent: number; sort: number; systemKey: string | null; isConcierge: boolean; count: number };
 
 export default function GradeManager({ grades }: { grades: G[] }) {
   const router = useRouter();
@@ -53,6 +53,7 @@ export default function GradeManager({ grades }: { grades: G[] }) {
               <th className="w-32">수수료율(%)</th>
               <th className="w-24">순서</th>
               <th className="w-32">자동 적용</th>
+              <th className="w-28">컨시어지 권한</th>
               <th className="w-24">회원수</th>
               <th className="w-20"></th>
             </tr>
@@ -68,6 +69,7 @@ export default function GradeManager({ grades }: { grades: G[] }) {
       <p className="text-xs text-sub">
         · <b>첫구매</b>는 판매실적 0건일 때, <b>일반</b>은 1건부터 자동으로 적용됩니다. (삭제 불가)
         <br />· 그 외 등급(컨시어지 등)은 <b>회원(파트너) 관리</b>에서 회원별로 직접 지정합니다.
+        <br />· <b>컨시어지 권한</b>을 켠 등급으로 회원을 지정하면 그 회원에게 컨시어지 자격(전용 메뉴·매장링크·상품카드)이 자동 부여되고, 다른 등급으로 바꾸면 해제됩니다.
       </p>
     </div>
   );
@@ -79,6 +81,7 @@ function GradeRow({ g }: { g: G }) {
   const [name, setName] = useState(g.name);
   const [percent, setPercent] = useState(String(g.percent));
   const [sort, setSort] = useState(String(g.sort));
+  const [concierge, setConcierge] = useState(g.isConcierge);
   const [saved, setSaved] = useState(false);
 
   function save() {
@@ -105,6 +108,22 @@ function GradeRow({ g }: { g: G }) {
       </td>
       <td className="text-xs text-sub">
         {g.systemKey === "first" ? "실적 0건" : g.systemKey === "normal" ? "실적 1건~" : "수동 지정"}
+      </td>
+      <td>
+        <label className="flex items-center gap-1.5 text-xs">
+          <input
+            type="checkbox"
+            className="h-4 w-4 accent-brand"
+            checked={concierge}
+            disabled={pending}
+            onChange={(e) => {
+              const v = e.target.checked;
+              setConcierge(v);
+              start(async () => { await updateGrade(g.id, { isConcierge: v }); router.refresh(); });
+            }}
+          />
+          {concierge ? "부여" : "없음"}
+        </label>
       </td>
       <td>{g.count}명</td>
       <td>

@@ -8,6 +8,7 @@ function revalidateAll() {
   revalidatePath("/admin/partners");
   revalidatePath("/");
   revalidatePath("/me");
+  revalidatePath("/concierge");
 }
 
 export async function createGrade(name: string, percent: number, sort: number) {
@@ -20,7 +21,7 @@ export async function createGrade(name: string, percent: number, sort: number) {
   return { ok: true, message: "등급이 추가되었습니다." };
 }
 
-export async function updateGrade(id: string, data: { name?: string; percent?: number; sort?: number }) {
+export async function updateGrade(id: string, data: { name?: string; percent?: number; sort?: number; isConcierge?: boolean }) {
   await prisma.grade.update({ where: { id }, data });
   revalidateAll();
   return { ok: true, message: "저장되었습니다." };
