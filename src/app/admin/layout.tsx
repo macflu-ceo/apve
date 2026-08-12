@@ -74,29 +74,37 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="min-h-screen bg-[#f7f6f4]">
-      {/* 백오피스 전용 헤더 (쇼핑몰과 분리) */}
-      <header className="sticky top-0 z-40 bg-ink text-white">
-        <div className="mx-auto flex max-w-shell items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-2">
-            <Logo height={18} light />
-            <span className="rounded bg-white/15 px-2 py-0.5 text-xs font-bold">ADMIN</span>
+      {/* 헤더 + 가로 메뉴바를 한 덩어리로 상단 고정 (오프셋 계산 불필요) */}
+      <div className="sticky top-0 z-40">
+        {/* 백오피스 전용 헤더 (쇼핑몰과 분리) */}
+        <header className="bg-ink text-white">
+          <div className="mx-auto flex max-w-shell items-center justify-between px-4 py-3">
+            <div className="flex items-center gap-2">
+              <Logo height={18} light />
+              <span className="rounded bg-white/15 px-2 py-0.5 text-xs font-bold">ADMIN</span>
+            </div>
+            <div className="flex items-center gap-4">
+              <Link href="/" className="text-xs text-white/70 hover:text-white" target="_blank">
+                쇼핑몰 보기 ↗
+              </Link>
+              <a href="/admin-login/logout" className="text-xs text-white/70 hover:text-white">
+                로그아웃
+              </a>
+            </div>
           </div>
-          <div className="flex items-center gap-4">
-            <Link href="/" className="text-xs text-white/70 hover:text-white" target="_blank">
-              쇼핑몰 보기 ↗
-            </Link>
-            <a href="/admin-login/logout" className="text-xs text-white/70 hover:text-white">
-              로그아웃
-            </a>
+        </header>
+
+        {/* 상단 가로 메뉴바 (기존 좌측 사이드바 대체) */}
+        <div className="border-b border-line bg-[#f7f6f4]/95 backdrop-blur">
+          <div className="mx-auto max-w-shell px-4 py-2">
+            <AdminMenu groups={ADMIN_GROUPS} />
           </div>
         </div>
-      </header>
+      </div>
 
-      <div className="mx-auto grid max-w-shell gap-8 px-4 py-6 md:grid-cols-[200px_1fr]">
-        <aside>
-          <AdminMenu groups={ADMIN_GROUPS} />
-        </aside>
-        <div className="rounded-xl2 bg-white p-6 shadow-sm">{children}</div>
+      <div className="mx-auto max-w-shell px-4 py-6">
+        {/* min-w-0: 넓은 테이블이 페이지 전체를 밀지 않고 테이블 내부에서만 가로 스크롤되게 */}
+        <div className="min-w-0 rounded-xl2 bg-white p-6 shadow-sm">{children}</div>
       </div>
     </div>
   );

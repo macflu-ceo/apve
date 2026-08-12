@@ -1,66 +1,74 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 export type MenuItem = { href: string; label: string };
 export type MenuGroup = { group: string; items: MenuItem[] };
 
-const KEY = "admin-menu-collapsed-v1";
-
+/** 상단 가로 메뉴바 — 그룹별 드롭다운. (기존 좌측 세로 사이드바 대체) */
 export default function AdminMenu({ groups }: { groups: MenuGroup[] }) {
   const pathname = usePathname();
-  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
-
-  // 저장된 접힘 상태 로드
-  useEffect(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem(KEY) || "[]") as string[];
-      if (Array.isArray(saved)) setCollapsed(new Set(saved));
-    } catch {
-      /* 무시 */
-    }
-  }, []);
-
-  function toggle(group: string) {
-    setCollapsed((prev) => {
-      const next = new Set(prev);
-      next.has(group) ? next.delete(group) : next.add(group);
-      try {
-        localStorage.setItem(KEY, JSON.stringify([...next]));
-      } catch {
-        /* 무시 */
-      }
-      return next;
-    });
-  }
+  const [open, setOpen] = useState<string | null>(null);
+  const ref = useRef<HTMLDivElement>(null);
 
   const isActive = (href: string) =>
     href === "/admin" ? pathname === "/admin" : pathname.startsWith(href);
 
+  // 경로 바뀌면 닫기
+  useEffect(() => {
+    setOpen(null);
+  }, [pathname]);
+
+  // 바깥 클릭 시 닫기
+  useEffect(() => {
+    function onDoc(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(null);
+    }
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, []);
+
   return (
-    <nav className="flex flex-col gap-3">
+    <nav ref={ref} className="flex flex-wrap items-center gap-1">
       {groups.map((g) => {
         const hasActive = g.items.some((i) => isActive(i.href));
-        const open = !collapsed.has(g.group) || hasActive; // 현재 페이지가 든 그룹은 항상 펼침
-        return (
-          <div key={g.group}>
-            <button
-              onClick={() => toggle(g.group)}
-              className="mb-1 flex w-full items-center justify-between px-1 text-[11px] font-bold uppercase tracking-wide text-ink/40 hover:text-ink/70"
+        const isOpen = open === g.group;
+        // 단일 항목 그룹(설정 등)은 드롭다운 없이 바로 링크
+        if (g.items.length === 1) {
+          const m = g.items[0];
+          return (
+            <Link
+              key={g.group}
+              href={m.href}
+              className={`rounded-lg px-3 py-1.5 text-sm font-semibold ${
+                isActive(m.href) ? "bg-brand text-white" : "text-ink/70 hover:bg-white hover:text-ink"
+              }`}
             >
-              <span>{g.group}</span>
-              <span className={`transition-transform ${open ? "" : "-rotate-90"}`}>⌄</span>
+              {m.label}
+            </Link>
+          );
+        }
+        return (
+          <div key={g.group} className="relative">
+            <button
+              onClick={() => setOpen(isOpen ? null : g.group)}
+              className={`flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm font-semibold ${
+                hasActive || isOpen ? "bg-brand text-white" : "text-ink/70 hover:bg-white hover:text-ink"
+              }`}
+            >
+              {g.group}
+              <span className={`text-[10px] opacity-60 transition-transform ${isOpen ? "rotate-180" : ""}`}>▾</span>
             </button>
-            {open && (
-              <div className="flex flex-col gap-0.5">
+            {isOpen && (
+              <div className="absolute left-0 top-full z-50 mt-1 min-w-[210px] rounded-xl border border-line bg-white p-1.5 shadow-lg">
                 {g.items.map((m) => (
                   <Link
                     key={m.href}
                     href={m.href}
-                    className={`rounded-lg px-3 py-2 text-sm font-medium ${
-                      isActive(m.href) ? "bg-brand text-white" : "text-ink/80 hover:bg-white hover:text-ink"
+                    className={`block rounded-lg px-3 py-2 text-sm font-medium ${
+                      isActive(m.href) ? "bg-brand text-white" : "text-ink/80 hover:bg-[#f7f6f4]"
                     }`}
                   >
                     {m.label}
