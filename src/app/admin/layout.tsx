@@ -2,7 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { isAdmin } from "@/lib/admin";
 import Logo from "@/components/Logo";
-import AdminMenu from "./AdminMenu";
+import AdminTopNav from "./AdminTopNav";
+import AdminSideNav from "./AdminSideNav";
 
 const ADMIN_GROUPS = [
   {
@@ -95,15 +96,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
         </header>
 
-        {/* 상단 가로 메뉴바 (기존 좌측 사이드바 대체) */}
+        {/* 상단 대분류(그룹) 바 */}
         <div className="border-b border-line bg-[#f7f6f4]/95 backdrop-blur">
           <div className="mx-auto max-w-shell px-4 py-2">
-            <AdminMenu groups={ADMIN_GROUPS} />
+            <AdminTopNav groups={ADMIN_GROUPS} />
           </div>
         </div>
       </div>
 
-      <div className="mx-auto max-w-shell px-4 py-6">
+      {/* 좌측: 선택 그룹의 하위 메뉴 / 우측: 콘텐츠 */}
+      <div className="mx-auto grid max-w-shell gap-6 px-4 py-6 md:grid-cols-[180px_1fr]">
+        <aside>
+          <AdminSideNav groups={ADMIN_GROUPS} />
+        </aside>
         {/* min-w-0: 넓은 테이블이 페이지 전체를 밀지 않고 테이블 내부에서만 가로 스크롤되게 */}
         <div className="min-w-0 rounded-xl2 bg-white p-6 shadow-sm">{children}</div>
       </div>
