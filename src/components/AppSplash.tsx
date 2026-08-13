@@ -21,12 +21,12 @@ export default function AppSplash({ image }: { image: string }) {
 
   return (
     <div
-      className={`fixed inset-0 z-[100] flex items-center justify-center transition-opacity duration-500 ${fade ? "opacity-0" : "opacity-100"}`}
+      className={`fixed inset-0 z-[100] transition-opacity duration-500 ${fade ? "opacity-0" : "opacity-100"}`}
       style={{ backgroundColor: "#D1B696" }}
       aria-hidden
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={image} alt="" className="max-h-[62%] max-w-[74%] object-contain" />
+      <img src={image} alt="" className="absolute inset-0 h-full w-full object-cover" />
     </div>
   );
 }
