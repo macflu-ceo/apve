@@ -24,8 +24,6 @@ export default function PushComposer({ tokenCount, grades }: { tokenCount: numbe
   const [segment, setSegment] = useState("all");
   const [gradeId, setGradeId] = useState(grades[0]?.id ?? "");
 
-  const [showTest, setShowTest] = useState(false);
-  const [testToken, setTestToken] = useState("");
   const [scheduleAt, setScheduleAt] = useState("");
 
   function validate() {
@@ -57,7 +55,7 @@ export default function PushComposer({ tokenCount, grades }: { tokenCount: numbe
     if (!validate()) return;
     setMsg(null);
     start(async () => {
-      const r = await sendTestPushAction({ token: testToken, title, body, url, imageUrl });
+      const r = await sendTestPushAction({ title, body, url, imageUrl });
       setMsg({ ok: r.ok, text: r.message });
       if (r.ok) router.refresh();
     });
@@ -147,8 +145,8 @@ export default function PushComposer({ tokenCount, grades }: { tokenCount: numbe
         <button onClick={send} disabled={pending} className="btn-brand px-6">
           {pending ? "처리 중…" : `📤 지금 발송 (대상 ${tokenCount.toLocaleString()})`}
         </button>
-        <button type="button" onClick={() => setShowTest((v) => !v)} className="btn-line px-4">
-          🧪 테스트 발송
+        <button type="button" onClick={sendTest} disabled={pending} className="btn-line px-4">
+          🧪 관리자에게 테스트 발송
         </button>
         {msg && <span className={`text-sm ${msg.ok ? "text-green-700" : "text-red-600"}`}>{msg.text}</span>}
       </div>
@@ -168,28 +166,11 @@ export default function PushComposer({ tokenCount, grades }: { tokenCount: numbe
         <span className="text-xs text-sub">선택한 시각(한국시간)에 발송 예약. (자동발송 크론 연결 필요 — 미연결 시 시각 도래분을 확인 후 수동 처리)</span>
       </div>
 
-      {/* 테스트 발송 (내 기기 1대에만) */}
-      {showTest && (
-        <div className="rounded-xl2 border border-dashed border-line bg-[#fbfaf9] p-4">
-          <div className="mb-1 text-sm font-bold">🧪 테스트 발송 — 내 기기에만</div>
-          <p className="mb-3 text-xs text-sub">
-            전체에 쏘기 전에 <b>내 기기 1대</b>로 먼저 확인합니다. 위의 제목·내용·이미지 그대로 이 기기에만 갑니다.
-            <br />
-            내 기기의 <b>푸시 토큰</b>을 붙여넣으세요. (토큰 얻는 법은 아래 안내 참고)
-          </p>
-          <div className="flex flex-wrap gap-2">
-            <input
-              value={testToken}
-              onChange={(e) => setTestToken(e.target.value)}
-              placeholder="내 기기 FCM 토큰 붙여넣기"
-              className="field flex-1 min-w-[240px] font-mono text-xs"
-            />
-            <button onClick={sendTest} disabled={pending || !testToken.trim()} className="btn-brand px-5">
-              {pending ? "발송 중…" : "이 기기로 테스트"}
-            </button>
-          </div>
-        </div>
-      )}
+      {/* 테스트 발송 안내 */}
+      <p className="text-xs text-sub">
+        🧪 <b>관리자에게 테스트 발송</b>: 위 제목·내용·이미지 그대로 <b>‘관리자’ 등급 회원의 기기</b>로만 보냅니다.
+        토큰 입력 불필요 — 본인 계정을 <b>회원 관리 → 등급 ‘관리자’</b>로 두고, 앱에서 알림 동의만 하면 이 버튼으로 테스트가 와요.
+      </p>
     </div>
   );
 }
