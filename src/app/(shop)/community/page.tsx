@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { parseList } from "@/lib/format";
 import { getSessionPartner } from "@/lib/auth";
 import { getCommunityPosts, getActiveCommunityCategories, categoryLabelMap, displayAuthor } from "@/lib/community";
+import { getBlockedIds } from "@/lib/community-moderation";
 
 export const dynamic = "force-dynamic";
 
@@ -13,10 +14,11 @@ function fmt(d: Date) {
 
 export default async function CommunityPage({ searchParams }: { searchParams: { cat?: string } }) {
   const cat = searchParams.cat;
-  const [posts, pinned, partner, categories, labels] = await Promise.all([
-    getCommunityPosts(cat, 60),
+  const partner = await getSessionPartner();
+  const blocked = await getBlockedIds(partner?.id);
+  const [posts, pinned, categories, labels] = await Promise.all([
+    getCommunityPosts(cat, 60, blocked),
     prisma.post.findMany({ where: { pinned: true, published: true }, orderBy: { createdAt: "desc" }, take: 3 }),
-    getSessionPartner(),
     getActiveCommunityCategories(),
     categoryLabelMap(),
   ]);

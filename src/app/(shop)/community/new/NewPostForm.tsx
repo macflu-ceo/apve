@@ -14,6 +14,7 @@ export default function NewPostForm({ categories }: { categories: { key: string;
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [images, setImages] = useState<string[]>([""]);
+  const [agreeRules, setAgreeRules] = useState(false);
 
   function setImage(i: number, url: string) {
     setImages((prev) => {
@@ -73,10 +74,18 @@ export default function NewPostForm({ categories }: { categories: { key: string;
         </div>
       </div>
 
+      {/* 커뮤니티 이용규칙 동의 (UGC 필수) */}
+      <label className="flex items-start gap-2 rounded-xl border border-line bg-[#fbfaf9] p-3 text-xs text-ink/80">
+        <input type="checkbox" className="mt-0.5 h-4 w-4 accent-brand" checked={agreeRules} onChange={(e) => setAgreeRules(e.target.checked)} />
+        <span>
+          욕설·비방·음란·불법·혐오 등 <b>부적절한 콘텐츠를 게시하지 않겠습니다.</b> 위반 게시물은 신고 시 24시간 내 삭제되며, 반복 시 이용이 제한될 수 있습니다. (커뮤니티 이용규칙 동의)
+        </span>
+      </label>
+
       {msg && <p className="text-sm text-red-600">{msg}</p>}
 
       <div className="flex gap-2">
-        <button onClick={submit} disabled={pending} className="btn-brand px-6">
+        <button onClick={submit} disabled={pending || !agreeRules || !title.trim() || !content.trim()} className="btn-brand px-6">
           {pending ? "등록 중…" : "등록"}
         </button>
         <button type="button" onClick={() => router.back()} className="btn-line px-4">취소</button>

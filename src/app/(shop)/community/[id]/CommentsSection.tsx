@@ -4,20 +4,23 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toggleLike, addComment, deleteComment } from "../actions";
 import { useAuthModal } from "@/components/auth/AuthModalProvider";
+import ContentModeration from "./ContentModeration";
 
-type Comment = { id: string; author: string; content: string; createdAt: string; mine: boolean };
+type Comment = { id: string; authorId: string; author: string; content: string; createdAt: string; mine: boolean };
 
 export default function CommentsSection({
   postId,
   likeCount,
   liked,
   canInteract,
+  loggedIn,
   comments,
 }: {
   postId: string;
   likeCount: number;
   liked: boolean;
   canInteract: boolean;
+  loggedIn: boolean;
   comments: Comment[];
 }) {
   const router = useRouter();
@@ -95,14 +98,18 @@ export default function CommentsSection({
                 <div className="flex items-center gap-2 text-xs text-sub">
                   <span className="font-bold text-ink">{c.author}</span>
                   <span>{c.createdAt}</span>
-                  {c.mine && (
+                  {c.mine ? (
                     <button
                       onClick={() => start(async () => { await deleteComment(c.id); router.refresh(); })}
                       className="ml-auto text-red-400 hover:underline"
                     >
                       삭제
                     </button>
-                  )}
+                  ) : loggedIn ? (
+                    <span className="ml-auto">
+                      <ContentModeration commentId={c.id} authorId={c.authorId} kind="댓글" />
+                    </span>
+                  ) : null}
                 </div>
                 <p className="mt-1 whitespace-pre-wrap text-sm">{c.content}</p>
               </li>

@@ -40,13 +40,14 @@ export function displayAuthor(p: { nickname: string | null; name: string }): str
   return p.name.length > 1 ? p.name[0] + "*".repeat(p.name.length - 1) : p.name;
 }
 
-/** 커뮤니티 목록 — 노출 카테고리의 글만. 고정글 먼저. */
-export async function getCommunityPosts(category?: string, take = 50) {
+/** 커뮤니티 목록 — 노출 카테고리의 글만. 고정글 먼저. excludeAuthorIds: 차단한 회원 글 제외 */
+export async function getCommunityPosts(category?: string, take = 50, excludeAuthorIds: string[] = []) {
   const active = await getActiveCommunityCategories();
   const activeKeys = active.map((c) => c.key);
   const where = {
     hidden: false,
     category: category && activeKeys.includes(category) ? category : { in: activeKeys },
+    ...(excludeAuthorIds.length ? { partnerId: { notIn: excludeAuthorIds } } : {}),
   };
   return prisma.communityPost.findMany({
     where,

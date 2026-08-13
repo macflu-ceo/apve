@@ -4,8 +4,10 @@ import { prisma } from "@/lib/db";
 import { parseList } from "@/lib/format";
 import { getSessionPartner } from "@/lib/auth";
 import { getCommunityPost, categoryLabelMap, displayAuthor } from "@/lib/community";
+import { getBlockedIds } from "@/lib/community-moderation";
 import DeletePostButton from "./DeletePostButton";
 import CommentsSection from "./CommentsSection";
+import ContentModeration from "./ContentModeration";
 
 export const dynamic = "force-dynamic";
 
@@ -21,10 +23,12 @@ export default async function CommunityDetail({ params }: { params: { id: string
     categoryLabelMap(),
   ]);
   if (!post || post.hidden) notFound();
+  const blocked = await getBlockedIds(partner?.id);
+  if (blocked.includes(post.partnerId)) notFound(); // 차단한 회원 글은 안 보이게
   const images = parseList(post.imagesJson);
   const mine = partner?.id === post.partnerId;
 
-  const [likeCount, myLike, comments] = await Promise.all([
+  const [likeCount, myLike, commentsRaw] = await Promise.all([
     prisma.communityLike.count({ where: { postId: post.id } }),
     partner ? prisma.communityLike.findUnique({ where: { postId_partnerId: { postId: post.id, partnerId: partner.id } }, select: { id: true } }) : null,
     prisma.communityComment.findMany({
@@ -33,6 +37,7 @@ export default async function CommunityDetail({ params }: { params: { id: string
       include: { partner: { select: { nickname: true, name: true } } },
     }),
   ]);
+  const comments = commentsRaw.filter((c) => !blocked.includes(c.partnerId)); // 차단 회원 댓글 숨김
   const canInteract = partner?.status === "approved";
 
   return (
@@ -43,8 +48,11 @@ export default async function CommunityDetail({ params }: { params: { id: string
         <span className="rounded bg-brandsoft px-2 py-0.5 text-xs font-bold text-brand">{labels.get(post.category) ?? post.category}</span>
       </div>
       <h1 className="mt-2 text-xl font-bold">{post.title}</h1>
-      <div className="mt-1 text-sm text-sub">
-        {displayAuthor(post.partner)} · {fmt(post.createdAt)}
+      <div className="mt-1 flex items-center gap-2 text-sm text-sub">
+        <span>{displayAuthor(post.partner)} · {fmt(post.createdAt)}</span>
+        {partner && !mine && (
+          <ContentModeration postId={post.id} authorId={post.partnerId} kind="게시글" />
+        )}
       </div>
 
       <div className="mt-5 whitespace-pre-wrap text-[15px] leading-relaxed">{post.content}</div>
@@ -64,8 +72,10 @@ export default async function CommunityDetail({ params }: { params: { id: string
         likeCount={likeCount}
         liked={!!myLike}
         canInteract={canInteract}
+        loggedIn={!!partner}
         comments={comments.map((c) => ({
           id: c.id,
+          authorId: c.partnerId,
           author: displayAuthor(c.partner),
           content: c.content,
           createdAt: fmt(c.createdAt),

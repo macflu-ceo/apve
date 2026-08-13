@@ -180,6 +180,31 @@ model CommunityLike {
   @@index([postId])
 }
 
+/// 커뮤니티 신고 (게시글/댓글) — 부적절 콘텐츠 신고. 관리자가 24시간 내 처리.
+model CommunityReport {
+  id         String   @id @default(cuid())
+  reporterId String
+  postId     String?
+  commentId  String?
+  reason     String
+  /// open(접수) | resolved(처리완료)
+  status     String   @default("open")
+  createdAt  DateTime @default(now())
+
+  @@index([status, createdAt])
+}
+
+/// 회원 차단 — 차단자가 피차단자를 차단하면, 피차단자 글/댓글이 차단자 피드에서 즉시 사라짐.
+model PartnerBlock {
+  id        String   @id @default(cuid())
+  blockerId String
+  blockedId String
+  createdAt DateTime @default(now())
+
+  @@unique([blockerId, blockedId])
+  @@index([blockerId])
+}
+
 /// 20% 수수료 보상 바우처 — 커뮤니티 기여 보상. 회원이 특정 상품에 적용하면 그 상품 최초 1판매에 20% 적용.
 model RewardVoucher {
   id        String   @id @default(cuid())
