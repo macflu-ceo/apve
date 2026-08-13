@@ -20,7 +20,6 @@ import QRCode from "qrcode";
 import PushOpenReporter from "@/components/PushOpenReporter";
 import OnboardingOverlay from "@/components/OnboardingOverlay";
 import AppConsent from "@/components/AppConsent";
-import AppSplash from "@/components/AppSplash";
 import PullToRefresh from "@/components/PullToRefresh";
 import { getPlatform } from "@/lib/platform";
 
@@ -87,7 +86,7 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
 
   return (
     <AuthModalProvider>
-      {platform === "app" && setting.appSplashUrl && <AppSplash image={setting.appSplashUrl} />}
+      {/* 앱 스플래시는 네이티브 런치 화면으로 통일(둘째 웹 오버레이 제거) */}
       {platform === "app" && <PullToRefresh />}
       {platform === "app" && <AppConsent />}
       <OnboardingOverlay />
