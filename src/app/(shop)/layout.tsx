@@ -21,6 +21,7 @@ import PushOpenReporter from "@/components/PushOpenReporter";
 import OnboardingOverlay from "@/components/OnboardingOverlay";
 import AppConsent from "@/components/AppConsent";
 import PullToRefresh from "@/components/PullToRefresh";
+import AppPushSync from "@/components/AppPushSync";
 import { getPlatform } from "@/lib/platform";
 
 const BASE_TABS = [
@@ -88,6 +89,7 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
     <AuthModalProvider>
       {/* 앱 스플래시는 네이티브 런치 화면으로 통일(둘째 웹 오버레이 제거) */}
       {platform === "app" && <PullToRefresh />}
+      {platform === "app" && <AppPushSync />}
       {platform === "app" && <AppConsent />}
       <OnboardingOverlay />
       <PushOpenReporter />
