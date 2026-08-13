@@ -6,6 +6,8 @@ const nextConfig = {
       { protocol: "https", hostname: "jprimo-partners-system-bucket.s3.amazonaws.com" },
       { protocol: "https", hostname: "*.s3.amazonaws.com" },
       { protocol: "https", hostname: "viaelite.co.kr" },
+      // 어드민 업로드(Vercel Blob) — 푸시 알림 이미지 자동 축소용
+      { protocol: "https", hostname: "*.public.blob.vercel-storage.com" },
     ],
   },
 };

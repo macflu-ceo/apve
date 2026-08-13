@@ -57,6 +57,21 @@ export interface PushMessage {
   imageUrl?: string;
 }
 
+/** 알림 이미지 자동 축소 — 안드로이드는 1MB 초과 이미지를 조용히 버리므로,
+ * 사이트의 이미지 최적화(/_next/image)를 거친 축소본 URL로 바꿔 싣는다. */
+function notificationImage(url: string | undefined): string | undefined {
+  if (!url) return undefined;
+  const site = (process.env.SITE_URL || "https://www.cashboutique.co.kr").replace(/\/$/, "");
+  try {
+    const u = new URL(url);
+    // 이미 최적화 URL이면 그대로
+    if (u.pathname.startsWith("/_next/image")) return url;
+    return `${site}/_next/image?url=${encodeURIComponent(url)}&w=828&q=70`;
+  } catch {
+    return url;
+  }
+}
+
 /** 알림 링크에 pushId를 심어 열람(탭) 귀속. url이 없으면 홈(/)으로. 상대/절대 모두 처리. */
 function withPushId(url: string | undefined, pushId: string): string {
   const base = url && url.trim() ? url.trim() : "/";
@@ -91,21 +106,22 @@ export async function sendPushToTokens(
     const slice = tokens.slice(i, i + chunk);
     const results = await Promise.allSettled(
       slice.map(async (t) => {
+        const img = notificationImage(msg.imageUrl); // 1MB 초과 방지 축소본
         const payload = {
           message: {
             token: t.token,
             notification: {
               title: msg.title,
               body: msg.body,
-              ...(msg.imageUrl ? { image: msg.imageUrl } : {}),
+              ...(img ? { image: img } : {}),
             },
             // 안드로이드 BigPicture · iOS 리치 알림(이미지)
-            ...(msg.imageUrl
+            ...(img
               ? {
-                  android: { notification: { image: msg.imageUrl } },
+                  android: { notification: { image: img } },
                   apns: {
                     payload: { aps: { "mutable-content": 1 } },
-                    fcm_options: { image: msg.imageUrl },
+                    fcm_options: { image: img },
                   },
                 }
               : {}),
