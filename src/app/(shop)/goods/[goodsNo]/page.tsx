@@ -13,6 +13,7 @@ import { keepProductImages } from "@/lib/godomall/scrape";
 import { sizeSystem, sizeSystemLabel, displaySize, isOneSizeOnly } from "@/lib/sizeSystem";
 import { voucherCounts } from "@/lib/voucher";
 import CodeButton from "./CodeButton";
+import PriceNotice from "./PriceNotice";
 import AiImageStudio from "./AiImageStudio";
 import VoucherApplyButton from "./VoucherApplyButton";
 
@@ -147,6 +148,7 @@ export default async function GoodsPage({ params }: { params: { goodsNo: string 
             <span className="text-sm text-sub line-through">{won(product.listPrice)}</span>
           )}
         </div>
+        <PriceNotice />
 
         {/* 예상 수익 (등급별) */}
         {boostedCommission != null ? (
