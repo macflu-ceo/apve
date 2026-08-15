@@ -30,7 +30,7 @@ export default function RefreshStockButton() {
   return (
     <div className="flex flex-wrap items-center gap-2">
       <button onClick={run} disabled={pending} className="btn-line px-4 py-2 text-sm">
-        {pending ? "처리 중…" : "↻ 재고 새로고침"}
+        {pending ? "처리 중…" : "↻ 최신화 (재고·가격)"}
       </button>
       <button onClick={runDomestic} disabled={pending} className="btn-line px-4 py-2 text-sm">
         {pending ? "처리 중…" : "🇰🇷 국내배송 동기화"}

@@ -6,7 +6,7 @@ import { isAdmin } from "@/lib/admin";
 import { parseSeason } from "@/lib/season";
 import { refreshStock } from "@/lib/godomall/stock";
 import { upsertFromUrl, importFromLinksText, toGoodsUrl } from "@/lib/godomall/import";
-import { fetchDomesticGoodsNos } from "@/lib/godomall/catalog";
+import { fetchDomesticGoodsNos, refreshPrices } from "@/lib/godomall/catalog";
 
 /** 상품 노출/원산지/태그 수정 (수수료율은 회원 등급에 귀속) */
 export async function updateProduct(
@@ -96,20 +96,20 @@ async function backfillSeasons() {
   }
 }
 
-/** 등록된 상품 전체의 사이즈·재고를 고도몰 API로 최신화 (+ 시즌 보정) */
+/** 등록된 상품 전체 최신화 — 재고·사이즈 + 가격(정가·판매가, 부티크 연동 변동 반영) + 시즌 보정 */
 export async function refreshAllStockAction() {
   if (!isAdmin()) return { ok: false, message: "권한이 없습니다." };
   try {
     await backfillSeasons();
-    const r = await refreshStock();
+    const [r, pr] = await Promise.all([refreshStock(), refreshPrices()]);
     revalidatePath("/admin/products");
     revalidatePath("/");
-    const parts = [`대상 ${r.targeted}개`, `갱신 ${r.updated}개`];
+    const parts = [`대상 ${r.targeted}개`, `재고갱신 ${r.updated}개`, `가격변동 반영 ${pr.priced}개`];
     if (r.hidden > 0) parts.push(`품절 자동숨김 ${r.hidden}개`);
-    if (r.errors > 0) parts.push(`실패 ${r.errors}개`);
+    if (r.errors + pr.errors > 0) parts.push(`실패 ${r.errors + pr.errors}개`);
     return { ok: true, message: parts.join(" · ") };
   } catch (e) {
-    return { ok: false, message: e instanceof Error ? e.message : "재고 갱신 실패" };
+    return { ok: false, message: e instanceof Error ? e.message : "최신화 실패" };
   }
 }
 
