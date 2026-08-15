@@ -5,8 +5,8 @@ import { prisma } from "@/lib/db";
 import { isAdmin } from "@/lib/admin";
 import { parseSeason } from "@/lib/season";
 import { refreshStock } from "@/lib/godomall/stock";
-import { upsertFromUrl, importFromLinksText, toGoodsUrl } from "@/lib/godomall/import";
-import { fetchDomesticGoodsNos, refreshPrices } from "@/lib/godomall/catalog";
+import { upsertFromUrl, importFromLinksText, toGoodsUrl, importGoodsNos } from "@/lib/godomall/import";
+import { fetchDomesticGoodsNos } from "@/lib/godomall/catalog";
 
 /** 상품 노출/원산지/태그 수정 (수수료율은 회원 등급에 귀속) */
 export async function updateProduct(
@@ -96,21 +96,29 @@ async function backfillSeasons() {
   }
 }
 
-/** 등록된 상품 전체 최신화 — 재고·사이즈 + 가격(정가·판매가, 부티크 연동 변동 반영) + 시즌 보정 */
-export async function refreshAllStockAction() {
+/** 최신화 대상 goodsNo 전체 목록 (배치 최신화의 시작점) */
+export async function listRefreshTargets() {
+  if (!isAdmin()) return { ok: false as const, goodsNos: [] as string[] };
+  const rows = await prisma.product.findMany({ select: { goodsNo: true }, orderBy: { createdAt: "asc" } });
+  return { ok: true as const, goodsNos: rows.map((r) => r.goodsNo) };
+}
+
+/** 배치 최신화 — 등록 때와 동일하게 상품 페이지를 다시 가져와(스크래핑+재고API) 그대로 덮어쓴다.
+ * 가격(정가·판매가)·재고·사이즈·이미지·상세가 모두 몰 데이터로 갱신됨. 6개 내외씩 호출. */
+export async function refreshImportBatch(goodsNos: string[]) {
+  if (!isAdmin()) return { ok: false, updated: 0, errors: [] as string[] };
+  const r = await importGoodsNos(goodsNos);
+  return { ok: true, updated: r.created + r.updated, errors: r.errors };
+}
+
+/** 배치 최신화 마무리 — 품절 자동숨김 + 시즌 보정 + 캐시 갱신 */
+export async function finishRefreshAction() {
   if (!isAdmin()) return { ok: false, message: "권한이 없습니다." };
-  try {
-    await backfillSeasons();
-    const [r, pr] = await Promise.all([refreshStock(), refreshPrices()]);
-    revalidatePath("/admin/products");
-    revalidatePath("/");
-    const parts = [`대상 ${r.targeted}개`, `재고갱신 ${r.updated}개`, `가격변동 반영 ${pr.priced}개`];
-    if (r.hidden > 0) parts.push(`품절 자동숨김 ${r.hidden}개`);
-    if (r.errors + pr.errors > 0) parts.push(`실패 ${r.errors + pr.errors}개`);
-    return { ok: true, message: parts.join(" · ") };
-  } catch (e) {
-    return { ok: false, message: e instanceof Error ? e.message : "최신화 실패" };
-  }
+  await backfillSeasons();
+  const r = await refreshStock(); // 품절(총재고 0) 자동 숨김 처리
+  revalidatePath("/admin/products");
+  revalidatePath("/");
+  return { ok: true, message: r.hidden > 0 ? `품절 자동숨김 ${r.hidden}개` : "" };
 }
 
 /**

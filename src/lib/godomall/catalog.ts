@@ -104,39 +104,3 @@ export async function fetchDomesticGoodsNos(): Promise<Set<string>> {
   }
   return set;
 }
-
-/**
- * 등록된 상품 전체의 가격(정가·판매가)을 카탈로그 API로 최신화한다.
- * 이탈리아 부티크 창고 연동으로 리테일가/할인가가 수시로 바뀌므로, 재고 새로고침과 함께 사용.
- * 판매가는 컨시어지가 정책(원본가 -5%)을 그대로 적용한다.
- */
-export async function refreshPrices(): Promise<{ targeted: number; priced: number; errors: number }> {
-  const { prisma } = await import("@/lib/db");
-  const { conciergePrice } = await import("@/lib/pricing");
-
-  // 1) 카탈로그 전체 페이지 수집 → goodsNo → 가격 맵
-  const priceMap = new Map<string, { sellPrice: number; listPrice: number }>();
-  for (let page = 1; page < 100; page++) {
-    const r = await fetchCatalog({ limit: 200, page });
-    for (const it of r.list) priceMap.set(it.goodsNo, { sellPrice: it.sellPrice, listPrice: it.listPrice });
-    if (r.list.length < 200 || priceMap.size >= r.count) break;
-  }
-
-  // 2) 우리 상품과 대조해 달라진 것만 갱신
-  const products = await prisma.product.findMany({ select: { id: true, goodsNo: true, listPrice: true, salePrice: true } });
-  const result = { targeted: products.length, priced: 0, errors: 0 };
-  for (const p of products) {
-    const src = priceMap.get(p.goodsNo);
-    if (!src || !src.sellPrice) continue; // 카탈로그에 없거나 가격 0 → 건너뜀
-    const newSale = conciergePrice(src.sellPrice);
-    const newList = src.listPrice || p.listPrice;
-    if (newSale === p.salePrice && newList === p.listPrice) continue; // 변동 없음
-    try {
-      await prisma.product.update({ where: { id: p.id }, data: { salePrice: newSale, listPrice: newList } });
-      result.priced++;
-    } catch {
-      result.errors++;
-    }
-  }
-  return result;
-}
