@@ -22,9 +22,12 @@ const DESCRIPTION =
   "코드 하나로 명품을 판매하는 어필리에이트 사이트. 재고 없이 명품 상품 링크를 발급해 판매하고 수익을 올리세요. 이탈리아 부티크 직수입 정품, 럭셔리 컨시어지 멤버십.";
 
 // 앱(웹뷰) 노치·다이나믹아일랜드 대응 — 안전영역 인셋 활성화
+// maximumScale/userScalable: iOS 웹뷰에서 핀치줌으로 화면이 확대·고정되는 문제 방지(앱처럼 줌 잠금)
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
   viewportFit: "cover",
 };
 
