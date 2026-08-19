@@ -14,6 +14,7 @@ import { sizeSystem, sizeSystemLabel, displaySize, isOneSizeOnly } from "@/lib/s
 import { voucherCounts } from "@/lib/voucher";
 import CodeButton from "./CodeButton";
 import PriceNotice from "./PriceNotice";
+import AppBackButton from "@/components/AppBackButton";
 import AiImageStudio from "./AiImageStudio";
 import VoucherApplyButton from "./VoucherApplyButton";
 
@@ -130,7 +131,9 @@ export default async function GoodsPage({ params }: { params: { goodsNo: string 
   };
 
   return (
-    <div className="grid gap-8 px-4 pb-12 pt-8 md:grid-cols-2 md:pt-12">
+    <div className="px-4 pb-12 pt-4 md:pt-8">
+      {rate.platform === "app" && <AppBackButton />}
+      <div className="grid gap-8 md:grid-cols-2">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       {/* 이미지 (스와이프 갤러리 + 썸네일 — 공통 배너 제외) */}
       <div>
@@ -299,6 +302,7 @@ export default async function GoodsPage({ params }: { params: { goodsNo: string 
             원본 상품 페이지 보기
           </a>
         )}
+      </div>
       </div>
     </div>
   );
