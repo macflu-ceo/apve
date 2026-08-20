@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -65,9 +65,15 @@ export default function TimeSaleBanner({
 
   const remain = now != null && target != null ? target - now : null;
 
-  // 0이 되면 상태 전환을 위해 새로고침
+  // 0이 되면 상태 전환을 위해 새로고침 — 단 1회만.
+  // (매초 refresh하면 진행 중인 페이지 이동(본인인증 등)을 계속 취소시켜 화면이 메인으로 튕긴다)
+  const refreshedRef = useRef(false);
   useEffect(() => {
-    if (remain != null && remain <= 0) router.refresh();
+    if (remain != null && remain <= 0 && !refreshedRef.current) {
+      refreshedRef.current = true;
+      router.refresh();
+    }
+    if (remain != null && remain > 0) refreshedRef.current = false;
   }, [remain, router]);
 
   const live = state === "live";
