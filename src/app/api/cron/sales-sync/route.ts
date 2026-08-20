@@ -1,6 +1,7 @@
 // 판매내역 자동 동기화 크론 — 최근 14일 창을 매일 갱신 (취소/확정 상태 변화 반영)
 import { NextResponse } from "next/server";
 import { syncConciergeSales } from "@/lib/godomall/sales";
+import { ensureGodoAgents } from "@/lib/godomall/agent";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -15,8 +16,9 @@ export async function GET(req: Request) {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
   }
   try {
+    const agents = await ensureGodoAgents().catch(() => null); // 영업사원 등록 보정(멱등)
     const r = await syncConciergeSales(kstDate(-14), kstDate(0));
-    return NextResponse.json({ ok: true, ...r });
+    return NextResponse.json({ ok: true, ...r, agents });
   } catch (e) {
     return NextResponse.json({ ok: false, error: e instanceof Error ? e.message : "sync failed" }, { status: 500 });
   }
