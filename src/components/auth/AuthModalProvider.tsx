@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { login, signup, requestIdentity, confirmIdentity, getIdentitySummary } from "@/lib/auth-actions";
+import { login, signup, requestIdentity, confirmIdentity, getIdentitySummary, checkUsernameAvailable } from "@/lib/auth-actions";
 import Logo from "@/components/Logo";
 
 // 본인인증 방식: raon(라온 OmniOne CX, 실서비스) | portone | mock(개발). 환경변수로 전환.
@@ -52,6 +52,8 @@ function AuthModal({ mode, setMode, close }: { mode: Mode; setMode: (m: Mode) =>
   // 회원가입
   const [s, setS] = useState({ username: "", password: "", name: "", nickname: "", email: "", phone: "" });
   const [password2, setPassword2] = useState("");
+  const [idCheck, setIdCheck] = useState<null | { available: boolean; text: string }>(null);
+  const [mismatch, setMismatch] = useState<string | null>(null);
   const [ci, setCi] = useState<string | null>(null);
   const [agree, setAgree] = useState({
     service: false,
@@ -81,8 +83,17 @@ function AuthModal({ mode, setMode, close }: { mode: Mode; setMode: (m: Mode) =>
       if (r.verified && r.flow === "signup") {
         setCi("raon-ticket"); // 실제 CI는 서버 티켓에서 — 클라이언트는 표식만
         setIvLocked(true);
-        setS((prev) => ({ ...prev, name: r.name || prev.name, phone: r.phone || prev.phone }));
-        setMsg({ ok: true, text: "✅ 본인인증이 완료되었습니다." });
+        setS((prev) => {
+          // 1단계에서 입력한 이름/전화와 인증기관 확인값 대조
+          const inName = prev.name.trim();
+          const inPhone = prev.phone.replace(/-/g, "").trim();
+          const notes: string[] = [];
+          if (inName && r.name && inName !== r.name) notes.push(`이름(입력 ${inName} → 인증 ${r.name})`);
+          if (inPhone && r.phone && inPhone !== r.phone) notes.push("휴대폰번호");
+          setMismatch(notes.length ? `입력하신 ${notes.join("·")} 정보가 인증 결과와 달라, 인증된 정보로 적용했어요.` : null);
+          return { ...prev, name: r.name || prev.name, phone: r.phone || prev.phone };
+        });
+        setMsg({ ok: true, text: "✅ 본인인증이 완료되었습니다. 아이디와 비밀번호를 설정해주세요." });
       }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -159,8 +170,16 @@ function AuthModal({ mode, setMode, close }: { mode: Mode; setMode: (m: Mode) =>
       setMsg({ ok: false, text: "휴대폰 본인인증을 먼저 완료해주세요." });
       return;
     }
-    if (s.password.length < 6) {
-      setMsg({ ok: false, text: "비밀번호는 6자 이상이어야 합니다." });
+    if (!/^[a-zA-Z0-9_]{4,20}$/.test(s.username.trim())) {
+      setMsg({ ok: false, text: "아이디는 영문/숫자 조합 4자 이상(최대 20자)이어야 합니다." });
+      return;
+    }
+    if (!idCheck?.available) {
+      setMsg({ ok: false, text: "아이디 중복확인을 해주세요." });
+      return;
+    }
+    if (!/^(?=.*[A-Za-z])(?=.*\d).{6,}$/.test(s.password)) {
+      setMsg({ ok: false, text: "비밀번호는 영문+숫자를 섞어 6자 이상이어야 합니다." });
       return;
     }
     if (s.password !== password2) {
@@ -229,65 +248,111 @@ function AuthModal({ mode, setMode, close }: { mode: Mode; setMode: (m: Mode) =>
           </div>
         ) : (
           <div className="space-y-3">
-            <input className="field" placeholder="아이디 (영문/숫자 4~20자)" value={s.username} onChange={(e) => setS({ ...s, username: e.target.value })} />
-            <input className="field" type="password" placeholder="비밀번호 (6자 이상)" value={s.password} onChange={(e) => setS({ ...s, password: e.target.value })} />
-            <div>
-              <input className="field w-full" type="password" placeholder="비밀번호 확인" value={password2} onChange={(e) => setPassword2(e.target.value)} />
-              {password2 && (
-                <p className={`mt-1 text-xs ${s.password === password2 ? "text-green-600" : "text-red-500"}`}>
-                  {s.password === password2 ? "✓ 비밀번호가 일치합니다" : "비밀번호가 일치하지 않습니다"}
-                </p>
-              )}
-            </div>
-            <input className="field" placeholder="이름(실명)" value={s.name} readOnly={ivLocked} onChange={(e) => setS({ ...s, name: e.target.value })} />
-            <input className="field" placeholder="닉네임 (커뮤니티 표시용, 2~12자)" value={s.nickname} onChange={(e) => setS({ ...s, nickname: e.target.value })} />
-            <input className="field" type="email" placeholder="이메일" value={s.email} onChange={(e) => setS({ ...s, email: e.target.value })} />
-            <div className="flex gap-2">
-              <input className="field flex-1" placeholder="휴대폰번호" value={s.phone} readOnly={ivLocked} onChange={(e) => setS({ ...s, phone: e.target.value })} />
-              <button
-                className={`shrink-0 rounded-xl px-3 text-sm font-bold ${ci ? "bg-deal/15 text-deal" : "border border-ink/20"}`}
-                onClick={doVerify}
-                disabled={pending || !!ci}
-              >
-                {ci ? "인증완료 ✓" : "본인인증"}
-              </button>
-            </div>
+            {!ci ? (
+              /* ── 1단계: 이름·연락처 → 본인인증 ── */
+              <>
+                <p className="text-sm text-ink/70">이름과 휴대폰번호를 입력하고 본인인증을 진행해주세요.</p>
+                <input className="field" placeholder="이름(실명)" value={s.name} onChange={(e) => setS({ ...s, name: e.target.value })} />
+                <input className="field" placeholder="휴대폰번호 (숫자만)" value={s.phone} onChange={(e) => setS({ ...s, phone: e.target.value })} />
+                <button
+                  className="btn-brand w-full"
+                  onClick={() => {
+                    if (!s.name.trim() || !/^01[0-9]{8,9}$/.test(s.phone.replace(/-/g, ""))) {
+                      setMsg({ ok: false, text: "이름과 휴대폰번호를 정확히 입력해주세요." });
+                      return;
+                    }
+                    setMsg(null);
+                    doVerify();
+                  }}
+                  disabled={pending}
+                >
+                  {pending ? "처리 중…" : "📱 본인인증하기 (카카오·토스)"}
+                </button>
+              </>
+            ) : (
+              /* ── 2단계: 인증완료 → 아이디·비밀번호 설정 ── */
+              <>
+                <div className="rounded-xl bg-green-50 px-3 py-2 text-sm font-semibold text-green-700">
+                  ✓ 본인인증 완료 — {s.name} · {s.phone}
+                </div>
+                {mismatch && <p className="text-xs text-amber-600">{mismatch}</p>}
 
-            {/* 약관 동의 */}
-            <div className="rounded-xl border border-line p-3">
-              <label className="flex items-center gap-2 border-b border-line pb-2 text-sm font-bold">
-                <input type="checkbox" checked={allChecked} onChange={(e) => toggleAll(e.target.checked)} />
-                전체 동의
-              </label>
-              <div className="mt-2 space-y-1.5 text-xs">
-                {[
-                  { k: "service" as const, label: "[필수] 서비스 이용약관", doc: "service" },
-                  { k: "privacy" as const, label: "[필수] 개인정보 수집·이용 (가입)", doc: "privacy_signup" },
-                  { k: "partnerPolicy" as const, label: "[필수] 파트너 운영정책·대가성 표시 서약", doc: "partner_policy" },
-                  { k: "age14" as const, label: "[필수] 만 14세 이상입니다", doc: "age14" },
-                  { k: "marketing" as const, label: "[선택] 마케팅 정보 수신 동의", doc: "marketing" },
-                ].map((row) => (
-                  <div key={row.k} className="flex items-center justify-between gap-2">
-                    <label className="flex flex-1 items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={agree[row.k]}
-                        onChange={(e) => setAgree({ ...agree, [row.k]: e.target.checked })}
-                      />
-                      {row.label}
-                    </label>
-                    <a href={`/terms?doc=${row.doc}`} target="_blank" className="shrink-0 text-sub underline">
-                      보기
-                    </a>
+                <div className="flex gap-2">
+                  <input
+                    className="field flex-1"
+                    placeholder="아이디 (영문/숫자 4자 이상)"
+                    value={s.username}
+                    onChange={(e) => { setS({ ...s, username: e.target.value }); setIdCheck(null); }}
+                  />
+                  <button
+                    type="button"
+                    className="shrink-0 rounded-xl border border-ink/20 px-3 text-sm font-bold"
+                    disabled={pending || !s.username.trim()}
+                    onClick={() =>
+                      start(async () => {
+                        const r = await checkUsernameAvailable(s.username);
+                        setIdCheck({ available: !!r.available, text: r.message });
+                      })
+                    }
+                  >
+                    중복확인
+                  </button>
+                </div>
+                {idCheck && (
+                  <p className={`text-xs ${idCheck.available ? "text-green-600" : "text-red-500"}`}>
+                    {idCheck.available ? "✓ " : ""}{idCheck.text}
+                  </p>
+                )}
+
+                <input className="field" type="password" placeholder="비밀번호 (영문+숫자 혼합 6자 이상)" value={s.password} onChange={(e) => setS({ ...s, password: e.target.value })} />
+                <div>
+                  <input className="field w-full" type="password" placeholder="비밀번호 확인" value={password2} onChange={(e) => setPassword2(e.target.value)} />
+                  {password2 && (
+                    <p className={`mt-1 text-xs ${s.password === password2 ? "text-green-600" : "text-red-500"}`}>
+                      {s.password === password2 ? "✓ 비밀번호가 일치합니다" : "비밀번호가 일치하지 않습니다"}
+                    </p>
+                  )}
+                </div>
+                <input className="field" placeholder="닉네임 (커뮤니티 표시용, 2~12자)" value={s.nickname} onChange={(e) => setS({ ...s, nickname: e.target.value })} />
+                <input className="field" type="email" placeholder="이메일" value={s.email} onChange={(e) => setS({ ...s, email: e.target.value })} />
+
+                {/* 약관 동의 */}
+                <div className="rounded-xl border border-line p-3">
+                  <label className="flex items-center gap-2 border-b border-line pb-2 text-sm font-bold">
+                    <input type="checkbox" checked={allChecked} onChange={(e) => toggleAll(e.target.checked)} />
+                    전체 동의
+                  </label>
+                  <div className="mt-2 space-y-1.5 text-xs">
+                    {[
+                      { k: "service" as const, label: "[필수] 서비스 이용약관", doc: "service" },
+                      { k: "privacy" as const, label: "[필수] 개인정보 수집·이용 (가입)", doc: "privacy_signup" },
+                      { k: "partnerPolicy" as const, label: "[필수] 파트너 운영정책·대가성 표시 서약", doc: "partner_policy" },
+                      { k: "age14" as const, label: "[필수] 만 14세 이상입니다", doc: "age14" },
+                      { k: "marketing" as const, label: "[선택] 마케팅 정보 수신 동의", doc: "marketing" },
+                    ].map((row) => (
+                      <div key={row.k} className="flex items-center justify-between gap-2">
+                        <label className="flex flex-1 items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={agree[row.k]}
+                            onChange={(e) => setAgree({ ...agree, [row.k]: e.target.checked })}
+                          />
+                          {row.label}
+                        </label>
+                        <a href={`/terms?doc=${row.doc}`} target="_blank" className="shrink-0 text-sub underline">
+                          보기
+                        </a>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </div>
+                </div>
 
-            <button className="btn-brand w-full" onClick={doSignup} disabled={pending}>
-              {pending ? "처리 중…" : "가입하기"}
-            </button>
-            <p className="text-center text-xs text-sub">본인인증 완료 시 즉시 가입되어 바로 이용할 수 있어요.</p>
+                <button className="btn-brand w-full" onClick={doSignup} disabled={pending}>
+                  {pending ? "처리 중…" : "가입 완료하기"}
+                </button>
+                <p className="text-center text-xs text-sub">가입 즉시 판매 코드가 자동 발급돼요.</p>
+              </>
+            )}
           </div>
         )}
 

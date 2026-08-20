@@ -47,6 +47,17 @@ export async function confirmIdentity(identityVerificationId: string) {
   };
 }
 
+/** 아이디 사용 가능 여부 (가입 2단계 중복확인 버튼) */
+export async function checkUsernameAvailable(username: string) {
+  const u = username.trim();
+  if (!/^[a-zA-Z0-9_]{4,20}$/.test(u))
+    return { ok: false, available: false, message: "아이디는 영문/숫자/_ 조합 4~20자입니다." };
+  const dup = await prisma.partner.findUnique({ where: { username: u }, select: { id: true } });
+  return dup
+    ? { ok: true, available: false, message: "이미 사용 중인 아이디입니다." }
+    : { ok: true, available: true, message: "사용 가능한 아이디입니다." };
+}
+
 /** 판매 코드 자동 생성 — cb + 영숫자 6자 (고도몰은 사전등록 불필요: URL 코드를 그대로 기록) */
 async function generatePartnerCode(): Promise<string> {
   const chars = "abcdefghjkmnpqrstuvwxyz23456789"; // 혼동문자(l,1,o,0,i) 제외
@@ -77,7 +88,8 @@ export async function signup(input: {
   const username = input.username.trim();
   if (!/^[a-zA-Z0-9_]{4,20}$/.test(username))
     return { ok: false, message: "아이디는 영문/숫자/_ 4~20자입니다." };
-  if (input.password.length < 6) return { ok: false, message: "비밀번호는 6자 이상이어야 합니다." };
+  if (!/^(?=.*[A-Za-z])(?=.*\d).{6,}$/.test(input.password))
+    return { ok: false, message: "비밀번호는 영문+숫자를 섞어 6자 이상이어야 합니다." };
   if (!input.name.trim() || !input.phone.trim())
     return { ok: false, message: "이름과 휴대폰번호를 입력하세요." };
   const nickname = input.nickname.trim();
