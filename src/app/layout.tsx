@@ -74,10 +74,12 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     verification: {
       google: process.env.GOOGLE_SITE_VERIFICATION,
-      // 네이버 서치어드바이저 소유 확인 (환경변수 우선, 없으면 기본값)
+      // 네이버 서치어드바이저 소유 확인 — non-www / www 사이트 각각의 태그
       other: {
-        "naver-site-verification":
-          process.env.NAVER_SITE_VERIFICATION || "87d6c038bd9207bf9e5170fa555b816e262f71f1",
+        "naver-site-verification": [
+          "87d6c038bd9207bf9e5170fa555b816e262f71f1", // cashboutique.co.kr
+          "d968ba2fcdd41e5fb25a0ae24e8c407f35f2dce4", // www.cashboutique.co.kr
+        ],
       },
     },
   };
