@@ -41,7 +41,8 @@ export default function BannerCarousel({
     if (!container || !track) return;
     const slide = track.children[i] as HTMLElement | undefined;
     if (!slide) return;
-    setOffset(container.clientWidth / 2 - slide.offsetLeft - slide.offsetWidth / 2);
+    // track에 transform이 걸리면 slide.offsetLeft 기준이 track이 됨 → 컨테이너 패딩(track.offsetLeft)을 보정해야 정중앙
+    setOffset(container.clientWidth / 2 - track.offsetLeft - slide.offsetLeft - slide.offsetWidth / 2);
     setReady(true);
   }, []);
 
