@@ -18,8 +18,15 @@ export async function createGodoAgent(code: string, name: string, email?: string
     if (email) url.searchParams.set("email", email);
     const res = await fetch(url.toString(), { headers: { "X-API-KEY": API_KEY }, cache: "no-store" });
     const d = await res.json().catch(() => null);
-    if (d?.ok) return { ok: true };
-    return { ok: false, message: d?.error || `HTTP ${res.status}` };
+    if (!d?.ok) return { ok: false, message: d?.error || `HTTP ${res.status}` };
+    // 컨시어지 할인율 5% 고정 (신규·기존 무관, 멱등)
+    const rateUrl = new URL(agentUrl());
+    rateUrl.searchParams.set("action", "setrate");
+    rateUrl.searchParams.set("col", "salesDiscountRate");
+    rateUrl.searchParams.set("rate", "5.00");
+    rateUrl.searchParams.set("code", code);
+    await fetch(rateUrl.toString(), { headers: { "X-API-KEY": API_KEY }, cache: "no-store" }).catch(() => {});
+    return { ok: true };
   } catch (e) {
     return { ok: false, message: e instanceof Error ? e.message : "agent api error" };
   }
