@@ -47,6 +47,18 @@ export async function confirmIdentity(identityVerificationId: string) {
   };
 }
 
+/** 판매 코드 자동 생성 — cb + 영숫자 6자 (고도몰은 사전등록 불필요: URL 코드를 그대로 기록) */
+async function generatePartnerCode(): Promise<string> {
+  const chars = "abcdefghjkmnpqrstuvwxyz23456789"; // 혼동문자(l,1,o,0,i) 제외
+  for (let attempt = 0; attempt < 10; attempt++) {
+    let c = "cb";
+    for (let i = 0; i < 6; i++) c += chars[Math.floor(Math.random() * chars.length)];
+    const dup = await prisma.partner.findUnique({ where: { code: c }, select: { id: true } });
+    if (!dup) return c;
+  }
+  throw new Error("코드 생성 실패");
+}
+
 /** 회원가입 신청 — 본인인증 통과분에 한해 pending 상태로 생성 */
 export async function signup(input: {
   username: string;
@@ -110,6 +122,7 @@ export async function signup(input: {
       verified: true,
       ci,
       status: "approved", // 본인인증 완료 = 즉시 승인 (승인제 폐지)
+      code: await generatePartnerCode(), // 판매 코드 즉시 자동 발급
       // 가입 직후 자동 로그인되므로 1회로 집계
       lastLoginAt: now,
       loginCount: 1,
@@ -127,9 +140,9 @@ export async function signup(input: {
     },
   });
   clearIdentityTicket(); // 티켓 일회용 소진
-  // 가입 즉시 로그인 + 즉시 이용 가능 (판매 링크 코드는 어드민이 곧 배정)
+  // 가입 즉시 로그인 + 판매 코드까지 자동 발급 — 바로 링크 발급 가능
   setSession(created.id);
-  return { ok: true, message: "가입 완료! 바로 이용하실 수 있어요." };
+  return { ok: true, message: "가입 완료! 바로 판매를 시작할 수 있어요." };
 }
 
 /** 로그인 (승인대기 회원도 로그인 가능, 반려/비활성만 차단) */
