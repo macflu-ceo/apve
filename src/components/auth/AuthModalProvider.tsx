@@ -51,6 +51,7 @@ function AuthModal({ mode, setMode, close }: { mode: Mode; setMode: (m: Mode) =>
 
   // 회원가입
   const [s, setS] = useState({ username: "", password: "", name: "", nickname: "", email: "", phone: "" });
+  const [password2, setPassword2] = useState("");
   const [ci, setCi] = useState<string | null>(null);
   const [agree, setAgree] = useState({
     service: false,
@@ -81,7 +82,7 @@ function AuthModal({ mode, setMode, close }: { mode: Mode; setMode: (m: Mode) =>
         setCi("raon-ticket"); // 실제 CI는 서버 티켓에서 — 클라이언트는 표식만
         setIvLocked(true);
         setS((prev) => ({ ...prev, name: r.name || prev.name, phone: r.phone || prev.phone }));
-        setMsg({ ok: true, text: "본인인증 완료" });
+        setMsg({ ok: true, text: "✅ 본인인증이 완료되었습니다." });
       }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -129,7 +130,7 @@ function AuthModal({ mode, setMode, close }: { mode: Mode; setMode: (m: Mode) =>
             setCi(r.ci);
             // 인증기관이 확인한 실명·전화로 확정
             setS((prev) => ({ ...prev, name: r.name ?? prev.name, phone: r.phone ?? prev.phone }));
-            setMsg({ ok: true, text: "본인인증 완료" });
+            setMsg({ ok: true, text: "✅ 본인인증이 완료되었습니다." });
           } else {
             setMsg({ ok: false, text: r.message ?? "본인인증 실패" });
           }
@@ -145,7 +146,7 @@ function AuthModal({ mode, setMode, close }: { mode: Mode; setMode: (m: Mode) =>
       const r = await requestIdentity(s.name, s.phone);
       if (r.ok) {
         setCi(r.ci);
-        setMsg({ ok: true, text: "본인인증 완료" });
+        setMsg({ ok: true, text: "✅ 본인인증이 완료되었습니다." });
       } else {
         setMsg({ ok: false, text: r.message ?? "본인인증 실패" });
       }
@@ -153,6 +154,23 @@ function AuthModal({ mode, setMode, close }: { mode: Mode; setMode: (m: Mode) =>
   }
 
   function doSignup() {
+    setMsg(null);
+    if (!ci) {
+      setMsg({ ok: false, text: "휴대폰 본인인증을 먼저 완료해주세요." });
+      return;
+    }
+    if (s.password.length < 6) {
+      setMsg({ ok: false, text: "비밀번호는 6자 이상이어야 합니다." });
+      return;
+    }
+    if (s.password !== password2) {
+      setMsg({ ok: false, text: "비밀번호가 서로 일치하지 않습니다." });
+      return;
+    }
+    if (!allRequired) {
+      setMsg({ ok: false, text: "필수 약관에 모두 동의해주세요." });
+      return;
+    }
     start(async () => {
       const r = await signup({
         ...s,
@@ -213,6 +231,14 @@ function AuthModal({ mode, setMode, close }: { mode: Mode; setMode: (m: Mode) =>
           <div className="space-y-3">
             <input className="field" placeholder="아이디 (영문/숫자 4~20자)" value={s.username} onChange={(e) => setS({ ...s, username: e.target.value })} />
             <input className="field" type="password" placeholder="비밀번호 (6자 이상)" value={s.password} onChange={(e) => setS({ ...s, password: e.target.value })} />
+            <div>
+              <input className="field w-full" type="password" placeholder="비밀번호 확인" value={password2} onChange={(e) => setPassword2(e.target.value)} />
+              {password2 && (
+                <p className={`mt-1 text-xs ${s.password === password2 ? "text-green-600" : "text-red-500"}`}>
+                  {s.password === password2 ? "✓ 비밀번호가 일치합니다" : "비밀번호가 일치하지 않습니다"}
+                </p>
+              )}
+            </div>
             <input className="field" placeholder="이름(실명)" value={s.name} readOnly={ivLocked} onChange={(e) => setS({ ...s, name: e.target.value })} />
             <input className="field" placeholder="닉네임 (커뮤니티 표시용, 2~12자)" value={s.nickname} onChange={(e) => setS({ ...s, nickname: e.target.value })} />
             <input className="field" type="email" placeholder="이메일" value={s.email} onChange={(e) => setS({ ...s, email: e.target.value })} />
@@ -258,7 +284,7 @@ function AuthModal({ mode, setMode, close }: { mode: Mode; setMode: (m: Mode) =>
               </div>
             </div>
 
-            <button className="btn-brand w-full" onClick={doSignup} disabled={pending || !ci || !allRequired}>
+            <button className="btn-brand w-full" onClick={doSignup} disabled={pending}>
               {pending ? "처리 중…" : "가입하기"}
             </button>
             <p className="text-center text-xs text-sub">본인인증 완료 시 즉시 가입되어 바로 이용할 수 있어요.</p>
