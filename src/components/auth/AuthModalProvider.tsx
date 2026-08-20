@@ -60,7 +60,6 @@ function AuthModal({ mode, setMode, close }: { mode: Mode; setMode: (m: Mode) =>
   const [s, setS] = useState({ username: "", password: "", name: "", nickname: "", email: "", phone: "" });
   const [password2, setPassword2] = useState("");
   const [idCheck, setIdCheck] = useState<null | { available: boolean; text: string }>(null);
-  const [mismatch, setMismatch] = useState<string | null>(null);
   const [ci, setCi] = useState<string | null>(null);
   const [agree, setAgree] = useState({
     service: false,
@@ -90,16 +89,7 @@ function AuthModal({ mode, setMode, close }: { mode: Mode; setMode: (m: Mode) =>
       if (r.verified && r.flow === "signup") {
         setCi("raon-ticket"); // 실제 CI는 서버 티켓에서 — 클라이언트는 표식만
         setIvLocked(true);
-        setS((prev) => {
-          // 1단계에서 입력한 이름/전화와 인증기관 확인값 대조
-          const inName = prev.name.trim();
-          const inPhone = prev.phone.replace(/-/g, "").trim();
-          const notes: string[] = [];
-          if (inName && r.name && inName !== r.name) notes.push(`이름(입력 ${inName} → 인증 ${r.name})`);
-          if (inPhone && r.phone && inPhone !== r.phone) notes.push("휴대폰번호");
-          setMismatch(notes.length ? `입력하신 ${notes.join("·")} 정보가 인증 결과와 달라, 인증된 정보로 적용했어요.` : null);
-          return { ...prev, name: r.name || prev.name, phone: r.phone || prev.phone };
-        });
+        setS((prev) => ({ ...prev, name: r.name || prev.name, phone: r.phone || prev.phone }));
         setMsg({ ok: true, text: "✅ 본인인증이 완료되었습니다. 아이디와 비밀번호를 설정해주세요." });
       }
     });
@@ -263,24 +253,22 @@ function AuthModal({ mode, setMode, close }: { mode: Mode; setMode: (m: Mode) =>
         ) : (
           <div className="space-y-3">
             {!ci ? (
-              /* ── 1단계: 이름·연락처 → 본인인증 ── */
+              /* ── 1단계: 본인인증만 (실명·연락처는 인증 결과에서 자동 수신) ── */
               <>
-                <p className="text-sm text-ink/70">이름과 휴대폰번호를 입력하고 본인인증을 진행해주세요.</p>
-                <input className="field" placeholder="이름(실명)" value={s.name} onChange={(e) => setS({ ...s, name: e.target.value })} />
-                <input className="field" placeholder="휴대폰번호 (숫자만)" value={s.phone} onChange={(e) => setS({ ...s, phone: e.target.value })} />
+                <p className="text-sm leading-relaxed text-ink/70">
+                  휴대폰 본인인증으로 간편하게 가입해요.
+                  <br />
+                  <span className="text-xs text-sub">이름·연락처는 인증 결과로 자동 입력됩니다. (카카오·토스 인증서)</span>
+                </p>
                 <button
                   className="btn-brand w-full"
                   onClick={() => {
-                    if (!s.name.trim() || !/^01[0-9]{8,9}$/.test(s.phone.replace(/-/g, ""))) {
-                      setMsg({ ok: false, text: "이름과 휴대폰번호를 정확히 입력해주세요." });
-                      return;
-                    }
                     setMsg(null);
                     doVerify();
                   }}
                   disabled={pending}
                 >
-                  {pending ? "처리 중…" : "📱 본인인증하기 (카카오·토스)"}
+                  {pending ? "처리 중…" : "📱 휴대폰 본인인증하기"}
                 </button>
               </>
             ) : (
@@ -289,7 +277,6 @@ function AuthModal({ mode, setMode, close }: { mode: Mode; setMode: (m: Mode) =>
                 <div className="rounded-xl bg-green-50 px-3 py-2 text-sm font-semibold text-green-700">
                   ✓ 본인인증 완료 — {s.name} · {s.phone}
                 </div>
-                {mismatch && <p className="text-xs text-amber-600">{mismatch}</p>}
 
                 <div className="flex gap-2">
                   <input
