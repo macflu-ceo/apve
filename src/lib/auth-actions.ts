@@ -221,3 +221,9 @@ export async function resetPasswordByIdentity(username: string, newPassword: str
   clearIdentityTicket();
   return { ok: true, message: "비밀번호가 변경되었습니다. 새 비밀번호로 로그인해주세요." };
 }
+
+/** 본인인증 티켓 폐기 — 가입창을 닫으면 처음부터 다시 인증하도록 */
+export async function discardIdentityTicket() {
+  clearIdentityTicket();
+  return { ok: true };
+}

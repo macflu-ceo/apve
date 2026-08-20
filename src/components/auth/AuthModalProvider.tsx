@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { login, signup, requestIdentity, confirmIdentity, getIdentitySummary, checkUsernameAvailable } from "@/lib/auth-actions";
+import { login, signup, requestIdentity, confirmIdentity, getIdentitySummary, checkUsernameAvailable, discardIdentityTicket } from "@/lib/auth-actions";
 import Logo from "@/components/Logo";
 
 // 본인인증 방식: raon(라온 OmniOne CX, 실서비스) | portone | mock(개발). 환경변수로 전환.
@@ -22,13 +22,20 @@ export default function AuthModalProvider({ children }: { children: React.ReactN
     setMode(m);
     setOpenState(true);
   };
-  const close = () => setOpenState(false);
+  const close = () => {
+    setOpenState(false);
+    discardIdentityTicket().catch(() => {}); // 창 닫으면 인증 무효 → 다시 열면 처음부터
+  };
 
   // 본인인증 복귀(?signup=1) / 로그인 유도(?login=1) 시 모달 자동 오픈
   useEffect(() => {
     const q = new URLSearchParams(window.location.search);
     if (q.get("signup") === "1") open("signup");
     else if (q.get("login") === "1") open("login");
+    if (q.get("signup") || q.get("login") || q.get("iv") || q.get("iv_error")) {
+      // 새로고침 시 재오픈/재처리 방지 — 파라미터 제거
+      window.history.replaceState(null, "", window.location.pathname);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -200,6 +207,13 @@ function AuthModal({ mode, setMode, close }: { mode: Mode; setMode: (m: Mode) =>
         agreeAge14: agree.age14,
         agreeMarketing: agree.marketing,
       });
+      if (!r.ok && /본인인증/.test(r.message || "")) {
+        // 서버 티켓 만료 → 1단계(인증)부터 다시
+        setCi(null);
+        setIvLocked(false);
+        setMsg({ ok: false, text: "본인인증이 만료되었어요. 처음부터 다시 인증해주세요." });
+        return;
+      }
       setMsg({ ok: r.ok, text: r.message });
       if (r.ok) {
         // 가입 즉시 로그인됨 → 새로고침 후 닫기
