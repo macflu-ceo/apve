@@ -241,8 +241,8 @@ function AuthModal({ mode, setMode, close }: { mode: Mode; setMode: (m: Mode) =>
 
         {mode === "login" ? (
           <div className="space-y-3">
-            <input className="field" placeholder="아이디" value={lid} onChange={(e) => setLid(e.target.value)} />
-            <input className="field" type="password" placeholder="비밀번호" value={lpw} onChange={(e) => setLpw(e.target.value)} />
+            <input className="field" autoComplete="username" placeholder="아이디" value={lid} onChange={(e) => setLid(e.target.value)} />
+            <input className="field" type="password" autoComplete="current-password" placeholder="비밀번호" value={lpw} onChange={(e) => setLpw(e.target.value)} />
             <button className="btn-brand w-full" onClick={doLogin} disabled={pending}>
               {pending ? "처리 중…" : "로그인"}
             </button>
@@ -282,6 +282,7 @@ function AuthModal({ mode, setMode, close }: { mode: Mode; setMode: (m: Mode) =>
                   <input
                     className="field flex-1"
                     placeholder="아이디 (영문/숫자 4자 이상)"
+                    autoComplete="username"
                     value={s.username}
                     onChange={(e) => { setS({ ...s, username: e.target.value }); setIdCheck(null); }}
                   />
@@ -305,9 +306,9 @@ function AuthModal({ mode, setMode, close }: { mode: Mode; setMode: (m: Mode) =>
                   </p>
                 )}
 
-                <input className="field" type="password" placeholder="비밀번호 (영문+숫자 혼합 6자 이상)" value={s.password} onChange={(e) => setS({ ...s, password: e.target.value })} />
+                <input className="field" type="password" autoComplete="new-password" placeholder="비밀번호 (영문+숫자 혼합 6자 이상)" value={s.password} onChange={(e) => setS({ ...s, password: e.target.value })} />
                 <div>
-                  <input className="field w-full" type="password" placeholder="비밀번호 확인" value={password2} onChange={(e) => setPassword2(e.target.value)} />
+                  <input className="field w-full" type="password" autoComplete="new-password" placeholder="비밀번호 확인" value={password2} onChange={(e) => setPassword2(e.target.value)} />
                   {password2 && (
                     <p className={`mt-1 text-xs ${s.password === password2 ? "text-green-600" : "text-red-500"}`}>
                       {s.password === password2 ? "✓ 비밀번호가 일치합니다" : "비밀번호가 일치하지 않습니다"}
