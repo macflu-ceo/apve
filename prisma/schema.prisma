@@ -41,8 +41,8 @@ model Partner {
   email        String?
   /// 실명(본인)인증 완료 여부
   verified     Boolean  @default(false)
-  /// 본인확인 CI (PASS/NICE 등 연동 시 저장)
-  ci           String?
+  /// 본인확인 CI (라온 OmniOne CX) — 1인 1계정 보장
+  ci           String?  @unique
   /// pending(신청) | approved(승인) | rejected(반려)
   status       String   @default("pending")
   /// 고도몰 URL 뒤에 붙는 고유 파라미터. 승인 시 어드민이 고도몰에서 발급해 부여.

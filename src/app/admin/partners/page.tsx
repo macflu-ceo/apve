@@ -175,7 +175,7 @@ export default async function AdminPartners({ searchParams }: { searchParams: SP
     }),
     // 등급 자동판정(첫구매/일반)은 항상 전체 누적 실적 기준
     prisma.sale.groupBy({ by: ["partnerId"], _count: { _all: true } }),
-    prisma.partner.findMany({ where: { status: "pending" }, orderBy: { createdAt: "desc" } }),
+    prisma.partner.findMany({ where: { active: true, code: null, status: { not: "rejected" } }, orderBy: { createdAt: "desc" } }),
     getPartnerEngagement(engFrom, engTo),
     // 20% 바우처는 항상 전체 누적 (기간 무관)
     prisma.rewardVoucher.groupBy({ by: ["partnerId", "status"], _count: { _all: true } }),
@@ -315,10 +315,10 @@ export default async function AdminPartners({ searchParams }: { searchParams: SP
       {/* 가입 신청 대기 */}
       <section className="mb-8">
         <h2 className="mb-3 text-lg font-semibold">
-          가입 신청 대기 <span className="text-brand">({pendingList.length})</span>
+          판매코드 미발급 <span className="text-brand">({pendingList.length})</span>
         </h2>
         {pendingList.length === 0 ? (
-          <div className="card p-6 text-sm text-sub">대기 중인 신청이 없습니다.</div>
+          <div className="card p-6 text-sm text-sub">코드 미발급 회원이 없습니다.</div>
         ) : (
           <div className="space-y-2">
             {pendingList.map((p) => (

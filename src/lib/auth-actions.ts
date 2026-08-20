@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { hashPassword, verifyPassword, setSession, clearSession, getSessionPartner } from "@/lib/auth";
 import { verifyIdentity, verifyPortoneIdentity } from "@/lib/identity";
 import { TERMS_VERSION } from "@/lib/terms";
+import { getIdentityTicket, clearIdentityTicket, isRaonConfigured } from "@/lib/identity-raon";
 
 /** 닉네임 설정/변경 — 마이페이지에서 최초 1회만 허용 */
 export async function changeNickname(nickname: string) {
@@ -19,6 +20,13 @@ export async function changeNickname(nickname: string) {
   revalidatePath("/me");
   revalidatePath("/community");
   return { ok: true, message: "닉네임이 설정되었습니다." };
+}
+
+/** 라온 인증결과 티켓 요약 — 모달이 인증완료 상태·실명·전화를 표시할 때 사용 (CI는 안 내려줌) */
+export async function getIdentitySummary() {
+  const t = getIdentityTicket();
+  if (!t) return { verified: false as const };
+  return { verified: true as const, name: t.name, phone: t.phone, flow: t.flow };
 }
 
 /** 본인인증 — mock 경로 (이름+전화만으로 통과, 개발용) */
@@ -65,9 +73,25 @@ export async function signup(input: {
     return { ok: false, message: "닉네임은 2~12자로 입력하세요." };
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.email.trim()))
     return { ok: false, message: "이메일을 정확히 입력하세요." };
-  if (!input.ci) return { ok: false, message: "휴대폰 본인인증을 먼저 완료하세요." };
+  // 본인인증 확정 — 라온이면 서명 티켓(서버 쿠키)에서 CI를 읽는다 (클라이언트 값 신뢰 안 함)
+  let ci = input.ci;
+  let realName = input.name.trim();
+  let realPhone = input.phone.trim();
+  if (isRaonConfigured()) {
+    const t = getIdentityTicket();
+    if (!t || t.flow !== "signup") return { ok: false, message: "휴대폰 본인인증을 먼저 완료하세요." };
+    ci = t.ci;
+    realName = t.name || realName;   // 인증기관이 확인한 실명
+    realPhone = t.phone || realPhone; // 인증된 전화번호
+  }
+  if (!ci) return { ok: false, message: "휴대폰 본인인증을 먼저 완료하세요." };
   if (!input.agreeService || !input.agreePrivacy || !input.agreePartnerPolicy || !input.agreeAge14)
     return { ok: false, message: "필수 약관에 모두 동의해야 가입할 수 있습니다." };
+
+  // 1인 1계정 — 같은 CI로 이미 가입돼 있으면 차단
+  const dupCi = await prisma.partner.findUnique({ where: { ci }, select: { username: true } });
+  if (dupCi)
+    return { ok: false, message: "이미 이 명의로 가입된 계정이 있습니다. '아이디 찾기'를 이용해주세요." };
 
   const dup = await prisma.partner.findUnique({ where: { username } });
   if (dup) return { ok: false, message: "이미 사용 중인 아이디입니다." };
@@ -79,13 +103,13 @@ export async function signup(input: {
     data: {
       username,
       passwordHash: hashPassword(input.password),
-      name: input.name.trim(),
+      name: realName,
       nickname,
       email: input.email.trim(),
-      phone: input.phone.trim(),
+      phone: realPhone,
       verified: true,
-      ci: input.ci,
-      status: "pending",
+      ci,
+      status: "approved", // 본인인증 완료 = 즉시 승인 (승인제 폐지)
       // 가입 직후 자동 로그인되므로 1회로 집계
       lastLoginAt: now,
       loginCount: 1,
@@ -102,9 +126,10 @@ export async function signup(input: {
       }),
     },
   });
-  // 가입 즉시 로그인 (상태는 승인대기중)
+  clearIdentityTicket(); // 티켓 일회용 소진
+  // 가입 즉시 로그인 + 즉시 이용 가능 (판매 링크 코드는 어드민이 곧 배정)
   setSession(created.id);
-  return { ok: true, message: "가입 완료! 지금은 승인대기중이며, 승인되면 코드가 발급됩니다." };
+  return { ok: true, message: "가입 완료! 바로 이용하실 수 있어요." };
 }
 
 /** 로그인 (승인대기 회원도 로그인 가능, 반려/비활성만 차단) */
@@ -127,4 +152,47 @@ export async function login(username: string, password: string) {
 export async function logout() {
   clearSession();
   return { ok: true };
+}
+
+/** 아이디 찾기 — 본인인증(티켓)의 CI로 계정 조회 */
+export async function findUsernameByIdentity() {
+  const t = getIdentityTicket();
+  if (!t || t.flow !== "find-id") return { ok: false, message: "본인인증을 먼저 완료해주세요." };
+  const p = await prisma.partner.findUnique({
+    where: { ci: t.ci },
+    select: { username: true, createdAt: true, active: true },
+  });
+  clearIdentityTicket(); // 일회용
+  if (!p) return { ok: false, message: "이 명의로 가입된 계정이 없습니다." };
+  if (!p.active) return { ok: false, message: "탈퇴했거나 이용이 제한된 계정입니다. 고객센터로 문의해주세요." };
+  const joined = new Date(p.createdAt.getTime() + 9 * 3600_000).toISOString().slice(0, 10);
+  return { ok: true, username: p.username, joinedAt: joined };
+}
+
+/** 비밀번호 재설정 1단계 — 아이디 + 본인인증 CI 일치 확인 (티켓은 유지, 2단계에서 소진) */
+export async function verifyResetIdentity(username: string) {
+  const t = getIdentityTicket();
+  if (!t || t.flow !== "reset-pw") return { ok: false, message: "본인인증을 먼저 완료해주세요." };
+  const u = username.trim();
+  if (!u) return { ok: false, message: "아이디를 입력하세요." };
+  const p = await prisma.partner.findUnique({ where: { username: u }, select: { ci: true, active: true } });
+  if (!p) return { ok: false, message: "존재하지 않는 아이디입니다." };
+  if (!p.active) return { ok: false, message: "탈퇴했거나 이용이 제한된 계정입니다." };
+  if (!p.ci || p.ci !== t.ci)
+    return { ok: false, message: "본인인증 정보와 계정 명의가 일치하지 않습니다." };
+  return { ok: true };
+}
+
+/** 비밀번호 재설정 2단계 — 새 비밀번호 저장 (티켓 소진) */
+export async function resetPasswordByIdentity(username: string, newPassword: string) {
+  const t = getIdentityTicket();
+  if (!t || t.flow !== "reset-pw") return { ok: false, message: "본인인증이 만료되었습니다. 처음부터 다시 진행해주세요." };
+  if (newPassword.length < 6) return { ok: false, message: "비밀번호는 6자 이상이어야 합니다." };
+  const u = username.trim();
+  const p = await prisma.partner.findUnique({ where: { username: u }, select: { id: true, ci: true, active: true } });
+  if (!p || !p.active || !p.ci || p.ci !== t.ci)
+    return { ok: false, message: "본인인증 정보와 계정 명의가 일치하지 않습니다." };
+  await prisma.partner.update({ where: { id: p.id }, data: { passwordHash: hashPassword(newPassword) } });
+  clearIdentityTicket();
+  return { ok: true, message: "비밀번호가 변경되었습니다. 새 비밀번호로 로그인해주세요." };
 }

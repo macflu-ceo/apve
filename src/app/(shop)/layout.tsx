@@ -158,6 +158,7 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
                 <li><Link href="/terms?doc=service" className="hover:text-ink">이용약관</Link></li>
                 <li><Link href="/terms?doc=privacy_policy" className="font-semibold hover:text-ink">개인정보처리방침</Link></li>
                 <li><Link href="/terms?doc=refund_policy" className="hover:text-ink">취소·환불 정책</Link></li>
+                <li><a href="/opensource-licenses.pdf" target="_blank" className="hover:text-ink">오픈소스 라이선스</a></li>
               </ul>
             </div>
 
