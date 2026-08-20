@@ -74,9 +74,11 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     verification: {
       google: process.env.GOOGLE_SITE_VERIFICATION,
-      other: process.env.NAVER_SITE_VERIFICATION
-        ? { "naver-site-verification": process.env.NAVER_SITE_VERIFICATION }
-        : undefined,
+      // 네이버 서치어드바이저 소유 확인 (환경변수 우선, 없으면 기본값)
+      other: {
+        "naver-site-verification":
+          process.env.NAVER_SITE_VERIFICATION || "87d6c038bd9207bf9e5170fa555b816e262f71f1",
+      },
     },
   };
 }
