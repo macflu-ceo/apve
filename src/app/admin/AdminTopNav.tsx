@@ -10,14 +10,14 @@ export default function AdminTopNav({ groups }: { groups: MenuGroup[] }) {
   const active = activeGroupName(pathname, groups);
 
   return (
-    <nav className="flex flex-wrap items-center gap-0.5">
+    <nav className="flex items-center gap-1 overflow-x-auto whitespace-nowrap [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {groups.map((g) => {
         const on = g.group === active;
         return (
           <Link
             key={g.group}
             href={g.items[0].href}
-            className={`rounded-lg px-3 py-1.5 text-sm font-bold ${
+            className={`shrink-0 rounded-lg px-3 py-1.5 text-sm font-bold ${
               on ? "bg-brand text-white" : "text-ink/70 hover:bg-white hover:text-ink"
             }`}
           >

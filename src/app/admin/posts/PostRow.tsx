@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { togglePostPublished, deletePost } from "./actions";
+import { togglePostPublished, togglePostPinned, deletePost } from "./actions";
 
 type P = { id: string; category: string; title: string; pinned: boolean; published: boolean; createdAt: string; hasVideo: boolean };
 
@@ -22,6 +22,14 @@ export default function PostRow({ p }: { p: P }) {
         </div>
         <div className="text-xs text-sub">{p.createdAt}</div>
       </div>
+      <button
+        onClick={() => start(async () => { await togglePostPinned(p.id, !p.pinned); router.refresh(); })}
+        disabled={pending}
+        className={`rounded-full px-3 py-1 text-xs font-bold ${p.pinned ? "bg-brand text-white" : "bg-line text-sub"}`}
+        title="공지 목록 상단에 고정"
+      >
+        {p.pinned ? "📌 고정중" : "고정"}
+      </button>
       <button
         onClick={() => start(async () => { await togglePostPublished(p.id, !p.published); router.refresh(); })}
         disabled={pending}

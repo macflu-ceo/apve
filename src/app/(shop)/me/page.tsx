@@ -76,6 +76,11 @@ export default async function MyPage() {
           >
             {grade}
           </span>
+          {partner.settlementStatus === "verified" ? (
+            <span className="rounded-full bg-green-100 px-2.5 py-1 text-xs font-bold text-green-700">✓ 정산 승인</span>
+          ) : partner.settlementStatus === "submitted" ? (
+            <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-700">정산 승인 대기중</span>
+          ) : null}
         </div>
         <p className="mt-1 text-sm text-ink/60">
           {partner.name} 님
@@ -91,6 +96,17 @@ export default async function MyPage() {
           )}
         </p>
       </div>
+
+      {/* 정산정보 미등록 강조 — 등록해야 수수료 지급 가능 */}
+      {isApproved && partner.settlementStatus === "none" && (
+        <a href="#settlement" className="flex items-center justify-between rounded-xl2 border-2 border-amber-300 bg-amber-50 p-4">
+          <div>
+            <div className="text-sm font-black text-amber-800">⚠️ 정산정보를 등록해주세요</div>
+            <div className="mt-0.5 text-xs text-amber-700">계좌 정보를 등록하고 관리자 승인을 받아야 수수료를 지급받을 수 있어요.</div>
+          </div>
+          <span className="shrink-0 rounded-lg bg-amber-500 px-3 py-2 text-xs font-bold text-white">등록하기 ↓</span>
+        </a>
+      )}
 
       {/* 커뮤니티 닉네임 (최초 1회 변경) */}
       <NicknameEditor nickname={partner.nickname} changed={partner.nicknameChanged} />
@@ -159,7 +175,7 @@ export default async function MyPage() {
           </div>
 
           {/* 정산 정보 (2단계) */}
-          <SettlementForm status={partner.settlementStatus} minPayout={SETTLEMENT_POLICY.minPayout} />
+          <div id="settlement"><SettlementForm status={partner.settlementStatus} minPayout={SETTLEMENT_POLICY.minPayout} /></div>
 
           {/* 리뷰·홍보 인증 → 20% 바우처 */}
           <RewardSubmitBox

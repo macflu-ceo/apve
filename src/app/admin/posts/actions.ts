@@ -58,3 +58,11 @@ export async function deletePost(id: string) {
   revalidatePath("/admin/posts");
   revalidatePath("/board");
 }
+
+/** 공지 상단고정 토글 — 커뮤니티/공지 목록 상단에 📌 고정 */
+export async function togglePostPinned(id: string, pinned: boolean) {
+  await prisma.post.update({ where: { id }, data: { pinned } });
+  revalidatePath("/admin/posts");
+  revalidatePath("/board");
+  revalidatePath("/community");
+}

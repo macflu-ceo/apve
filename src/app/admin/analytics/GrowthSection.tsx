@@ -16,6 +16,7 @@ export default function GrowthSection({
   active,
   cohorts,
   funnel,
+  signups,
   salesCount,
   acq,
   totalSessions,
@@ -24,12 +25,14 @@ export default function GrowthSection({
   active: ActiveUsers;
   cohorts: Cohort[];
   funnel: VisitorFunnel;
+  signups: number;
   salesCount: number;
   acq: Acquisition;
   totalSessions: number;
 }) {
   const steps = [
     { label: "방문자", value: funnel.visitors },
+    { label: "회원가입", value: signups },
     { label: "상품 조회", value: funnel.viewers },
     { label: "코드 생성", value: funnel.coders },
     { label: "판매(확정)", value: salesCount },

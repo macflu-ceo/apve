@@ -75,9 +75,9 @@ export async function getActiveUsers(asOf: string, platform?: PF): Promise<Activ
   const wauFrom = addDays(asOf, -6);
   const r = await prisma.$queryRaw<{ dau: bigint; wau: bigint; mau: bigint }[]>`
     SELECT
-      COUNT(DISTINCT "visitorId") FILTER (WHERE day = ${asOf}) AS dau,
-      COUNT(DISTINCT "visitorId") FILTER (WHERE day >= ${wauFrom} AND day <= ${asOf}) AS wau,
-      COUNT(DISTINCT "visitorId") FILTER (WHERE day >= ${mauFrom} AND day <= ${asOf}) AS mau
+      COUNT(DISTINCT COALESCE("partnerId", "visitorId")) FILTER (WHERE day = ${asOf}) AS dau,
+      COUNT(DISTINCT COALESCE("partnerId", "visitorId")) FILTER (WHERE day >= ${wauFrom} AND day <= ${asOf}) AS wau,
+      COUNT(DISTINCT COALESCE("partnerId", "visitorId")) FILTER (WHERE day >= ${mauFrom} AND day <= ${asOf}) AS mau
     FROM "Visit"
     WHERE day >= ${mauFrom} AND day <= ${asOf} ${pfSql(platform)}`;
   const dau = num(r[0]?.dau), wau = num(r[0]?.wau), mau = num(r[0]?.mau);
@@ -96,16 +96,16 @@ export async function getCohorts(asOf: string, platform?: PF): Promise<Cohort[]>
   const pf = pfSql(platform);
   const rows = await prisma.$queryRaw<{ cohort: string; wk: number; users: bigint }[]>`
     WITH firsts AS (
-      SELECT "visitorId", MIN(day)::date AS fd
-      FROM "Visit" WHERE TRUE ${pf} GROUP BY "visitorId"
+      SELECT COALESCE("partnerId", "visitorId") AS pid, MIN(day)::date AS fd
+      FROM "Visit" WHERE TRUE ${pf} GROUP BY COALESCE("partnerId", "visitorId")
     ), base AS (
-      SELECT v."visitorId",
+      SELECT COALESCE(v."partnerId", v."visitorId") AS pid,
         date_trunc('week', f.fd)::date AS cohort_start,
         ((v.day::date - date_trunc('week', f.fd)::date) / 7)::int AS wk
-      FROM "Visit" v JOIN firsts f ON f."visitorId" = v."visitorId"
+      FROM "Visit" v JOIN firsts f ON f.pid = COALESCE(v."partnerId", v."visitorId")
       WHERE TRUE ${pf}
     )
-    SELECT to_char(cohort_start, 'YYYY-MM-DD') AS cohort, wk, COUNT(DISTINCT "visitorId") AS users
+    SELECT to_char(cohort_start, 'YYYY-MM-DD') AS cohort, wk, COUNT(DISTINCT COALESCE("partnerId", "visitorId")) AS users
     FROM base
     WHERE cohort_start >= ${cutoff}::date AND wk BETWEEN 0 AND 6
     GROUP BY cohort_start, wk
@@ -140,9 +140,9 @@ export interface VisitorFunnel {
 export async function getVisitorFunnel(from: string, to: string, platform?: PF): Promise<VisitorFunnel> {
   const r = await prisma.$queryRaw<{ visitors: bigint; viewers: bigint; coders: bigint }[]>`
     SELECT
-      COUNT(DISTINCT "visitorId") AS visitors,
-      COUNT(DISTINCT "visitorId") FILTER (WHERE kind = 'product') AS viewers,
-      COUNT(DISTINCT "visitorId") FILTER (WHERE label = 'code') AS coders
+      COUNT(DISTINCT COALESCE("partnerId", "visitorId")) AS visitors,
+      COUNT(DISTINCT COALESCE("partnerId", "visitorId")) FILTER (WHERE kind = 'product') AS viewers,
+      COUNT(DISTINCT COALESCE("partnerId", "visitorId")) FILTER (WHERE label = 'code') AS coders
     FROM "Visit"
     WHERE day >= ${from} AND day <= ${to} ${pfSql(platform)}`;
   return { visitors: num(r[0]?.visitors), viewers: num(r[0]?.viewers), coders: num(r[0]?.coders) };
@@ -192,7 +192,7 @@ export async function getDailySeries(from: string, to: string, platform?: "web" 
       { day: string; visitors: bigint; sessions: bigint; page_views: bigint; product_views: bigint; clicks: bigint }[]
     >`
       SELECT day,
-        COUNT(DISTINCT "visitorId") AS visitors,
+        COUNT(DISTINCT COALESCE("partnerId", "visitorId")) AS visitors,
         COUNT(DISTINCT "sessionId") AS sessions,
         COUNT(*) FILTER (WHERE kind IN ('page','product')) AS page_views,
         COUNT(*) FILTER (WHERE kind = 'product') AS product_views,
@@ -202,12 +202,12 @@ export async function getDailySeries(from: string, to: string, platform?: "web" 
       GROUP BY day`,
     // 재방문: 그 날 방문자 중 '그 이전에도' 방문한 적 있는 사람 수
     prisma.$queryRaw<{ day: string; returning: bigint }[]>`
-      SELECT v.day, COUNT(DISTINCT v."visitorId") AS returning
+      SELECT v.day, COUNT(DISTINCT COALESCE(v."partnerId", v."visitorId")) AS returning
       FROM "Visit" v
       WHERE v.day >= ${from} AND v.day <= ${to} ${pfV}
         AND EXISTS (
           SELECT 1 FROM "Visit" p
-          WHERE p."visitorId" = v."visitorId" AND p.day < v.day
+          WHERE COALESCE(p."partnerId", p."visitorId") = COALESCE(v."partnerId", v."visitorId") AND p.day < v.day
         )
       GROUP BY v.day`,
   ]);
@@ -247,7 +247,7 @@ export async function getRetentionSummary(from: string, to: string, platform?: "
       { visitors: bigint; sessions: bigint; page_views: bigint; logged_in: bigint }[]
     >`
       SELECT
-        COUNT(DISTINCT "visitorId") AS visitors,
+        COUNT(DISTINCT COALESCE("partnerId", "visitorId")) AS visitors,
         COUNT(DISTINCT "sessionId") AS sessions,
         COUNT(*) FILTER (WHERE kind IN ('page','product')) AS page_views,
         COUNT(DISTINCT "partnerId") FILTER (WHERE "partnerId" IS NOT NULL) AS logged_in
@@ -255,9 +255,9 @@ export async function getRetentionSummary(from: string, to: string, platform?: "
       WHERE day >= ${from} AND day <= ${to} ${pf}`,
     prisma.$queryRaw<{ n: bigint }[]>`
       SELECT COUNT(*) AS n FROM (
-        SELECT "visitorId" FROM "Visit"
+        SELECT COALESCE("partnerId", "visitorId") AS pid FROM "Visit"
         WHERE day >= ${from} AND day <= ${to} ${pf}
-        GROUP BY "visitorId" HAVING COUNT(DISTINCT day) >= 2
+        GROUP BY COALESCE("partnerId", "visitorId") HAVING COUNT(DISTINCT day) >= 2
       ) t`,
   ]);
 
@@ -345,7 +345,7 @@ export async function getTopProducts(from: string, to: string, take = 10) {
 
   const [viewRows, linkAgg] = await Promise.all([
     prisma.$queryRaw<{ goodsNo: string; viewers: bigint }[]>`
-      SELECT "goodsNo", COUNT(DISTINCT "visitorId") AS viewers
+      SELECT "goodsNo", COUNT(DISTINCT COALESCE("partnerId", "visitorId")) AS viewers
       FROM "Visit"
       WHERE kind = 'product' AND "goodsNo" IS NOT NULL AND day >= ${from} AND day <= ${to}
       GROUP BY "goodsNo" ORDER BY viewers DESC LIMIT ${take}`,
@@ -416,8 +416,8 @@ export async function getAppCtaPerformance(from: string, to: string): Promise<Ap
   // 고유 방문자 기준 — 같은 사람이 여러 번 봐도 1명. "본 사람 중 누른 %"를 정확히.
   const rows = await prisma.$queryRaw<{ label: string; impressions: bigint; clicks: bigint }[]>`
     SELECT label,
-      COUNT(DISTINCT "visitorId") FILTER (WHERE kind = 'impression') AS impressions,
-      COUNT(DISTINCT "visitorId") FILTER (WHERE kind = 'click') AS clicks
+      COUNT(DISTINCT COALESCE("partnerId", "visitorId")) FILTER (WHERE kind = 'impression') AS impressions,
+      COUNT(DISTINCT COALESCE("partnerId", "visitorId")) FILTER (WHERE kind = 'click') AS clicks
     FROM "Visit"
     WHERE label LIKE 'app_cta_%' AND day >= ${from} AND day <= ${to}
     GROUP BY label`;
@@ -452,12 +452,12 @@ export async function getAppConversionFunnel(from: string, to: string): Promise<
   const [ctaRows, appRows, installs] = await Promise.all([
     prisma.$queryRaw<{ impressions: bigint; clicks: bigint }[]>`
       SELECT
-        COUNT(DISTINCT "visitorId") FILTER (WHERE kind = 'impression') AS impressions,
-        COUNT(DISTINCT "visitorId") FILTER (WHERE kind = 'click') AS clicks
+        COUNT(DISTINCT COALESCE("partnerId", "visitorId")) FILTER (WHERE kind = 'impression') AS impressions,
+        COUNT(DISTINCT COALESCE("partnerId", "visitorId")) FILTER (WHERE kind = 'click') AS clicks
       FROM "Visit"
       WHERE label LIKE 'app_cta_%' AND day >= ${from} AND day <= ${to}`,
     prisma.$queryRaw<{ n: bigint }[]>`
-      SELECT COUNT(DISTINCT "visitorId") AS n FROM "Visit"
+      SELECT COUNT(DISTINCT COALESCE("partnerId", "visitorId")) AS n FROM "Visit"
       WHERE platform = 'app' AND day >= ${from} AND day <= ${to}`,
     prisma.rewardVoucher.count({
       where: { reason: APP_INSTALL_REASON, createdAt: { gte: kstStart(from), lte: kstEnd(to) } },

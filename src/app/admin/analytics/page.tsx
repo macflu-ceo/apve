@@ -98,6 +98,7 @@ export default async function AdminAnalytics({
         active={active}
         cohorts={cohorts}
         funnel={vFunnel}
+        signups={funnel.signups}
         salesCount={funnel.salesCount}
         acq={acq}
         totalSessions={retention.sessions}

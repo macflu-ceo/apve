@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { won } from "@/lib/format";
 import { listGrades } from "@/lib/grade";
 import { getPartnerEngagement } from "@/lib/analytics";
-import PendingRow from "./PendingRow";
+import SettlementApproveRow from "./SettlementApproveRow";
 import ForceDeleteButton from "./ForceDeleteButton";
 import GradeSelect from "./GradeSelect";
 import SettlementCell from "./SettlementCell";
@@ -175,7 +175,7 @@ export default async function AdminPartners({ searchParams }: { searchParams: SP
     }),
     // 등급 자동판정(첫구매/일반)은 항상 전체 누적 실적 기준
     prisma.sale.groupBy({ by: ["partnerId"], _count: { _all: true } }),
-    prisma.partner.findMany({ where: { active: true, code: null, status: { not: "rejected" } }, orderBy: { createdAt: "desc" } }),
+    prisma.partner.findMany({ where: { active: true, settlementStatus: "submitted" }, orderBy: { settlementAgreedAt: "desc" } }),
     getPartnerEngagement(engFrom, engTo),
     // 20% 바우처는 항상 전체 누적 (기간 무관)
     prisma.rewardVoucher.groupBy({ by: ["partnerId", "status"], _count: { _all: true } }),
@@ -312,25 +312,27 @@ export default async function AdminPartners({ searchParams }: { searchParams: SP
     <div>
       <h1 className="mb-6 text-2xl font-bold">회원(파트너) 관리</h1>
 
-      {/* 가입 신청 대기 */}
+      {/* 정산정보 승인 대기 */}
       <section className="mb-8">
         <h2 className="mb-3 text-lg font-semibold">
-          판매코드 미발급 <span className="text-brand">({pendingList.length})</span>
+          정산정보 승인 대기 <span className="text-brand">({pendingList.length})</span>
         </h2>
+        <p className="mb-3 text-xs text-sub">회원이 등록한 계좌 정보를 확인하고 승인하면, 회원 마이페이지에 '정산 승인 완료'로 표시됩니다.</p>
         {pendingList.length === 0 ? (
-          <div className="card p-6 text-sm text-sub">코드 미발급 회원이 없습니다.</div>
+          <div className="card p-6 text-sm text-sub">승인 대기 중인 정산정보가 없습니다.</div>
         ) : (
           <div className="space-y-2">
             {pendingList.map((p) => (
-              <PendingRow
+              <SettlementApproveRow
                 key={p.id}
                 p={{
                   id: p.id,
                   username: p.username,
                   name: p.name,
-                  phone: p.phone,
-                  verified: p.verified,
-                  createdAt: fmtDate(p.createdAt),
+                  bankName: p.bankName,
+                  bankAccount: p.bankAccount,
+                  accountHolder: p.accountHolder,
+                  submittedAt: fmtDate(p.settlementAgreedAt ?? p.createdAt),
                 }}
               />
             ))}
