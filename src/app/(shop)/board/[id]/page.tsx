@@ -27,6 +27,11 @@ export default async function BoardDetail({ params }: { params: { id: string } }
   const embed = toEmbedUrl(post.videoUrl);
   const images = parseList(post.imagesJson);
 
+  // 본문 안 [[CTA:라벨|링크]] 마커 → 실제 클릭 버튼으로 렌더 (통이미지엔 버튼을 안 넣고 여기서 처리)
+  const ctaMatch = post.content?.match(/\[\[CTA:([^|\]]+)\|([^\]]+)\]\]/);
+  const cta = ctaMatch ? { label: ctaMatch[1].trim(), url: ctaMatch[2].trim() } : null;
+  const bodyText = (post.content ?? "").replace(/\[\[CTA:[^\]]+\]\]/g, "").trim();
+
   return (
     <div className="mx-auto max-w-2xl px-4 py-6">
       <Link href="/board" className="text-xs text-sub underline">← 목록</Link>
@@ -58,8 +63,17 @@ export default async function BoardDetail({ params }: { params: { id: string } }
         </div>
       )}
 
-      {post.content && (
-        <div className="mt-5 whitespace-pre-wrap text-[15px] leading-relaxed text-ink/85">{post.content}</div>
+      {bodyText && (
+        <div className="mt-5 whitespace-pre-wrap text-[15px] leading-relaxed text-ink/85">{bodyText}</div>
+      )}
+
+      {cta && (
+        <Link
+          href={cta.url}
+          className="mt-6 flex w-full items-center justify-center rounded-full bg-[#e5623f] px-8 py-4 text-base font-black text-white shadow-[0_10px_24px_rgba(201,74,44,0.32)] transition active:scale-[0.98]"
+        >
+          {cta.label} →
+        </Link>
       )}
     </div>
   );
