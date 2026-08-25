@@ -13,8 +13,8 @@ export default function ExhibitionForm() {
     title: "",
     subtitle: "",
     bannerImageUrl: "",
-    bannerFrom: "#e9dfd5",
-    bannerTo: "#cdb7a6",
+    bannerFrom: "#E7ECFF",
+    bannerTo: "#B9C6FF",
     sort: "0",
   });
   const set = <K extends keyof typeof f>(k: K, v: string) => setF((p) => ({ ...p, [k]: v }));

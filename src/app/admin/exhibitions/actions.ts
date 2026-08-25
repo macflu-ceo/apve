@@ -17,8 +17,8 @@ export async function createExhibition(input: {
       title: input.title.trim(),
       subtitle: input.subtitle.trim() || null,
       bannerImageUrl: input.bannerImageUrl.trim() || null,
-      bannerFrom: input.bannerFrom || "#e9dfd5",
-      bannerTo: input.bannerTo || "#cdb7a6",
+      bannerFrom: input.bannerFrom || "#E7ECFF",
+      bannerTo: input.bannerTo || "#B9C6FF",
       sort: input.sort || 0,
     },
   });

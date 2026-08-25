@@ -27,10 +27,10 @@ export default function ConciergeHub({ name, conciergeNo }: { name: string; conc
   return (
     <div className="mx-auto max-w-2xl px-4 py-6">
       <div className="mb-6 rounded-xl2 bg-gradient-to-br from-[#2C3A30] to-[#222C25] p-6 text-white">
-        <div className="text-xs font-semibold tracking-[0.2em] text-[#DCC38A]">VIA ÉLITE · CONCIERGE</div>
+        <div className="text-xs font-semibold tracking-[0.2em] text-[#A9B8FF]">VIA ÉLITE · CONCIERGE</div>
         <div className="mt-2 text-xl font-bold">{name} 컨시어지</div>
         <div className="mt-0.5 text-sm text-white/70">
-          컨시어지 번호 <b className="text-[#DCC38A]">{conciergeCode(conciergeNo)}</b>
+          컨시어지 번호 <b className="text-[#A9B8FF]">{conciergeCode(conciergeNo)}</b>
         </div>
       </div>
 

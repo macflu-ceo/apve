@@ -13,8 +13,8 @@ export default function BannerForm() {
     title: "이탈리아 부티크 직수입",
     subtitle: "정가 대비 최대 70% 특가",
     imageUrl: "",
-    bgFrom: "#e9dfd5",
-    bgTo: "#cdb7a6",
+    bgFrom: "#E7ECFF",
+    bgTo: "#B9C6FF",
     linkUrl: "",
     sort: "0",
   });

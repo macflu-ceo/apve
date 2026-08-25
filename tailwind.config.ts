@@ -9,8 +9,8 @@ const config: Config = {
         ink: "#1a1a1a",
         sub: "#9a9a9a",
         line: "#f0f0f0",
-        brand: "#8a6f5e", // 웜 브라운 (로고/포인트)
-        brandsoft: "#f3ede7", // 베이지 배경
+        brand: "#4A60FF", // 브랜드 블루 (로고/포인트)
+        brandsoft: "#EEF1FF", // 연블루 배경
         deal: "#13b6a6", // 할인율 틸
       },
       fontFamily: {

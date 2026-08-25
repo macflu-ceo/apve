@@ -20,7 +20,7 @@ type Config = {
 
 const COLOR_PRESETS: { label: string; from: string; to: string }[] = [
   { label: "레드", from: "#e5322f", to: "#c81e1a" },
-  { label: "골드", from: "#b8860b", to: "#9a6f08" },
+  { label: "골드", from: "#b8860b", to: "#4A60FF" },
   { label: "퍼플", from: "#7c3aed", to: "#5b21b6" },
   { label: "블루", from: "#2563eb", to: "#1e40af" },
   { label: "핑크", from: "#ec4899", to: "#be185d" },
@@ -242,7 +242,7 @@ export default function TimeSaleEditor({
                       </td>
                       <td className="text-right">
                         {baseComm != null && eff > 0 && <span className="text-sub line-through">{won(baseComm)}</span>}{" "}
-                        <b className="text-[#9a6f08]">{won(boosted)}</b>{" "}
+                        <b className="text-[#4A60FF]">{won(boosted)}</b>{" "}
                         <span className="text-[10px] text-sub">({boostedRate}%)</span>
                       </td>
                     </tr>

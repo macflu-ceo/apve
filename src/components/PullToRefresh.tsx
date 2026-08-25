@@ -76,7 +76,7 @@ export default function PullToRefresh() {
           height="18"
           viewBox="0 0 24 24"
           fill="none"
-          stroke="#8a6f5e"
+          stroke="#4A60FF"
           strokeWidth="2"
           className={refreshing ? "animate-spin" : ""}
           style={refreshing ? undefined : { transform: `rotate(${Math.min(360, pull * 4)}deg)` }}

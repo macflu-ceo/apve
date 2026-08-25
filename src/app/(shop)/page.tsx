@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
 
 // DB에 배너/카테고리/섹션이 없을 때의 기본값
 const DEFAULT_BANNERS = [
-  { title: "이탈리아 부티크 직수입", subtitle: "정가 대비 최대 70% 특가", imageUrl: null, bgFrom: "#e9dfd5", bgTo: "#cdb7a6", linkUrl: null },
+  { title: "이탈리아 부티크 직수입", subtitle: "정가 대비 최대 70% 특가", imageUrl: null, bgFrom: "#E7ECFF", bgTo: "#B9C6FF", linkUrl: null },
   { title: "이번 주 신상 명품", subtitle: "새로 들어온 럭셔리 셀렉션", imageUrl: null, bgFrom: "#e5e7ec", bgTo: "#c3c8d2", linkUrl: null },
   { title: "내 코드로 시작하는 판매", subtitle: "컨시어지 어필리에이트", imageUrl: null, bgFrom: "#efe6df", bgTo: "#d8c3b3", linkUrl: null },
 ];

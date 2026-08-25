@@ -1,0 +1,59 @@
+<!doctype html><meta charset="utf-8">
+<style>
+  body{margin:0;background:#eef1f5;font-family:-apple-system,sans-serif;display:flex;flex-wrap:wrap;gap:24px;padding:24px;width:1180px}
+  .card{background:#fff;border-radius:28px;width:340px;height:400px;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 6px 24px rgba(0,0,0,.06)}
+  .lab{margin-top:8px;color:#556;font-size:15px;font-weight:600}
+  svg{display:block}
+</style>
+<body>
+<!-- v1: 두 팔찌 수직 링크 + 바(=$) -->
+<div class="card">
+  <svg width="240" height="240" viewBox="0 0 512 512">
+    <g fill="none" stroke="#1f6fe5" stroke-width="40" stroke-linecap="round">
+      <rect x="238" y="92" width="36" height="332" rx="18" fill="#1f6fe5" stroke="none"/>
+      <ellipse cx="256" cy="198" rx="84" ry="62"/>
+      <ellipse cx="256" cy="316" rx="84" ry="62"/>
+    </g>
+    <path d="M150 108 Q150 150 192 150 Q150 150 150 192 Q150 150 108 150 Q150 150 150 108 Z" fill="#1f6fe5"/>
+  </svg>
+  <div class="lab">v1 · 수직 팔찌 2개 + 바</div>
+</div>
+
+<!-- v2: 두 팔찌 링크만 (바 없음) -->
+<div class="card">
+  <svg width="240" height="240" viewBox="0 0 512 512">
+    <g fill="none" stroke="#1f6fe5" stroke-width="42" stroke-linecap="round">
+      <ellipse cx="256" cy="196" rx="88" ry="66"/>
+      <ellipse cx="256" cy="322" rx="88" ry="66"/>
+    </g>
+    <path d="M158 120 Q158 160 198 160 Q158 160 158 200 Q158 160 118 160 Q158 160 158 120 Z" fill="#1f6fe5"/>
+  </svg>
+  <div class="lab">v2 · 팔찌 2개만 (체인)</div>
+</div>
+
+<!-- v3: 대각 인터락 두 링 + 바 -->
+<div class="card">
+  <svg width="240" height="240" viewBox="0 0 512 512">
+    <rect x="238" y="96" width="36" height="320" rx="18" fill="#1f6fe5"/>
+    <g fill="none" stroke="#1f6fe5" stroke-width="40" stroke-linecap="round">
+      <ellipse cx="216" cy="220" rx="78" ry="60" transform="rotate(-24 216 220)"/>
+      <ellipse cx="296" cy="292" rx="78" ry="60" transform="rotate(-24 296 292)"/>
+    </g>
+    <path d="M150 110 Q150 150 190 150 Q150 150 150 190 Q150 150 110 150 Q150 150 150 110 Z" fill="#1f6fe5"/>
+  </svg>
+  <div class="lab">v3 · 대각 인터락 + 바</div>
+</div>
+
+<!-- v4: S자 아크 두개(팔찌 열린형) + 바 -->
+<div class="card">
+  <svg width="240" height="240" viewBox="0 0 512 512">
+    <g fill="none" stroke="#1f6fe5" stroke-width="44" stroke-linecap="round">
+      <path d="M330 168 A80 66 0 1 0 256 262"/>
+      <path d="M182 344 A80 66 0 1 0 256 250"/>
+      <rect x="240" y="104" width="32" height="304" rx="16" fill="#1f6fe5" stroke="none"/>
+    </g>
+    <path d="M150 108 Q150 148 190 148 Q150 148 150 188 Q150 148 110 148 Q150 148 150 108 Z" fill="#1f6fe5"/>
+  </svg>
+  <div class="lab">v4 · S자 아크 팔찌 + 바</div>
+</div>
+</body>

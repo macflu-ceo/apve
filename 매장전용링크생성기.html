@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>매장 특별 이용 권한 — 레퍼런스 &amp; 항목</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@200;300;400;500&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#F7F4EE; --paper:#FFFFFF; --line:#E3DDD1;
+    --green:#2C3A30; --green-2:#222C25;
+    --gold:#B99A5B; --gold-lt:#DCC38A;
+    --red:#A8442F;
+    --ink:#2A2A28; --ink-2:#6B675F; --ink-3:#9C978C;
+    --serif:'Cormorant Garamond','Noto Serif KR',serif;
+    --kserif:'Noto Serif KR',serif;
+    --sans:'Noto Sans KR','Apple SD Gothic Neo',sans-serif;
+    --mono:'Roboto Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--cream);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1060px;margin:0 auto;padding:44px 24px 90px}
+
+  .hd{border-bottom:1px solid var(--line);padding-bottom:22px;margin-bottom:38px}
+  .hd h1{margin:0;font-family:var(--serif);font-size:29px;font-weight:500;letter-spacing:.06em;color:var(--green)}
+  .hd h1 b{font-family:var(--sans);font-size:18px;font-weight:500;letter-spacing:0;margin-left:12px;color:var(--ink)}
+  .hd p{margin:11px 0 0;font-size:13.5px;color:var(--ink-2);line-height:1.75}
+  .hd p b{color:var(--green);font-weight:500}
+  .rev{margin-top:14px;display:inline-block;background:#EFEBE0;border:1px solid var(--line);border-radius:2px;padding:7px 12px;font-size:11.5px;color:var(--ink-2)}
+  .rev b{color:var(--green)}
+
+  .sec{margin-bottom:52px}
+  .sec > h2{margin:0 0 18px;font-size:15px;font-weight:700;color:var(--green);letter-spacing:.02em;display:flex;align-items:center;gap:9px}
+  .sec > h2 i{width:22px;height:22px;background:var(--green);color:#fff;border-radius:50%;font-style:normal;font-size:11px;font-weight:500;display:flex;align-items:center;justify-content:center;flex:none}
+  .sec > .lead{margin:-8px 0 20px 31px;font-size:12.5px;color:var(--ink-2);line-height:1.8}
+
+  /* callout */
+  .call{background:#FBF3EF;border:1px solid #E8CFC5;border-left:3px solid var(--red);border-radius:2px;padding:15px 17px;margin-bottom:20px}
+  .call h4{margin:0;font-size:13px;font-weight:700;color:var(--red)}
+  .call p{margin:7px 0 0;font-size:12.5px;color:var(--ink-2);line-height:1.8}
+  .call code{font-family:var(--mono);background:#fff;border:1px solid var(--line);padding:1px 5px;border-radius:2px;font-size:11.5px;color:var(--green)}
+
+  /* ============ reference ============ */
+  .ref{display:grid;grid-template-columns:340px 1fr;gap:38px;align-items:start}
+  @media(max-width:860px){.ref{grid-template-columns:1fr;gap:30px}}
+  .phone{position:relative;background:var(--green);border-radius:4px;padding:32px 24px 26px;color:#EDE8DC;box-shadow:0 18px 44px -18px rgba(44,58,48,.55)}
+  .phone::before{content:'';position:absolute;inset:8px;border:1px solid rgba(220,195,138,.22);border-radius:2px;pointer-events:none}
+  .phone > *{position:relative}
+  .n{position:absolute;left:-13px;width:24px;height:24px;border-radius:50%;background:var(--gold);color:#241E10;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;font-family:var(--sans);box-shadow:0 2px 6px rgba(0,0,0,.28);z-index:3}
+  .blk{position:relative}
+  .mark{text-align:center}
+  .mark .w{font-family:var(--serif);font-size:21px;font-weight:600;letter-spacing:.26em;text-indent:.26em;color:#fff}
+  .mark .s{margin-top:4px;font-size:7.5px;letter-spacing:.3em;text-indent:.3em;color:rgba(237,232,220,.5)}
+  .hr{height:1px;background:linear-gradient(90deg,transparent,rgba(220,195,138,.4),transparent);margin:20px 0}
+  .eyeb{text-align:center;font-size:8px;letter-spacing:.26em;text-indent:.26em;color:var(--gold-lt)}
+  .guest{text-align:center;margin:12px 0 0;font-family:var(--kserif);font-weight:300;font-size:29px;color:#fff}
+  .guest s{font-size:16px;color:rgba(237,232,220,.55);text-decoration:none;margin-left:3px}
+  .via{text-align:center;margin:13px 0 0;font-family:var(--kserif);font-weight:200;font-size:12px;line-height:1.95;color:rgba(237,232,220,.78)}
+  .via em{font-style:normal;color:var(--gold-lt)}
+  .priv{margin-top:20px;padding:15px 12px;text-align:center;border-radius:2px;border:1px solid rgba(220,195,138,.3);background:rgba(220,195,138,.08)}
+  .priv .l{font-size:7.5px;letter-spacing:.26em;text-indent:.26em;color:var(--gold-lt)}
+  .priv .v{margin-top:8px;font-family:var(--kserif);font-weight:400;font-size:18px;color:#fff;line-height:1.4}
+  .priv .sc{margin-top:7px;font-family:var(--kserif);font-weight:200;font-size:11px;color:rgba(237,232,220,.62)}
+  .meta{margin-top:19px;padding:15px 0;display:grid;grid-template-columns:1fr 1fr;gap:14px 10px;border-top:1px solid rgba(220,195,138,.2);border-bottom:1px solid rgba(220,195,138,.2)}
+  .meta .f{grid-column:1/-1}
+  .ml{font-size:7px;letter-spacing:.22em;text-indent:.22em;color:rgba(237,232,220,.42);margin-bottom:5px}
+  .mv{font-family:var(--kserif);font-size:12.5px;font-weight:300;color:#EDE8DC}
+  .mv.mo{font-family:var(--mono);font-size:11.5px;letter-spacing:.04em;font-weight:400}
+  .dd{display:inline-block;margin-left:6px;background:var(--gold);color:#241E10;font-size:9px;font-weight:700;padding:2px 6px;border-radius:2px;vertical-align:1px;font-family:var(--sans)}
+  .qrw{margin-top:19px;text-align:center}
+  .qrb{width:104px;height:104px;margin:0 auto;background:#fff;padding:7px;border-radius:2px}
+  .qrb svg{width:100%;height:100%;display:block}
+  .qrn{margin-top:9px;font-family:var(--kserif);font-size:10.5px;font-weight:300;color:rgba(237,232,220,.6)}
+  .st{margin-top:19px;padding-top:16px;border-top:1px solid rgba(220,195,138,.2);text-align:center}
+  .st .a{font-family:var(--kserif);font-size:12.5px;color:#EDE8DC}
+  .st .b{margin-top:5px;font-family:var(--kserif);font-weight:200;font-size:10.5px;color:rgba(237,232,220,.6)}
+  .st .c{margin-top:3px;font-size:9.5px;color:rgba(237,232,220,.42)}
+  .tm{margin-top:18px;padding-top:15px;border-top:1px solid rgba(220,195,138,.2)}
+  .tm .l{text-align:center;font-size:7px;letter-spacing:.22em;color:rgba(237,232,220,.42);margin-bottom:8px}
+  .tm ul{margin:0;padding-left:13px;font-family:var(--kserif);font-weight:200;font-size:10px;line-height:1.85;color:rgba(237,232,220,.62)}
+  .btns{margin-top:18px;display:grid;gap:6px}
+  .btns .r2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .bt{height:36px;border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:11px;letter-spacing:.04em}
+  .bt.g{background:linear-gradient(180deg,#DCC38A,#B99A5B);color:#241E10;font-weight:500}
+  .bt.o{border:1px solid rgba(220,195,138,.4);color:var(--gold-lt)}
+
+  .leg{list-style:none;margin:0;padding:0}
+  .leg li{display:flex;gap:13px;padding:12px 0;border-bottom:1px dashed var(--line);align-items:flex-start}
+  .leg li:first-child{padding-top:0}
+  .leg .num{width:22px;height:22px;flex:none;border-radius:50%;background:var(--green);color:#fff;font-size:10.5px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:1px}
+  .leg .tx{flex:1;min-width:0}
+  .leg .t{font-size:13.5px;font-weight:500;color:var(--ink);line-height:1.5}
+  .leg .t span{font-weight:400;color:var(--ink-3);font-size:12px;margin-left:6px}
+  .leg .d{margin-top:4px;font-size:12px;color:var(--ink-2);line-height:1.7}
+  .leg .d b{color:var(--red);font-weight:500}
+  .leg .d code{font-family:var(--mono);font-size:11.5px;color:var(--green);background:#EFEBE0;padding:1px 4px;border-radius:2px}
+
+  /* table */
+  .tb{width:100%;border-collapse:collapse;background:var(--paper);border:1px solid var(--line);border-radius:3px;overflow:hidden}
+  .tb th,.tb td{padding:12px 14px;text-align:left;font-size:13px;border-bottom:1px solid var(--line);vertical-align:top}
+  .tb th{background:#F1EDE4;font-weight:500;color:var(--green);font-size:11.5px;letter-spacing:.04em}
+  .tb tr:last-child td{border-bottom:0}
+  .tb td.k{width:32%;font-weight:500;color:var(--ink)}
+  .tb td.k em{font-style:normal;color:var(--red);margin-left:3px}
+  .tb td.v{color:var(--ink-2);line-height:1.7;font-size:12.5px}
+  .tb td.v b{color:var(--red);font-weight:500}
+  .tb .grp td{background:#FAF8F3;font-weight:700;color:var(--green);font-size:11.5px;letter-spacing:.06em}
+  .tb code{font-family:var(--mono);font-size:11.5px;color:var(--green);background:#EFEBE0;padding:1px 5px;border-radius:2px}
+
+  /* code diagram */
+  .codebox{background:var(--green);border-radius:3px;padding:26px 22px;text-align:center;margin-bottom:18px}
+  .codebox .big{font-family:var(--mono);font-size:34px;font-weight:500;color:#fff;letter-spacing:.06em}
+  .codebox .big i{font-style:normal}
+  .codebox .big .c1{color:#8FBFA0}
+  .codebox .big .c2{color:#DCC38A}
+  .codebox .big .c3{color:#E0A48F}
+  .codebox .big .c4{color:rgba(237,232,220,.55)}
+  .codelg{display:flex;flex-wrap:wrap;justify-content:center;gap:8px 22px;margin-top:18px}
+  .codelg div{font-size:11.5px;color:rgba(237,232,220,.72);display:flex;align-items:center;gap:6px}
+  .codelg b{width:9px;height:9px;border-radius:2px;display:inline-block}
+
+  /* admin wireframes */
+  .wf{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  @media(max-width:860px){.wf{grid-template-columns:1fr}}
+  .wfc{background:var(--paper);border:1px solid var(--line);border-radius:3px;overflow:hidden;display:flex;flex-direction:column}
+  .wfc .hdr{background:var(--green);color:#fff;padding:10px 13px;font-size:12px;font-weight:500;letter-spacing:.02em}
+  .wfc .hdr span{display:block;font-size:9.5px;font-weight:400;color:rgba(237,232,220,.6);margin-top:3px;letter-spacing:.06em}
+  .wfc .body{padding:14px 13px;flex:1}
+  .wfr{border:1px dashed #D8D2C5;border-radius:2px;padding:9px 10px;font-size:11px;color:var(--ink-2);margin-bottom:7px;line-height:1.6}
+  .wfr:last-child{margin-bottom:0}
+  .wfr.solid{border-style:solid;background:#FAF8F3}
+  .wfr b{color:var(--ink);font-weight:500}
+  .wfr .tag{display:inline-block;font-size:9.5px;padding:1.5px 6px;border-radius:2px;margin-left:4px;vertical-align:1px}
+  .tag.ok{background:#DDEBE0;color:#2C6B44}
+  .tag.no{background:#F4DCD6;color:#A8442F}
+  .tag.wt{background:#F2EAD5;color:#8A6D2E}
+  .wfbtn{background:var(--green);color:#fff;text-align:center;padding:9px;border-radius:2px;font-size:11px;font-weight:500;margin-top:9px}
+  .wfnote{margin-top:9px;font-size:11px;color:var(--ink-2);line-height:1.7;padding-left:13px}
+  .wfnote li{margin-bottom:3px}
+
+  .rules{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+  @media(max-width:700px){.rules{grid-template-columns:1fr}}
+  .rule{background:var(--paper);border:1px solid var(--line);border-left:3px solid var(--gold);padding:15px 17px;border-radius:2px}
+  .rule h4{margin:0;font-size:13.5px;font-weight:500;color:var(--green)}
+  .rule p{margin:7px 0 0;font-size:12.5px;color:var(--ink-2);line-height:1.75}
+
+  .flow{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+  .fbox{background:var(--paper);border:1px solid var(--line);border-radius:3px;padding:13px 15px;font-size:12px;color:var(--ink);line-height:1.6;flex:1;min-width:135px}
+  .fbox b{display:block;font-size:9.5px;color:var(--gold);letter-spacing:.14em;margin-bottom:5px;font-weight:700}
+  .farr{color:var(--ink-3);font-size:15px;flex:none}
+  @media(max-width:760px){.farr{display:none}}
+
+  .foot{margin-top:56px;padding-top:20px;border-top:1px solid var(--line);font-size:11px;color:var(--ink-3);letter-spacing:.1em}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hd">
+    <h1>STORE PRIVILEGE <b>매장 특별 이용 권한 — 레퍼런스 &amp; 항목</b></h1>
+    <p>
+      <b>image.viaelite.kr</b> 상단 탭에 <b>이용 권한 발급</b> 추가 + <b>어드민</b> 3개 화면.<br>
+      컨시어지가 자기 고객 이름으로 발급 → 카톡 전송 → 고객이 매장에서 화면 제시 → 매장이 QR 스캔.
+    </p>
+    <div class="rev"><b>변경 반영</b> · 명칭 변경 · 코드 체계 <code style="font-family:var(--mono)">cd001cp</code> 적용 · 월렛 저장 삭제(→이미지 저장) · 방문 예약 추가 · 어드민 3화면 추가</div>
+  </div>
+
+  <!-- ============ 1. FLOW ============ -->
+  <div class="sec">
+    <h2><i>1</i>흐름</h2>
+    <div class="flow">
+      <div class="fbox"><b>STEP 1</b>컨시어지가 발급<br>고객 이름·혜택 입력</div>
+      <div class="farr">→</div>
+      <div class="fbox"><b>STEP 2</b>카톡으로 링크 전송</div>
+      <div class="farr">→</div>
+      <div class="fbox"><b>STEP 3</b>고객이 화면 확인<br>+ <b style="display:inline;color:var(--green)">방문 예약</b></div>
+      <div class="farr">→</div>
+      <div class="fbox"><b>STEP 4</b>매장 방문<br>어드민에서 예약 확인</div>
+      <div class="farr">→</div>
+      <div class="fbox"><b>STEP 5</b>QR 스캔 → 사용 처리<br>→ 집계 반영</div>
+    </div>
+  </div>
+
+  <!-- ============ 2. CODE ============ -->
+  <div class="sec">
+    <h2><i>2</i>코드 체계</h2>
+
+    <div class="call">
+      <h4>확인 필요 — 발급 건별 일련번호가 필요합니다</h4>
+      <p>
+        <code>cd001cp</code> 만으로는 <b>청담점 1번 컨시어지가 발급한 모든 건이 전부 같은 코드</b>가 됩니다.
+        그러면 어느 고객 건인지 구분이 안 되어 사용 처리·중복 사용 방지·집계가 불가능합니다.<br>
+        뒤에 일련번호를 붙이는 것을 제안합니다 → <code>cd001cp-0731</code>
+      </p>
+    </div>
+
+    <div class="codebox">
+      <div class="big"><i class="c1">cd</i><i class="c2">001</i><i class="c3">cp</i><i class="c4">-0731</i></div>
+      <div class="codelg">
+        <div><b style="background:#8FBFA0"></b> cd — 매장 (청담)</div>
+        <div><b style="background:#DCC38A"></b> 001 — 컨시어지 번호</div>
+        <div><b style="background:#E0A48F"></b> cp / ws — 가격 구분</div>
+        <div><b style="background:rgba(237,232,220,.55)"></b> 0731 — 발급 일련번호 <span style="opacity:.7">(추가 제안)</span></div>
+      </div>
+    </div>
+
+    <table class="tb">
+      <tr><th style="width:14%">구분</th><th style="width:30%">의미</th><th>어드민 처리</th></tr>
+      <tr><td class="k"><code>cp</code></td><td class="v">커스토머 프라이스<br>컨시어지 마진 <b>있음</b></td><td class="v">판매가 − 공급가 = 컨시어지 수익으로 집계</td></tr>
+      <tr><td class="k"><code>ws</code></td><td class="v">홀세일 프라이스<br>컨시어지 마진 <b>없음</b></td><td class="v">컨시어지 수익 0으로 집계. 매출에는 잡히되 수수료 정산에서 제외<br><b>남발 방지를 위해 발급 수량을 별도로 제한할지 결정 필요</b></td></tr>
+    </table>
+  </div>
+
+  <!-- ============ 3. REFERENCE ============ -->
+  <div class="sec">
+    <h2><i>3</i>고객이 보는 화면 — 레퍼런스</h2>
+    <div class="lead">모바일 세로 1장. 아래 번호와 오른쪽 목록이 대응됩니다.</div>
+
+    <div class="ref">
+      <div class="phone">
+
+        <div class="blk"><span class="n" style="top:26px">1</span>
+          <div class="mark">
+            <div class="w">VIA ÉLITE</div>
+            <div class="s">STORE PRIVILEGE</div>
+          </div>
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="blk"><span class="n" style="top:14px">2</span>
+          <div class="eyeb">특별 이용 권한</div>
+          <div class="guest">김서연<s>&nbsp;님</s></div>
+        </div>
+
+        <div class="blk"><span class="n" style="top:12px">3</span>
+          <div class="via">럭셔리 컨시어지 <em>박민정</em> 님을 통해<br><em>청담점 특별 이용 권한</em>이 부여되었습니다.</div>
+        </div>
+
+        <div class="blk"><span class="n" style="top:32px">4</span>
+          <div class="priv">
+            <div class="l">PRIVILEGE</div>
+            <div class="v">정가 대비 최대 70% 전용가</div>
+            <div class="sc">구찌 · 프라다 · 보테가베네타 전 품목</div>
+          </div>
+        </div>
+
+        <div class="blk"><span class="n" style="top:30px">5</span>
+          <div class="meta">
+            <div><div class="ml">CONCIERGE</div><div class="mv">박민정</div></div>
+            <div><div class="ml">CODE</div><div class="mv mo">cd001cp-0731</div></div>
+            <div class="f"><div class="ml">VALID PERIOD</div>
+              <div class="mv mo">2026. 08. 09 – 2026. 09. 08 <span class="dd">D-31</span></div></div>
+          </div>
+        </div>
+
+        <div class="blk"><span class="n" style="top:40px">6</span>
+          <div class="qrw">
+            <div class="qrb">
+              <svg viewBox="0 0 25 25" shape-rendering="crispEdges">
+                <rect width="25" height="25" fill="#fff"/>
+                <g fill="#222C25">
+                  <rect x="0" y="0" width="7" height="7"/><rect x="1" y="1" width="5" height="5" fill="#fff"/><rect x="2" y="2" width="3" height="3"/>
+                  <rect x="18" y="0" width="7" height="7"/><rect x="19" y="1" width="5" height="5" fill="#fff"/><rect x="20" y="2" width="3" height="3"/>
+                  <rect x="0" y="18" width="7" height="7"/><rect x="1" y="19" width="5" height="5" fill="#fff"/><rect x="2" y="20" width="3" height="3"/>
+                  <rect x="9" y="0" width="1" height="1"/><rect x="11" y="0" width="1" height="1"/><rect x="13" y="1" width="1" height="1"/>
+                  <rect x="10" y="2" width="1" height="1"/><rect x="12" y="2" width="1" height="1"/><rect x="9" y="3" width="1" height="1"/>
+                  <rect x="11" y="4" width="1" height="1"/><rect x="13" y="4" width="1" height="1"/><rect x="10" y="5" width="1" height="1"/>
+                  <rect x="12" y="6" width="1" height="1"/><rect x="9" y="7" width="1" height="1"/><rect x="14" y="7" width="1" height="1"/>
+                  <rect x="0" y="9" width="1" height="1"/><rect x="2" y="9" width="1" height="1"/><rect x="4" y="9" width="1" height="1"/>
+                  <rect x="6" y="10" width="1" height="1"/><rect x="1" y="11" width="1" height="1"/><rect x="3" y="11" width="1" height="1"/>
+                  <rect x="5" y="12" width="1" height="1"/><rect x="0" y="13" width="1" height="1"/><rect x="2" y="14" width="1" height="1"/>
+                  <rect x="9" y="9" width="2" height="2"/><rect x="12" y="9" width="1" height="1"/><rect x="14" y="10" width="1" height="1"/>
+                  <rect x="10" y="11" width="1" height="1"/><rect x="13" y="11" width="2" height="2"/><rect x="9" y="13" width="1" height="1"/>
+                  <rect x="11" y="13" width="1" height="1"/><rect x="12" y="14" width="1" height="1"/><rect x="15" y="14" width="1" height="1"/>
+                  <rect x="17" y="9" width="1" height="1"/><rect x="19" y="10" width="1" height="1"/><rect x="21" y="9" width="1" height="1"/>
+                  <rect x="23" y="10" width="1" height="1"/><rect x="18" y="12" width="1" height="1"/><rect x="20" y="12" width="1" height="1"/>
+                  <rect x="22" y="13" width="1" height="1"/><rect x="24" y="12" width="1" height="1"/><rect x="17" y="14" width="1" height="1"/>
+                  <rect x="19" y="14" width="1" height="1"/><rect x="21" y="15" width="1" height="1"/><rect x="23" y="15" width="1" height="1"/>
+                  <rect x="9" y="16" width="1" height="1"/><rect x="12" y="16" width="1" height="1"/><rect x="15" y="17" width="1" height="1"/>
+                  <rect x="10" y="18" width="1" height="1"/><rect x="13" y="18" width="1" height="1"/><rect x="11" y="20" width="1" height="1"/>
+                  <rect x="14" y="20" width="1" height="1"/><rect x="9" y="21" width="1" height="1"/><rect x="12" y="22" width="1" height="1"/>
+                  <rect x="15" y="22" width="1" height="1"/><rect x="10" y="23" width="1" height="1"/><rect x="13" y="24" width="1" height="1"/>
+                  <rect x="17" y="17" width="1" height="1"/><rect x="19" y="18" width="1" height="1"/><rect x="21" y="17" width="1" height="1"/>
+                  <rect x="23" y="19" width="1" height="1"/><rect x="18" y="20" width="1" height="1"/><rect x="20" y="21" width="1" height="1"/>
+                  <rect x="22" y="20" width="1" height="1"/><rect x="24" y="22" width="1" height="1"/><rect x="17" y="23" width="1" height="1"/>
+                  <rect x="19" y="23" width="1" height="1"/><rect x="21" y="24" width="1" height="1"/><rect x="23" y="23" width="1" height="1"/>
+                </g>
+              </svg>
+            </div>
+            <div class="qrn">매장 데스크에서 스캔해 주세요</div>
+          </div>
+        </div>
+
+        <div class="blk"><span class="n" style="top:32px">7</span>
+          <div class="st">
+            <div class="a">비아엘리떼 청담점</div>
+            <div class="b">서울 강남구 도산대로 000 · 2F</div>
+            <div class="c">11:00 – 20:00 · 방문 예약 권장</div>
+          </div>
+        </div>
+
+        <div class="blk"><span class="n" style="top:28px">8</span>
+          <div class="tm">
+            <div class="l">이용 조건</div>
+            <ul>
+              <li>기명 발급 · 본인만 사용 가능</li>
+              <li>동반 1인까지 적용</li>
+              <li>1회 사용 후 소멸</li>
+              <li>일부 한정 품목 제외</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="blk"><span class="n" style="top:20px">9</span>
+          <div class="btns">
+            <div class="bt g">방문 예약하기</div>
+            <div class="r2">
+              <div class="bt o">이미지 저장</div>
+              <div class="bt o">길찾기</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <ul class="leg">
+        <li><span class="num">1</span><div class="tx">
+          <div class="t">로고 <span>VIA ÉLITE / STORE PRIVILEGE</span></div>
+          <div class="d">기존 사이트 로고 그대로.</div></div></li>
+
+        <li><span class="num">2</span><div class="tx">
+          <div class="t">고객 이름 <span>가장 크게</span></div>
+          <div class="d"><b>이게 복제 방지 장치입니다.</b> 이름이 박혀 있어야 스크린샷을 돌려도 남이 못 씁니다. 작게 넣거나 빼면 안 됩니다.</div></div></li>
+
+        <li><span class="num">3</span><div class="tx">
+          <div class="t">컨시어지 이름 문구</div>
+          <div class="d">"럭셔리 컨시어지 OOO 님을 통해 <b style="color:var(--green)">OO점 특별 이용 권한</b>이 부여되었습니다"<br>매장명은 코드 앞 2자리(cd 등)로 자동 결정.</div></div></li>
+
+        <li><span class="num">4</span><div class="tx">
+          <div class="t">혜택 <span>PRIVILEGE 박스</span></div>
+          <div class="d">할인 내용 + 적용 브랜드·상품. 화면에서 두 번째로 눈에 띄어야 하는 요소.</div></div></li>
+
+        <li><span class="num">5</span><div class="tx">
+          <div class="t">컨시어지명 · 코드 · 유효기간</div>
+          <div class="d"><code>cd001cp-0731</code> 형식. 유효기간 옆 D-day 자동 계산, 지나면 EXPIRED 회색 처리.</div></div></li>
+
+        <li><span class="num">6</span><div class="tx">
+          <div class="t">QR 코드</div>
+          <div class="d">어드민 스캔용. 코드값이 담깁니다.</div></div></li>
+
+        <li><span class="num">7</span><div class="tx">
+          <div class="t">매장명 · 주소 · 영업시간</div>
+          <div class="d">코드의 매장 구분값에 따라 자동 표시. 주소로 지도 링크 생성.</div></div></li>
+
+        <li><span class="num">8</span><div class="tx">
+          <div class="t">이용 조건</div>
+          <div class="d">여러 줄 입력, 한 줄 = 한 항목.</div></div></li>
+
+        <li><span class="num">9</span><div class="tx">
+          <div class="t">버튼 3개 <span>월렛 저장 삭제됨</span></div>
+          <div class="d">
+            <b style="color:var(--green)">[방문 예약하기]</b> — 날짜·시간 선택 → 어드민 예약 목록에 등록<br>
+            [이미지 저장] — 화면을 PNG로 저장 (카톡 재전달·보관용)<br>
+            [길찾기] — 지도 앱 연결
+          </div></div></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ============ 4. FIELDS ============ -->
+  <div class="sec">
+    <h2><i>4</i>컨시어지가 입력하는 항목</h2>
+    <div class="lead"><em style="font-style:normal;color:var(--red)">●</em> 표시는 필수입니다.</div>
+    <table class="tb">
+      <tr><th>항목</th><th>설명</th></tr>
+
+      <tr class="grp"><td colspan="2">고객</td></tr>
+      <tr><td class="k">고객 이름<em>●</em></td><td class="v">화면 중앙에 각인됩니다</td></tr>
+      <tr><td class="k">고객 연락처<em>●</em></td><td class="v">방문 예약 확인 · 매장 본인 확인용. 고객 화면에는 안 보임</td></tr>
+
+      <tr class="grp"><td colspan="2">컨시어지 · 코드</td></tr>
+      <tr><td class="k">컨시어지<em>●</em></td><td class="v">로그인 계정에서 자동 (<code>001</code>) · <b>수정 불가</b></td></tr>
+      <tr><td class="k">매장<em>●</em></td><td class="v">목록에서 선택 (<code>cd</code>) → 매장명·주소·영업시간 자동 입력</td></tr>
+      <tr><td class="k">가격 구분<em>●</em></td><td class="v"><code>cp</code> 마진 있음 / <code>ws</code> 마진 없음 — 선택</td></tr>
+      <tr><td class="k">일련번호</td><td class="v">자동 채번 (<code>0731</code>)</td></tr>
+
+      <tr class="grp"><td colspan="2">혜택</td></tr>
+      <tr><td class="k">적용 혜택<em>●</em></td><td class="v">예) 정가 대비 최대 70% 전용가<br>본사 승인 문구를 버튼으로 제공, 자유 입력 지양</td></tr>
+      <tr><td class="k">적용 브랜드 · 상품</td><td class="v">예) 구찌 · 프라다 전 품목</td></tr>
+
+      <tr class="grp"><td colspan="2">기간 · 조건</td></tr>
+      <tr><td class="k">시작일 / 종료일<em>●</em></td><td class="v">기본값 오늘 ~ +30일</td></tr>
+      <tr><td class="k">이용 조건</td><td class="v">여러 줄 입력. 기본 문구 미리 채워두기</td></tr>
+    </table>
+  </div>
+
+  <!-- ============ 5. ADMIN ============ -->
+  <div class="sec">
+    <h2><i>5</i>어드민 — 화면 3개</h2>
+    <div class="lead">매장 직원용(A·B)과 본사용(C)으로 권한을 나눕니다. 매장 계정은 자기 매장 데이터만 보이게 합니다.</div>
+
+    <div class="wf">
+
+      <!-- A -->
+      <div class="wfc">
+        <div class="hdr">A. QR 스캔 · 사용 처리<span>매장 데스크 · 태블릿</span></div>
+        <div class="body">
+          <div class="wfr solid" style="text-align:center;padding:18px 10px">
+            <b>[ 카메라 · QR 스캔 ]</b><br>
+            <span style="font-size:10.5px">코드 직접 입력도 가능</span>
+          </div>
+          <div class="wfr"><b>김서연</b> 님 <span class="tag ok">사용 가능</span><br>
+            cd001cp-0731<br>컨시어지 박민정 · 청담점</div>
+          <div class="wfr">정가 대비 최대 70% 전용가<br>구찌 · 프라다 · 보테가베네타<br>~2026.09.08 (D-31)</div>
+          <div class="wfbtn">사용 처리</div>
+          <ul class="wfnote">
+            <li>이미 사용 <span class="tag no">사용 완료</span> · 기간 만료 <span class="tag no">만료</span> 시 붉게 경고 후 처리 차단</li>
+            <li>본인 확인용으로 연락처 뒤 4자리 표시</li>
+            <li>구매 금액 입력란 (집계용, 선택)</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- B -->
+      <div class="wfc">
+        <div class="hdr">B. 방문 예약 관리<span>매장 데스크</span></div>
+        <div class="body">
+          <div class="wfr solid"><b>2026. 08. 12 (수)</b> · 청담점 &nbsp;▾</div>
+          <div class="wfr"><b>14:00</b> 김서연 · 010-••••-1234<br>박민정 / cd001cp-0731 <span class="tag wt">예약</span></div>
+          <div class="wfr"><b>16:30</b> 이하늘 · 010-••••-5567<br>정유진 / cd002ws-0812 <span class="tag ok">방문완료</span></div>
+          <div class="wfr"><b>18:00</b> 최민서 · 010-••••-9902<br>박민정 / cd001cp-0733 <span class="tag no">노쇼</span></div>
+          <ul class="wfnote">
+            <li>예약 시 고객·컨시어지에게 알림톡 발송</li>
+            <li>상태: 예약 / 방문완료 / 노쇼 / 취소</li>
+            <li>스캔(A)하면 자동으로 방문완료 전환</li>
+            <li>시간대별 예약 정원 설정</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- C -->
+      <div class="wfc">
+        <div class="hdr">C. 집계 대시보드<span>본사 · 매장</span></div>
+        <div class="body">
+          <div class="wfr solid">기간 &nbsp;2026.08.01 – 08.31 &nbsp;▾ &nbsp;| &nbsp;매장 전체 ▾</div>
+          <div class="wfr">발급 <b>128</b> · 예약 <b>61</b> · 방문 <b>47</b> · 사용 <b>29</b><br>
+            예약률 47.7% · 방문률 36.7% · <b>구매전환 22.7%</b></div>
+          <div class="wfr">cp <b>104건</b> / ws <b>24건</b><br>매출 1억 2,400만 · 컨시어지 수익 2,180만</div>
+          <div class="wfr"><b>컨시어지 순위</b><br>
+            1. 박민정 42건 · 전환 31%<br>
+            2. 정유진 27건 · 전환 25%<br>
+            3. 한소영 19건 · 전환 21%</div>
+          <ul class="wfnote">
+            <li>매장별 · 컨시어지별 · 기간별 필터</li>
+            <li>엑셀 내보내기</li>
+            <li>ws는 컨시어지 수익 0으로 계산</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ 6. RULES ============ -->
+  <div class="sec">
+    <h2><i>6</i>꼭 지킬 것</h2>
+    <div class="rules">
+      <div class="rule">
+        <h4>"할인"이라는 단어 금지</h4>
+        <p>고객 화면에는 전용가 · 특별 이용 권한 · PRIVILEGE로만 씁니다. 명품에서 '할인권'은 격이 떨어집니다.</p>
+      </div>
+      <div class="rule">
+        <h4>로그인 없이 열려야 함</h4>
+        <p>고객에게 가입이나 앱 설치를 요구하면 전환이 무너집니다. 카톡에서 바로 열리는 모바일 웹.</p>
+      </div>
+      <div class="rule">
+        <h4>고객 이름은 크게</h4>
+        <p>복제 방지 + 특별함을 동시에 해결하는 유일한 장치입니다.</p>
+      </div>
+      <div class="rule">
+        <h4>코드에 일련번호 필수</h4>
+        <p>없으면 사용 처리·중복 방지·집계가 전부 불가능합니다. 어드민 기능의 전제 조건입니다.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 7. SCOPE ============ -->
+  <div class="sec">
+    <h2><i>7</i>개발 순서</h2>
+    <table class="tb">
+      <tr><th style="width:14%">차수</th><th>내용</th></tr>
+      <tr><td class="k">1차</td><td class="v">발급 화면 · 고객 화면 · 링크 복사 · <b>이미지 저장</b> · D-day 자동 계산 · 길찾기<br><b>어드민 A</b>(QR 스캔 · 사용 처리) — 스캔이 없으면 종이쿠폰과 다를 게 없음</td></tr>
+      <tr><td class="k">2차</td><td class="v"><b>방문 예약</b> + <b>어드민 B</b>(예약 관리) · 알림톡 발송</td></tr>
+      <tr><td class="k">3차</td><td class="v"><b>어드민 C</b>(집계 대시보드) · 컨시어지별 월 발급 수량 제한 · 엑셀 내보내기</td></tr>
+    </table>
+  </div>
+
+  <div class="foot">JPRIMO INTERNATIONAL · VIA ÉLITE</div>
+</div>
+</body>
+</html>

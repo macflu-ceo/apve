@@ -15,3 +15,16 @@ prisma/dev.db-journal
 # uploads (런타임 저장 이미지)
 /public/uploads/*
 !/public/uploads/.gitkeep
+
+# RAON OmniOne CX 연동 모듈(로컬 참고용, 커밋 제외)
+omnione_node/
+omnione_node.zip
+재직증명서_Certificate_of_Employment.docx
+★OmniOneCX*
+제이프리모인터내셔널_OmniOne*
+*라온시큐어*
+*서비스코드 및 사이트 키*
+
+# App Store Connect API 키(비밀)
+AuthKey_*.p8
+*.p8

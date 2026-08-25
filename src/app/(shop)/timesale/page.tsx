@@ -50,7 +50,7 @@ export default async function TimeSalePage() {
         <div className="rounded-xl2 border border-line bg-[#faf9f8] p-10 text-center">
           <div className="text-lg font-black">🔒 오픈 준비 중</div>
           <p className="mt-2 text-sm text-sub">
-            오픈되면 이 상품들을 팔 때 <b className="text-[#9a6f08]">수수료가 올라갑니다.</b>
+            오픈되면 이 상품들을 팔 때 <b className="text-[#4A60FF]">수수료가 올라갑니다.</b>
             <br />
             타이머가 끝나면 자동으로 시작됩니다.
           </p>
@@ -73,7 +73,7 @@ export default async function TimeSalePage() {
                     <div className="flex h-full items-center justify-center text-sub">No Image</div>
                   )}
                   {boost > 0 && (
-                    <span className="absolute left-2 top-2 rounded-md bg-[#9a6f08] px-2 py-1 text-xs font-black text-white">
+                    <span className="absolute left-2 top-2 rounded-md bg-[#4A60FF] px-2 py-1 text-xs font-black text-white">
                       수수료 +{boost}%p
                     </span>
                   )}
@@ -88,7 +88,7 @@ export default async function TimeSalePage() {
                       {base != null && boost > 0 && (
                         <span className="text-sub line-through">{won(base)}</span>
                       )}{" "}
-                      <b className="text-[#9a6f08]">{won(boosted)}</b>
+                      <b className="text-[#4A60FF]">{won(boosted)}</b>
                     </div>
                   )}
                 </div>

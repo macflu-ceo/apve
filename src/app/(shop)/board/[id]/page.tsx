@@ -70,7 +70,7 @@ export default async function BoardDetail({ params }: { params: { id: string } }
       {cta && (
         <Link
           href={cta.url}
-          className="mt-6 flex w-full items-center justify-center rounded-full bg-[#e5623f] px-8 py-4 text-base font-black text-white shadow-[0_10px_24px_rgba(201,74,44,0.32)] transition active:scale-[0.98]"
+          className="mt-6 flex w-full items-center justify-center rounded-full bg-[#4A60FF] px-8 py-4 text-base font-black text-white shadow-[0_10px_24px_rgba(74,96,255,0.32)] transition active:scale-[0.98]"
         >
           {cta.label} →
         </Link>
