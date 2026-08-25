@@ -28,3 +28,11 @@ omnione_node.zip
 # App Store Connect API 키(비밀)
 AuthKey_*.p8
 *.p8
+
+# 로컬 작업 파일
+매장전용링크생성기.html
+미리보기 이미지.png
+스플레시cb2.png
+앱.png
+자산 18@4x.png
+파비콘.svg
