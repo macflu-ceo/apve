@@ -85,7 +85,7 @@ export default function TimeSaleBanner({
 
   return (
     <Link href="/timesale" className="block text-white" style={bg}>
-      <div className="mx-auto flex max-w-shell items-center gap-3 px-4 pb-2.5 pt-[max(0.625rem,env(safe-area-inset-top))]">
+      <div className="mx-auto flex max-w-shell items-center gap-2 px-3 pb-2.5 sm:gap-3 sm:px-4 pt-[max(0.625rem,env(safe-area-inset-top))]">
         <span
           className="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-black tracking-wide"
           style={live ? { backgroundColor: "#fff", color: colorTo } : { backgroundColor: "rgba(255,255,255,0.2)" }}
@@ -93,7 +93,7 @@ export default function TimeSaleBanner({
           {live ? "LIVE" : "SOON"}
         </span>
 
-        <span className="shrink-0 text-sm font-black tracking-tight">{title}</span>
+        <span className="min-w-0 truncate text-sm font-black tracking-tight">{title}</span>
 
         {maxBoost > 0 && (
           <span
@@ -108,7 +108,7 @@ export default function TimeSaleBanner({
           {live ? liveText : upcomingText}
         </span>
 
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex shrink-0 items-center gap-2">
           {t ? (
             <>
               <span className="hidden text-[11px] font-medium text-white/70 sm:inline">
