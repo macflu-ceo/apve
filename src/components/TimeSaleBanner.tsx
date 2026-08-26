@@ -81,7 +81,7 @@ export default function TimeSaleBanner({
   // 진행중이면 커스텀 색상, 예정이면 다크
   const bg = live
     ? { backgroundImage: `linear-gradient(90deg, ${colorFrom}, ${colorTo})` }
-    : { backgroundImage: "linear-gradient(90deg, #2b2622, #4a3f36)" };
+    : { backgroundImage: "linear-gradient(90deg, #6E82FF, #4A60FF)" };
 
   return (
     <Link href="/timesale" className="block text-white" style={bg}>

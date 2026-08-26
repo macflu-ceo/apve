@@ -145,7 +145,12 @@ export default async function GoodsPage({ params }: { params: { goodsNo: string 
         {product.brand && <div className="text-sm font-bold text-brand">{product.brand}</div>}
         <h1 className="mt-1 text-2xl font-bold leading-snug">{product.name}</h1>
 
-        <div className="mt-4 flex items-baseline gap-3">
+        <div className="mt-4 flex items-baseline gap-2">
+          {product.listPrice && product.salePrice && product.listPrice > product.salePrice && (
+            <span className="text-2xl font-extrabold text-deal">
+              {Math.round((1 - product.salePrice / product.listPrice) * 100)}%
+            </span>
+          )}
           <span className="text-2xl font-extrabold">{won(product.salePrice)}</span>
           {product.listPrice && product.salePrice && product.listPrice > product.salePrice && (
             <span className="text-sm text-sub line-through">{won(product.listPrice)}</span>
