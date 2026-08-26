@@ -199,6 +199,31 @@ export async function sendPushToGradeName(gradeName: string, msg: PushMessage, t
   return sendPushToGrade(grade.id, grade.name, msg, trigger);
 }
 
+/** 테스트 수신자(pushTester) 회원 기기 전체에 발송 — 등급과 무관. */
+export async function sendPushToTesters(msg: PushMessage): Promise<PushResult> {
+  const testers = await prisma.partner.findMany({ where: { pushTester: true }, select: { id: true } });
+  const tokens = await prisma.pushToken.findMany({
+    where: { active: true, partnerId: { in: testers.map((t) => t.id) } },
+    select: { id: true, token: true },
+  });
+  const res = await sendPushToTokens(tokens, msg);
+  await prisma.pushLog.create({
+    data: {
+      title: msg.title,
+      body: msg.body,
+      url: msg.url ?? null,
+      imageUrl: msg.imageUrl ?? null,
+      segment: "tester",
+      trigger: "test",
+      target: res.target,
+      sent: res.sent,
+      failed: res.failed,
+      provider: res.provider,
+    },
+  });
+  return res;
+}
+
 /** 특정 회원의 기기들에 발송 (개별 로그는 남기지 않음 — 트리거에서 집계). */
 export async function sendPushToPartner(partnerId: string, msg: PushMessage): Promise<PushResult> {
   const tokens = await prisma.pushToken.findMany({

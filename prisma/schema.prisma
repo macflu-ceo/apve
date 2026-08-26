@@ -45,6 +45,7 @@ model Partner {
   ci           String?  @unique
   /// pending(신청) | approved(승인) | rejected(반려)
   status       String   @default("pending")
+  pushTester   Boolean  @default(false) // 앱 푸시 테스트 수신 대상 (등급과 무관)
   /// 고도몰 URL 뒤에 붙는 고유 파라미터. 승인 시 어드민이 고도몰에서 발급해 부여.
   code         String?  @unique
   active       Boolean  @default(true)

@@ -14,7 +14,13 @@ type Ctx = { open: (mode?: Mode) => void; close: () => void };
 const AuthCtx = createContext<Ctx>({ open: () => {}, close: () => {} });
 export const useAuthModal = () => useContext(AuthCtx);
 
-export default function AuthModalProvider({ children }: { children: React.ReactNode }) {
+export default function AuthModalProvider({
+  children,
+  loggedIn = false,
+}: {
+  children: React.ReactNode;
+  loggedIn?: boolean;
+}) {
   const [openState, setOpenState] = useState(false);
   const [mode, setMode] = useState<Mode>("login");
 
@@ -28,16 +34,19 @@ export default function AuthModalProvider({ children }: { children: React.ReactN
   };
 
   // 본인인증 복귀(?signup=1) / 로그인 유도(?login=1) 시 모달 자동 오픈
+  // 이미 로그인된 상태면 열지 않음 (가입 완료 후 새로고침 시 재오픈 버그 방지)
   useEffect(() => {
     const q = new URLSearchParams(window.location.search);
-    if (q.get("signup") === "1") open("signup");
-    else if (q.get("login") === "1") open("login");
+    if (!loggedIn) {
+      if (q.get("signup") === "1") open("signup");
+      else if (q.get("login") === "1") open("login");
+    }
     if (q.get("signup") || q.get("login") || q.get("iv") || q.get("iv_error")) {
       // 새로고침 시 재오픈/재처리 방지 — 파라미터 제거
       window.history.replaceState(null, "", window.location.pathname);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loggedIn]);
 
   return (
     <AuthCtx.Provider value={{ open, close }}>

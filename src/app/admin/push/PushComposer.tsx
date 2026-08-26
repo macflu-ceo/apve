@@ -146,7 +146,7 @@ export default function PushComposer({ tokenCount, grades }: { tokenCount: numbe
           {pending ? "처리 중…" : `📤 지금 발송 (대상 ${tokenCount.toLocaleString()})`}
         </button>
         <button type="button" onClick={sendTest} disabled={pending} className="btn-line px-4">
-          🧪 관리자에게 테스트 발송
+          🧪 테스트 발송
         </button>
         {msg && <span className={`text-sm ${msg.ok ? "text-green-700" : "text-red-600"}`}>{msg.text}</span>}
       </div>
@@ -168,8 +168,8 @@ export default function PushComposer({ tokenCount, grades }: { tokenCount: numbe
 
       {/* 테스트 발송 안내 */}
       <p className="text-xs text-sub">
-        🧪 <b>관리자에게 테스트 발송</b>: 위 제목·내용·이미지 그대로 <b>‘관리자’ 등급 회원의 기기</b>로만 보냅니다.
-        토큰 입력 불필요 — 본인 계정을 <b>회원 관리 → 등급 ‘관리자’</b>로 두고, 앱에서 알림 동의만 하면 이 버튼으로 테스트가 와요.
+        🧪 <b>테스트 발송</b>: 위 제목·내용·이미지 그대로 <b>아래 ‘테스트 수신자’로 지정된 회원의 기기</b>로만 보냅니다.
+        등급과 무관 — 이 페이지 하단에서 아이디로 지정하고, 앱에서 알림 동의만 하면 이 버튼으로 테스트가 와요.
       </p>
     </div>
   );

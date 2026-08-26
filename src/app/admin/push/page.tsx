@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { isPushConfigured } from "@/lib/push";
 import PushComposer from "./PushComposer";
+import PushTesters from "./PushTesters";
 import CancelScheduleButton from "./CancelScheduleButton";
 
 export const dynamic = "force-dynamic";
@@ -13,13 +14,18 @@ function fmtDateTime(d: Date) {
 const SEG_LABEL: Record<string, string> = { all: "전체", members: "회원", guests: "비회원" };
 
 export default async function AdminPush() {
-  const [total, members, byPlatform, logs, scheduled, grades] = await Promise.all([
+  const [total, members, byPlatform, logs, scheduled, grades, testerRows] = await Promise.all([
     prisma.pushToken.count({ where: { active: true } }),
     prisma.pushToken.count({ where: { active: true, partnerId: { not: null } } }),
     prisma.pushToken.groupBy({ by: ["platform"], where: { active: true }, _count: { _all: true } }),
     prisma.pushLog.findMany({ orderBy: { createdAt: "desc" }, take: 50 }),
     prisma.scheduledPush.findMany({ where: { status: "pending" }, orderBy: { sendAt: "asc" } }),
     prisma.grade.findMany({ orderBy: { sort: "asc" }, select: { id: true, name: true } }),
+    prisma.partner.findMany({
+      where: { pushTester: true },
+      select: { id: true, username: true, name: true },
+      orderBy: { createdAt: "asc" },
+    }),
   ]);
 
   const configured = isPushConfigured();
@@ -52,6 +58,19 @@ export default async function AdminPush() {
       <h2 className="mb-3 text-lg font-semibold">새 푸시 발송</h2>
       <div className="mb-6">
         <PushComposer tokenCount={total} grades={grades} />
+      </div>
+
+      {/* 테스트 수신자 관리 */}
+      <div className="mb-6">
+        <PushTesters
+          testers={await Promise.all(
+            testerRows.map(async (t) => ({
+              username: t.username,
+              name: t.name,
+              deviceCount: await prisma.pushToken.count({ where: { active: true, partnerId: t.id } }),
+            })),
+          )}
+        />
       </div>
 
       {/* 가이드 */}

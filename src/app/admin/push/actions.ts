@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { isAdmin } from "@/lib/admin";
-import { sendPushToSegment, sendPushToGrade, sendPushToGradeName, type PushSegment } from "@/lib/push";
+import { sendPushToSegment, sendPushToGrade, sendPushToGradeName, sendPushToTesters, type PushSegment } from "@/lib/push";
 
 export async function sendPushAction(input: {
   title: string;
@@ -39,7 +39,7 @@ export async function sendPushAction(input: {
   return { ok: true, message: `발송 처리: 대상 ${res.target} · 성공 ${res.sent} · 실패 ${res.failed}${note}` };
 }
 
-/** 테스트 발송 — '관리자' 등급 회원 기기에만 (토큰 입력 불필요) */
+/** 테스트 발송 — '테스트 수신자'로 지정된 회원 기기에만 (토큰 입력 불필요) */
 export async function sendTestPushAction(input: {
   title: string;
   body: string;
@@ -51,27 +51,33 @@ export async function sendTestPushAction(input: {
   const body = input.body.trim();
   if (!title || !body) return { ok: false, message: "제목과 내용을 입력하세요." };
 
-  const res = await sendPushToGradeName(
-    "관리자",
-    {
-      title,
-      body,
-      url: input.url.trim() || undefined,
-      imageUrl: input.imageUrl.trim() || undefined,
-    },
-    "test",
-  );
+  const res = await sendPushToTesters({
+    title,
+    body,
+    url: input.url.trim() || undefined,
+    imageUrl: input.imageUrl.trim() || undefined,
+  });
   revalidatePath("/admin/push");
 
-  if (res == null)
-    return { ok: false, message: "'관리자' 등급이 없습니다. 회원 관리에서 본인 계정을 '관리자' 등급으로 지정하세요." };
   if (res.provider === "mock")
     return { ok: false, message: "⚠️ Firebase 키가 없어 실제 발송 불가. 먼저 환경변수를 설정하세요." };
   if (res.target === 0)
-    return { ok: false, message: "'관리자' 등급 회원 중 앱 설치·알림 동의한 기기가 없어요. 본인 계정을 관리자 등급으로 두고 앱에서 알림 동의하면 여기로 테스트가 갑니다." };
+    return { ok: false, message: "테스트 수신자 중 앱 설치·알림 동의한 기기가 없어요. 아래에서 본인 계정을 테스트 수신자로 지정하고 앱에서 알림 동의하면 여기로 테스트가 갑니다." };
   return res.sent > 0
-    ? { ok: true, message: `✅ 관리자 등급 기기로 테스트 발송! (성공 ${res.sent} · 실패 ${res.failed})` }
+    ? { ok: true, message: `✅ 테스트 수신자 기기로 발송! (성공 ${res.sent} · 실패 ${res.failed})` }
     : { ok: false, message: "발송 실패 — 기기 토큰이 만료됐을 수 있어요." };
+}
+
+/** 테스트 수신자 지정/해제 — 아이디로 지정, 등급과 무관 */
+export async function setPushTesterAction(username: string, on: boolean) {
+  if (!isAdmin()) return { ok: false, message: "권한이 없습니다." };
+  const u = username.trim();
+  if (!u) return { ok: false, message: "아이디를 입력하세요." };
+  const partner = await prisma.partner.findUnique({ where: { username: u }, select: { id: true, name: true } });
+  if (!partner) return { ok: false, message: `'${u}' 회원을 찾을 수 없습니다.` };
+  await prisma.partner.update({ where: { id: partner.id }, data: { pushTester: on } });
+  revalidatePath("/admin/push");
+  return { ok: true, message: on ? `${partner.name}(${u}) 님을 테스트 수신자로 지정했어요.` : `${partner.name}(${u}) 님을 테스트 수신자에서 해제했어요.` };
 }
 
 /** 예약 발송 등록 — sendAt(KST 'YYYY-MM-DDTHH:mm')에 크론이 발송 */

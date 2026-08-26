@@ -77,7 +77,7 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
   const showTimeSaleBanner = !!(timeSale && timeSale.state !== "off"); // 마진업 바 노출 여부
 
   return (
-    <AuthModalProvider>
+    <AuthModalProvider loggedIn={!!partner}>
       {/* 앱 스플래시는 네이티브 런치 화면으로 통일(둘째 웹 오버레이 제거) */}
       {platform === "app" && <PullToRefresh />}
       {platform === "app" && <AppPushSync />}
