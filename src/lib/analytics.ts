@@ -105,7 +105,7 @@ export async function getCohorts(asOf: string, platform?: PF): Promise<Cohort[]>
       FROM "Visit" v JOIN firsts f ON f.pid = COALESCE(v."partnerId", v."visitorId")
       WHERE TRUE ${pf}
     )
-    SELECT to_char(cohort_start, 'YYYY-MM-DD') AS cohort, wk, COUNT(DISTINCT COALESCE("partnerId", "visitorId")) AS users
+    SELECT to_char(cohort_start, 'YYYY-MM-DD') AS cohort, wk, COUNT(DISTINCT pid) AS users
     FROM base
     WHERE cohort_start >= ${cutoff}::date AND wk BETWEEN 0 AND 6
     GROUP BY cohort_start, wk
