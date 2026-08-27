@@ -1,5 +1,21 @@
 "use client";
 
+/** 앱 전용 고정 기기 ID — 웹뷰 쿠키가 재시작에 날아가도 같은 기기는 같은 사람으로 집계.
+ *  매 이벤트에 실어 보내 서버가 쿠키 대신 이 값을 쓰므로 콜드스타트 첫 화면부터 정확하다. */
+function stableVid(): string | undefined {
+  try {
+    if (!navigator.userAgent.includes("CashBoutiqueApp")) return undefined; // 앱 웹뷰만
+    let v = localStorage.getItem("vid_stable");
+    if (!v) {
+      v = crypto.randomUUID();
+      localStorage.setItem("vid_stable", v);
+    }
+    return v;
+  } catch {
+    return undefined;
+  }
+}
+
 // 클라이언트에서 방문/클릭 이벤트를 서버로 보낸다. 실패는 조용히 무시.
 export function trackEvent(
   kind: "page" | "product" | "click" | "impression",
@@ -41,6 +57,7 @@ export function trackEvent(
       utmSource: opts.utmSource,
       utmMedium: opts.utmMedium,
       utmCampaign: opts.utmCampaign,
+      svid: stableVid(),
     });
     // keepalive: 페이지 이탈 중에도 전송 보장
     fetch("/api/track", {

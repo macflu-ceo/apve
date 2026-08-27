@@ -25,6 +25,7 @@ export async function POST(req: Request) {
       utmSource?: string;
       utmMedium?: string;
       utmCampaign?: string;
+      svid?: string;
     };
 
     let path = (body.path ?? "").slice(0, 300);
@@ -39,7 +40,22 @@ export async function POST(req: Request) {
     if (kind === "page" && goodsMatch) kind = "product";
     const goodsNo = body.goodsNo ?? goodsMatch?.[1] ?? null;
 
-    const { visitorId } = getOrSetVisitorId();
+    let { visitorId } = getOrSetVisitorId();
+    // 앱: 클라이언트 고정 기기 ID 우선 — 웹뷰 쿠키가 날아가도 같은 기기는 같은 사람
+    if (
+      typeof body.svid === "string" &&
+      /^[0-9a-f-]{36}$/i.test(body.svid) &&
+      getPlatform() === "app"
+    ) {
+      visitorId = body.svid;
+      const { cookies } = await import("next/headers");
+      cookies().set("vid", body.svid, {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        maxAge: 60 * 60 * 24 * 365,
+      });
+    }
     const { sessionId, isNewSession } = getOrSetSessionId();
     const partner = await getSessionPartner();
 
