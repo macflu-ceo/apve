@@ -85,8 +85,8 @@ export default function NewPostForm({ categories }: { categories: { key: string;
       {msg && <p className="text-sm text-red-600">{msg}</p>}
 
       <div className="flex gap-2">
-        <button onClick={submit} disabled={pending || !agreeRules || !title.trim() || !content.trim()} className="btn-brand px-6">
-          {pending ? "등록 중…" : "등록"}
+        <button onClick={submit} disabled={pending || !agreeRules || !title.trim() || !content.trim() || images.filter(Boolean).length === 0} className="btn-brand px-6">
+          {pending ? "등록 중…" : images.filter(Boolean).length === 0 ? "사진을 첨부해주세요" : "등록"}
         </button>
         <button type="button" onClick={() => router.back()} className="btn-line px-4">취소</button>
       </div>

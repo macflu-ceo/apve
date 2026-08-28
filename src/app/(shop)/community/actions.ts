@@ -22,6 +22,7 @@ export async function createCommunityPost(input: {
   const title = input.title.trim();
   const content = input.content.trim();
   if (!title || !content) return { ok: false, message: "제목과 내용을 입력하세요." };
+  if (!input.images.length) return { ok: false, message: "사진을 1장 이상 첨부해야 게시할 수 있어요." };
   const bad = findObjectionable(`${title} ${content}`);
   if (bad) return { ok: false, message: "부적절한 표현이 포함되어 등록할 수 없습니다. 커뮤니티 이용규칙을 지켜주세요." };
 
