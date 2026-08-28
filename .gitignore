@@ -36,3 +36,10 @@ AuthKey_*.p8
 앱.png
 자산 18@4x.png
 파비콘.svg
+
+# 빌드 캐시·로컬 생성 스크립트
+*.tsbuildinfo
+scripts/bulk_2000.ts
+scripts/fill_sections_100.ts
+scripts/gen_ad5_more.ts
+scripts/gen_adassets.ts
