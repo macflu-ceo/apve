@@ -5,6 +5,12 @@ import { conciergeCode } from "@/lib/concierge-access";
 export default function ConciergeHub({ name, conciergeNo }: { name: string; conciergeNo: number }) {
   const tools = [
     {
+      href: "/me/multilink",
+      emoji: "🔗",
+      title: "내 멀티링크",
+      desc: "내가 고른 상품을 한 페이지로 모아 공유하고, 고객 추천 신청을 받습니다.",
+    },
+    {
       href: "/concierge/coupons",
       emoji: "🎫",
       title: "매장 특별 이용 권한",
