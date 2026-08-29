@@ -68,6 +68,7 @@ export default async function MultiLinkAdminPage() {
         displayName: ml.displayName,
         bio: ml.bio ?? "",
         avatarUrl: ml.avatarUrl ?? "",
+        coverUrl: ml.coverUrl ?? "",
         views: ml.views,
       }}
       percent={percent}

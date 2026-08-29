@@ -100,9 +100,15 @@ export default async function MultiLinkPage({ params }: { params: { slug: string
     <div className="min-h-dvh bg-[#F3F5FB]">
       <div className="mx-auto min-h-dvh max-w-[430px] bg-[#F3F5FB] pb-32">
         {/* ── 프로필 헤더 ── */}
-        <div className="relative overflow-hidden bg-gradient-to-b from-[#4A60FF] to-[#6E82FF] px-5 pb-16 pt-10 text-center text-white">
-          <div className="pointer-events-none absolute -right-8 -top-8 h-36 w-36 rounded-full bg-white/10" />
-          <div className="pointer-events-none absolute -left-10 bottom-0 h-28 w-28 rounded-full bg-white/10" />
+        <div
+          className="relative overflow-hidden bg-gradient-to-b from-[#4A60FF] to-[#6E82FF] bg-cover bg-center px-5 pb-16 pt-10 text-center text-white"
+          style={ml.coverUrl ? { backgroundImage: `url(${ml.coverUrl})` } : undefined}
+        >
+          {/* 커버 위 가독성 오버레이 */}
+          {ml.coverUrl && <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/30 via-black/25 to-black/55" />}
+          {!ml.coverUrl && <div className="pointer-events-none absolute -right-8 -top-8 h-36 w-36 rounded-full bg-white/10" />}
+          {!ml.coverUrl && <div className="pointer-events-none absolute -left-10 bottom-0 h-28 w-28 rounded-full bg-white/10" />}
+          <div className="relative">
           {ml.avatarUrl ? (
             <img src={ml.avatarUrl} alt="" className="mx-auto h-20 w-20 rounded-full border-[3px] border-white/80 object-cover shadow-lg" />
           ) : (
@@ -114,6 +120,7 @@ export default async function MultiLinkPage({ params }: { params: { slug: string
           <div className="mt-3.5 flex justify-center gap-1.5">
             <span className="rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold backdrop-blur">🛡️ 100% 정품 보증</span>
             <span className="rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold backdrop-blur">✈️ 이탈리아 부티크 직계약</span>
+          </div>
           </div>
         </div>
 

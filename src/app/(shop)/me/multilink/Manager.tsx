@@ -40,7 +40,7 @@ const won = (n: number) => n.toLocaleString() + "원";
 export default function Manager({
   ml, percent, sections, items, candidates, leads,
 }: {
-  ml: { slug: string; displayName: string; bio: string; avatarUrl: string; views: number };
+  ml: { slug: string; displayName: string; bio: string; avatarUrl: string; coverUrl: string; views: number };
   percent: number;
   sections: Section[];
   items: Item[];
@@ -49,7 +49,7 @@ export default function Manager({
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
-  const [profile, setProfile] = useState({ displayName: ml.displayName, bio: ml.bio, avatarUrl: ml.avatarUrl, featuredTitle: "" });
+  const [profile, setProfile] = useState({ displayName: ml.displayName, bio: ml.bio, avatarUrl: ml.avatarUrl, coverUrl: ml.coverUrl });
   const [msg, setMsg] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [view, setView] = useState<"list" | "card">("list");
@@ -64,14 +64,14 @@ export default function Manager({
       router.refresh();
     });
 
-  async function uploadAvatar(f: File) {
+  async function uploadImage(f: File, key: "avatarUrl" | "coverUrl") {
     setUploading(true);
     try {
       const fd = new FormData();
       fd.append("file", f);
       const res = await fetch("/api/upload", { method: "POST", body: fd });
       const d = await res.json();
-      if (d.url) setProfile((p) => ({ ...p, avatarUrl: d.url }));
+      if (d.url) setProfile((p) => ({ ...p, [key]: d.url }));
       else setMsg(d.error ?? "업로드 실패");
     } catch {
       setMsg("업로드 실패");
@@ -165,12 +165,28 @@ export default function Manager({
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-brandsoft text-2xl">🛍️</div>
             )}
             <span className="mt-1 block text-[11px] text-brand">{uploading ? "업로드중…" : "사진 변경"}</span>
-            <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && uploadAvatar(e.target.files[0])} />
+            <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && uploadImage(e.target.files[0], "avatarUrl")} />
           </label>
           <div className="flex-1 space-y-2">
             <input value={profile.displayName} onChange={(e) => setProfile({ ...profile, displayName: e.target.value })} placeholder="표시 이름" className="field w-full" />
             <input value={profile.bio} onChange={(e) => setProfile({ ...profile, bio: e.target.value })} placeholder="소개 문구 (예: 명품, 아는 사람 가격으로 추천해드려요)" className="field w-full" />
           </div>
+        </div>
+        <div className="mt-3">
+          <div className="mb-1.5 text-[13px] font-bold text-gray-700">배경(커버) 이미지 <span className="font-normal text-sub">— 페이지 상단에 화면 맞춤으로 깔립니다</span></div>
+          <label className="block cursor-pointer">
+            {profile.coverUrl ? (
+              <img src={profile.coverUrl} className="h-24 w-full rounded-xl object-cover" alt="" />
+            ) : (
+              <div className="flex h-24 w-full items-center justify-center rounded-xl border border-dashed border-line bg-brandsoft/40 text-sm text-sub">
+                + 배경 이미지 올리기 (권장 1200×800 이상)
+              </div>
+            )}
+            <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && uploadImage(e.target.files[0], "coverUrl")} />
+          </label>
+          {profile.coverUrl && (
+            <button onClick={() => setProfile((p) => ({ ...p, coverUrl: "" }))} className="mt-1 text-xs text-red-500 underline">배경 제거</button>
+          )}
         </div>
         <button onClick={() => run(() => updateMultiLinkProfile(profile))} disabled={pending} className="btn-brand mt-3 px-5 py-2 text-sm">
           {pending ? "저장 중…" : "프로필 저장"}

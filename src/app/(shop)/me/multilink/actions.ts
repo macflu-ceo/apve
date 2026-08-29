@@ -31,7 +31,8 @@ export async function updateMultiLinkProfile(input: {
   displayName: string;
   bio: string;
   avatarUrl: string;
-  featuredTitle: string;
+  coverUrl?: string;
+  featuredTitle?: string;
 }) {
   const r = await myMultiLink();
   if ("error" in r) return { ok: false, message: r.error };
@@ -43,7 +44,7 @@ export async function updateMultiLinkProfile(input: {
       displayName,
       bio: input.bio.trim().slice(0, 120) || null,
       avatarUrl: input.avatarUrl.trim() || null,
-      featuredTitle: input.featuredTitle.trim().slice(0, 20) || "지금 추천해요",
+      coverUrl: (input.coverUrl ?? "").trim() || null,
     },
   });
   refresh(r.ml.slug);

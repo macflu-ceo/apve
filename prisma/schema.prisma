@@ -470,6 +470,8 @@ model MultiLink {
   displayName   String
   bio           String?
   avatarUrl     String?
+  /// 헤더 배경(커버) 이미지
+  coverUrl      String?
   /// 강조 섹션 타이틀 (예: 이번 주 추천)
   featuredTitle String   @default("지금 추천해요")
   active        Boolean  @default(true)

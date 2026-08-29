@@ -23,31 +23,29 @@ export default function AppSideQr({
   const store = resolveStoreUrl({ ios, android, landing });
 
   return (
-    <aside className="fixed left-[calc(50%-560px)] top-1/2 z-30 hidden w-[280px] -translate-y-1/2 min-[1000px]:block">
+    <aside className="fixed left-[calc(50%-480px)] top-1/2 z-30 hidden w-[200px] -translate-y-1/2 min-[1000px]:block">
       <div className="text-center">
-        <img src="/logo.png" alt="돈버는 명품샵" className="mx-auto h-8" />
-        <div className="mt-6 text-[22px] font-black leading-snug text-ink">
+        <img src="/logo.png" alt="돈버는 명품샵" className="mx-auto h-6" />
+        <div className="mt-4 text-[17px] font-black leading-snug text-ink">
           새로운 명품 부업의
           <br />
           발견
         </div>
-        <p className="mt-3 text-[13px] leading-relaxed text-sub">
-          지금, 돈버는 명품샵 앱에서
+        <p className="mt-2 text-[11.5px] leading-relaxed text-sub">
+          앱에서 명품 추천부터
           <br />
-          명품 추천부터 수수료 적립,
-          <br />
-          푸시 알림까지 받아보세요!
+          수수료 적립까지 받아보세요
         </p>
-        <div className="mx-auto mt-6 w-fit rounded-2xl border border-line bg-white p-4 shadow-sm">
-          <img src={qr} alt="앱 다운로드 QR" className="h-36 w-36" />
+        <div className="mx-auto mt-4 w-fit rounded-xl border border-line bg-white p-2.5 shadow-sm">
+          <img src={qr} alt="앱 다운로드 QR" className="h-24 w-24" />
         </div>
-        <div className="mt-2 text-[11px] text-sub">QR을 스캔하면 스토어로 이동해요</div>
+        <div className="mt-1.5 text-[10px] text-sub">QR 스캔 → 스토어 이동</div>
         {store && (
           <a
             href={store}
             target="_blank"
             onClick={() => trackAppCta("sideqr", "click")}
-            className="mt-4 inline-block rounded-xl bg-brand px-6 py-2.5 text-sm font-bold text-white"
+            className="mt-3 inline-block rounded-lg bg-brand px-4 py-1.5 text-xs font-bold text-white"
           >
             앱 다운로드
           </a>
