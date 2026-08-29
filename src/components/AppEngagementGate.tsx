@@ -81,7 +81,7 @@ export default function AppEngagementGate({
 
   return (
     <div
-      className="fixed inset-0 z-[70] flex items-end justify-center bg-black/50 p-4 sm:items-center"
+      className="fixed inset-0 z-[70] flex items-end justify-center bg-black/50 p-4"
       role="dialog"
       aria-modal="true"
       onClick={close}

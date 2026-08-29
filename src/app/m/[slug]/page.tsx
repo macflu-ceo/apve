@@ -24,8 +24,9 @@ async function getData(slug: string) {
     where: { slug },
     include: {
       partner: { select: { code: true, name: true } },
+      sections: { orderBy: [{ sort: "asc" }, { createdAt: "asc" }] },
       items: {
-        orderBy: [{ featured: "desc" }, { sort: "asc" }, { createdAt: "asc" }],
+        orderBy: [{ sort: "asc" }, { createdAt: "asc" }],
         include: { product: true },
       },
     },
@@ -34,13 +35,13 @@ async function getData(slug: string) {
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const ml = await getData(params.slug);
-  if (!ml || !ml.active) return { title: "돈버는 명품샵" };
+  if (!ml || !ml.active) return { title: { absolute: "VIA ÉLITE" } };
   return {
-    title: `${ml.displayName}의 명품샵`,
+    title: { absolute: `${ml.displayName}의 명품샵 | VIA ÉLITE` },
     description: ml.bio ?? "이탈리아 부티크 직계약 100% 정품, 특별한 가격으로 추천해드려요.",
     openGraph: {
       title: `${ml.displayName}의 명품샵`,
-      description: ml.bio ?? "100% 정품 명품을 특별한 가격으로.",
+      description: ml.bio ?? "이탈리아 부티크 직계약, 100% 정품 명품을 특별한 가격으로.",
       ...(ml.avatarUrl ? { images: [ml.avatarUrl] } : {}),
     },
   };
@@ -55,10 +56,16 @@ export default async function MultiLinkPage({ params }: { params: { slug: string
 
   const code = ml.partner.code ?? "";
   const items = ml.items.filter((i) => i.product.active);
-  const featured = items.filter((i) => i.featured);
-  const rest = items.filter((i) => !i.featured);
+  const groups = [
+    ...ml.sections
+      .map((s) => ({ key: s.id, title: s.title, rows: items.filter((i) => i.sectionId === s.id) }))
+      .filter((g) => g.rows.length > 0),
+    ...(items.some((i) => i.sectionId == null)
+      ? [{ key: "default", title: ml.sections.length > 0 ? "추천 상품" : "", rows: items.filter((i) => i.sectionId == null) }]
+      : []),
+  ];
 
-  const Card = ({ item, wide = false }: { item: (typeof items)[number]; wide?: boolean }) => {
+  const Card = ({ item }: { item: (typeof items)[number] }) => {
     const p = item.product;
     const img = firstImage(p.imagesJson);
     const d = discount(p.listPrice, p.salePrice);
@@ -67,7 +74,7 @@ export default async function MultiLinkPage({ params }: { params: { slug: string
         href={partnerLink(p.goodsNo, code)}
         target="_blank"
         rel="noopener"
-        className={`block overflow-hidden rounded-2xl bg-white shadow-[0_2px_14px_rgba(20,30,80,.07)] transition active:scale-[0.98] ${wide ? "w-[160px] shrink-0" : ""}`}
+        className={`block overflow-hidden rounded-2xl bg-white shadow-[0_2px_14px_rgba(20,30,80,.07)] transition active:scale-[0.98] `}
       >
         <div className="aspect-square bg-[#FAFAFC]">
           {img && <img src={img} alt={p.name} className="h-full w-full object-contain" loading="lazy" />}
@@ -101,11 +108,12 @@ export default async function MultiLinkPage({ params }: { params: { slug: string
           ) : (
             <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border-[3px] border-white/80 bg-white text-3xl shadow-lg">🛍️</div>
           )}
-          <h1 className="mt-3 text-[21px] font-extrabold tracking-tight">{ml.displayName}의 명품샵</h1>
+          <div className="mt-3 text-[10px] font-bold tracking-[0.28em] text-white/70">VIA ÉLITE · ITALY DIRECT</div>
+          <h1 className="mt-1 text-[21px] font-extrabold tracking-tight">{ml.displayName}의 명품샵</h1>
           {ml.bio && <p className="mx-auto mt-1.5 max-w-[300px] text-[13px] leading-relaxed text-white/85">{ml.bio}</p>}
           <div className="mt-3.5 flex justify-center gap-1.5">
             <span className="rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold backdrop-blur">🛡️ 100% 정품 보증</span>
-            <span className="rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold backdrop-blur">✈️ 부티크 직계약</span>
+            <span className="rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold backdrop-blur">✈️ 이탈리아 부티크 직계약</span>
           </div>
         </div>
 
@@ -115,37 +123,27 @@ export default async function MultiLinkPage({ params }: { params: { slug: string
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#EEF1FF] text-xl">🛡️</div>
             <div>
               <div className="text-[13.5px] font-extrabold text-gray-900">정품이 아니면 200% 보상</div>
-              <div className="text-[11.5px] text-gray-500">이탈리아 부티크 직계약 공급 · 돈버는명품샵 보증</div>
+              <div className="text-[11.5px] text-gray-500">이탈리아 부티크 직계약 공급 · VIA ÉLITE 정품 보증</div>
             </div>
           </div>
         </div>
 
-        {/* ── 강조 섹션 ── */}
-        {featured.length > 0 && (
-          <div className="mt-7">
-            <div className="flex items-baseline justify-between px-5">
-              <h2 className="text-[17px] font-extrabold text-gray-900">🔥 {ml.featuredTitle}</h2>
-              <span className="text-[11px] text-gray-400">{ml.displayName} PICK</span>
-            </div>
-            <div className="mt-3 flex gap-3 overflow-x-auto px-4 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {featured.map((item) => (
-                <Card key={item.id} item={item} wide />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* ── 전체 상품 ── */}
-        {rest.length > 0 && (
-          <div className="mt-7 px-4">
-            <h2 className="px-1 text-[17px] font-extrabold text-gray-900">추천 상품</h2>
-            <div className="mt-3 grid grid-cols-2 gap-3">
-              {rest.map((item) => (
+        {/* ── 진열 섹션 ── */}
+        {groups.map((g, gi) => (
+          <div key={g.key} className="mt-7 px-4">
+            {g.title && (
+              <div className="flex items-baseline justify-between px-1">
+                <h2 className="text-[17px] font-extrabold text-gray-900">{g.title}</h2>
+                {gi === 0 && <span className="text-[11px] text-gray-400">{ml.displayName} PICK</span>}
+              </div>
+            )}
+            <div className={g.title ? "mt-3 grid grid-cols-2 gap-3" : "grid grid-cols-2 gap-3"}>
+              {g.rows.map((item) => (
                 <Card key={item.id} item={item} />
               ))}
             </div>
           </div>
-        )}
+        ))}
 
         {items.length === 0 && (
           <div className="mt-16 text-center text-sm text-gray-400">아직 등록된 상품이 없어요.</div>
@@ -153,11 +151,11 @@ export default async function MultiLinkPage({ params }: { params: { slug: string
 
         {/* ── 푸터 ── */}
         <div className="mt-12 px-4 text-center">
-          <img src="/logo.png" alt="돈버는 명품샵" className="mx-auto h-5 opacity-70" />
-          <p className="mt-2 text-[11px] leading-relaxed text-gray-400">
+          <div className="text-[12px] font-bold tracking-[0.22em] text-gray-400">VIA ÉLITE</div>
+          <p className="mt-1.5 text-[11px] leading-relaxed text-gray-400">
             이탈리아 부티크 직계약 · 100% 정품 보증
-            <br />ⓒ 돈버는명품샵
           </p>
+          <p className="mt-4 text-[9px] text-gray-300">powered by cashboutique</p>
         </div>
 
         <RecommendSheet slug={ml.slug} conciergeName={ml.displayName} />

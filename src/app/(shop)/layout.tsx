@@ -92,6 +92,8 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
           {sideQr && <AppSideQr qr={sideQr} ios={setting.appIosUrl} android={setting.appAndroidUrl} landing={setting.appLandingUrl} />}
         </>
       )}
+      {/* PC에서도 모바일 UI 한 벌 — 중앙 480px 컬럼, 남는 공간은 사이드 앱 패널 */}
+      <div className="mx-auto min-h-screen max-w-shell border-x border-line bg-white">
       {/* 마진업세일 배너 + 헤더를 하나로 상단 고정 → 최상단 요소가 safe-area를 받아 상태바와 안 겹침 */}
       <div className="sticky top-0 z-50 bg-white">
       {timeSale && timeSale.state !== "off" && (
@@ -126,14 +128,14 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
       </header>
       </div>
 
-      <main className="mx-auto max-w-shell pb-24 md:pb-0">{children}</main>
+      <main className="mx-auto max-w-shell pb-24">{children}</main>
 
       {/* 하단 탭바 (모바일 전용) — 현재 탭 강조 */}
       <BottomNav />
 
-      <footer className="mt-16 border-t border-line bg-[#faf9f8] pb-24 md:pb-0">
+      <footer className="mt-16 border-t border-line bg-[#faf9f8] pb-24">
         <div className="mx-auto max-w-shell px-4 py-10">
-          <div className="grid gap-8 md:grid-cols-[1.4fr_1fr_1fr]">
+          <div className="grid gap-8">
             {/* 브랜드 */}
             <div>
               <Logo height={20} />
@@ -181,6 +183,7 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
           </div>
         </div>
       </footer>
+      </div>
     </AuthModalProvider>
   );
 }

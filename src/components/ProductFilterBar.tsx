@@ -27,7 +27,7 @@ export default function ProductFilterBar({ facets }: { facets: Facets }) {
   const chip = "rounded-md border border-line bg-white px-2.5 py-1.5 text-sm";
 
   return (
-    <div className="sticky top-[52px] z-30 -mx-4 mb-4 border-b border-line bg-white/95 px-4 py-2 backdrop-blur md:top-[64px]">
+    <div className="sticky top-[52px] z-30 -mx-4 mb-4 border-b border-line bg-white/95 px-4 py-2 backdrop-blur">
       <div className="flex flex-wrap items-center gap-2">
         <select value={get("category")} onChange={(e) => setParam({ category: e.target.value })} className={chip}>
           <option value="">카테고리</option>

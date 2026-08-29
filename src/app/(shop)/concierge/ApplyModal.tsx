@@ -37,9 +37,9 @@ export default function ApplyModal({ questions }: { questions: Question[] }) {
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/45 md:items-center" onClick={() => setOpen(false)}>
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/45" onClick={() => setOpen(false)}>
           <div
-            className="max-h-[88vh] w-full max-w-lg overflow-auto rounded-t-2xl bg-white p-6 md:rounded-2xl"
+            className="max-h-[88vh] w-full max-w-lg overflow-auto rounded-t-2xl bg-white p-6"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-4 flex items-start justify-between">
@@ -58,7 +58,7 @@ export default function ApplyModal({ questions }: { questions: Question[] }) {
               </div>
             ) : (
               <form onSubmit={submit} className="space-y-3">
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className="grid gap-3">
                   <div>
                     <label className="text-xs text-sub">이름 *</label>
                     <input className="field mt-1" value={f.name} onChange={(e) => set("name", e.target.value)} required />

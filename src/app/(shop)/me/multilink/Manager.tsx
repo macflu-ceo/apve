@@ -1,28 +1,33 @@
 "use client";
 
-// 컨시어지 멀티링크 관리 — 프로필·상품 큐레이션·추천 신청 DB
+// 컨시어지 멀티링크 관리 — 프로필·진열 섹션·상품 큐레이션·취향등록 DB
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   updateMultiLinkProfile,
   addMultiLinkItem,
   removeMultiLinkItem,
-  toggleMultiLinkFeatured,
   moveMultiLinkItem,
+  createSection,
+  renameSection,
+  deleteSection,
+  moveSection,
+  setItemSection,
   setLeadStatus,
 } from "./actions";
 
 type Item = {
   id: string;
   productId: string;
-  featured: boolean;
+  sectionId: string | null;
   name: string;
   brand: string | null;
   image: string | null;
   salePrice: number | null;
   commission: number | null;
 };
-type Candidate = Omit<Item, "id" | "featured">;
+type Candidate = Omit<Item, "id" | "sectionId">;
+type Section = { id: string; title: string };
 type Lead = {
   id: string; name: string; phone: string;
   brands: string | null; ageRange: string | null; gender: string | null;
@@ -33,19 +38,23 @@ type Lead = {
 const won = (n: number) => n.toLocaleString() + "원";
 
 export default function Manager({
-  ml, percent, items, candidates, leads,
+  ml, percent, sections, items, candidates, leads,
 }: {
-  ml: { slug: string; displayName: string; bio: string; avatarUrl: string; featuredTitle: string; views: number };
+  ml: { slug: string; displayName: string; bio: string; avatarUrl: string; views: number };
   percent: number;
+  sections: Section[];
   items: Item[];
   candidates: Candidate[];
   leads: Lead[];
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
-  const [profile, setProfile] = useState({ displayName: ml.displayName, bio: ml.bio, avatarUrl: ml.avatarUrl, featuredTitle: ml.featuredTitle });
+  const [profile, setProfile] = useState({ displayName: ml.displayName, bio: ml.bio, avatarUrl: ml.avatarUrl, featuredTitle: "" });
   const [msg, setMsg] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [view, setView] = useState<"list" | "card">("list");
+  const [newSection, setNewSection] = useState("");
+  const [editingSection, setEditingSection] = useState<{ id: string; title: string } | null>(null);
 
   const url = `https://www.cashboutique.co.kr/m/${ml.slug}`;
   const run = (fn: () => Promise<{ ok: boolean; message?: string }>) =>
@@ -71,6 +80,63 @@ export default function Manager({
   }
 
   const newLeads = leads.filter((l) => l.status === "new");
+  const groups: { section: Section | null; rows: Item[] }[] = [
+    ...sections.map((s) => ({ section: s as Section | null, rows: items.filter((i) => i.sectionId === s.id) })),
+    { section: null, rows: items.filter((i) => i.sectionId == null) },
+  ];
+
+  const SectionSelect = ({ it }: { it: Item }) => (
+    <select
+      value={it.sectionId ?? ""}
+      onChange={(e) => run(() => setItemSection(it.id, e.target.value || null))}
+      className="rounded-lg border border-line bg-white px-1.5 py-1 text-[11px] text-sub"
+    >
+      <option value="">기본 진열</option>
+      {sections.map((s) => (
+        <option key={s.id} value={s.id}>{s.title}</option>
+      ))}
+    </select>
+  );
+
+  const ItemRow = ({ it, i, len }: { it: Item; i: number; len: number }) => (
+    <div className="flex items-center gap-2 rounded-xl border border-line px-2 py-1.5">
+      {it.image && <img src={it.image} className="h-9 w-9 shrink-0 rounded-md bg-[#fafafa] object-contain" alt="" />}
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-[12.5px] font-bold">
+          {it.brand && <span className="mr-1 font-semibold text-sub">{it.brand}</span>}{it.name}
+        </div>
+        <div className="text-[11px] text-sub">
+          {it.salePrice != null && won(it.salePrice)}
+          {it.commission != null && <b className="ml-1.5 text-brand">수수료 {won(it.commission)}</b>}
+        </div>
+      </div>
+      <SectionSelect it={it} />
+      <div className="flex flex-col">
+        <button onClick={() => run(() => moveMultiLinkItem(it.id, "up"))} disabled={i === 0} className="px-1 text-[10px] leading-3 text-sub disabled:opacity-25">▲</button>
+        <button onClick={() => run(() => moveMultiLinkItem(it.id, "down"))} disabled={i === len - 1} className="px-1 text-[10px] leading-3 text-sub disabled:opacity-25">▼</button>
+      </div>
+      <button onClick={() => run(() => removeMultiLinkItem(it.id))} className="px-1 text-[11px] text-red-500">빼기</button>
+    </div>
+  );
+
+  const ItemCard = ({ it, i, len }: { it: Item; i: number; len: number }) => (
+    <div className="rounded-xl border border-line p-2">
+      <div className="aspect-square rounded-lg bg-[#fafafa]">
+        {it.image && <img src={it.image} className="h-full w-full object-contain" alt="" />}
+      </div>
+      <div className="mt-1.5 truncate text-[12px] font-bold">{it.name}</div>
+      <div className="text-[11px] text-sub">
+        {it.salePrice != null && won(it.salePrice)}
+        {it.commission != null && <b className="ml-1 text-brand">+{won(it.commission)}</b>}
+      </div>
+      <div className="mt-1.5 flex items-center gap-1">
+        <SectionSelect it={it} />
+        <button onClick={() => run(() => moveMultiLinkItem(it.id, "up"))} disabled={i === 0} className="text-[11px] text-sub disabled:opacity-25">▲</button>
+        <button onClick={() => run(() => moveMultiLinkItem(it.id, "down"))} disabled={i === len - 1} className="text-[11px] text-sub disabled:opacity-25">▼</button>
+        <button onClick={() => run(() => removeMultiLinkItem(it.id))} className="ml-auto text-[11px] text-red-500">빼기</button>
+      </div>
+    </div>
+  );
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-6 pb-28">
@@ -104,10 +170,6 @@ export default function Manager({
           <div className="flex-1 space-y-2">
             <input value={profile.displayName} onChange={(e) => setProfile({ ...profile, displayName: e.target.value })} placeholder="표시 이름" className="field w-full" />
             <input value={profile.bio} onChange={(e) => setProfile({ ...profile, bio: e.target.value })} placeholder="소개 문구 (예: 명품, 아는 사람 가격으로 추천해드려요)" className="field w-full" />
-            <div className="flex items-center gap-2">
-              <span className="shrink-0 text-xs text-sub">강조 섹션 제목</span>
-              <input value={profile.featuredTitle} onChange={(e) => setProfile({ ...profile, featuredTitle: e.target.value })} className="field flex-1" />
-            </div>
           </div>
         </div>
         <button onClick={() => run(() => updateMultiLinkProfile(profile))} disabled={pending} className="btn-brand mt-3 px-5 py-2 text-sm">
@@ -115,64 +177,101 @@ export default function Manager({
         </button>
       </div>
 
-      {/* 페이지에 담긴 상품 */}
+      {/* 진열 섹션 관리 */}
       <div className="card mt-4 p-4">
-        <div className="flex items-baseline justify-between">
-          <h2 className="text-base font-bold">페이지 상품 <span className="text-sm font-normal text-sub">({items.length})</span></h2>
-          <span className="text-xs text-sub">★ = 강조 섹션 · 내 수수료율 {percent}%</span>
-        </div>
+        <h2 className="text-base font-bold">진열 섹션</h2>
+        <p className="mt-0.5 text-xs text-sub">섹션을 만들면 페이지에서 제목별로 상품이 나뉘어 보여요. 섹션이 없는 상품은 &lsquo;기본 진열&rsquo;에 표시됩니다.</p>
         <div className="mt-3 space-y-2">
-          {items.length === 0 && <div className="py-4 text-center text-sm text-sub">아래 목록에서 상품을 추가해보세요.</div>}
-          {items.map((it, i) => (
-            <div key={it.id} className="flex items-center gap-3 rounded-xl border border-line p-2">
-              {it.image && <img src={it.image} className="h-14 w-14 rounded-lg bg-[#fafafa] object-contain" alt="" />}
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-[13px] font-bold">{it.brand && <span className="mr-1 text-sub">{it.brand}</span>}{it.name}</div>
-                <div className="text-xs text-sub">
-                  {it.salePrice != null && won(it.salePrice)}
-                  {it.commission != null && <b className="ml-2 text-brand">수수료 {won(it.commission)}</b>}
-                </div>
-              </div>
-              <button onClick={() => run(() => toggleMultiLinkFeatured(it.id))} title="강조"
-                className={`rounded-lg px-2 py-1 text-sm ${it.featured ? "bg-brand text-white" : "bg-brandsoft text-sub"}`}>★</button>
-              <div className="flex flex-col">
-                <button onClick={() => run(() => moveMultiLinkItem(it.id, "up"))} disabled={i === 0} className="px-1.5 text-xs text-sub disabled:opacity-25">▲</button>
-                <button onClick={() => run(() => moveMultiLinkItem(it.id, "down"))} disabled={i === items.length - 1} className="px-1.5 text-xs text-sub disabled:opacity-25">▼</button>
-              </div>
-              <button onClick={() => run(() => removeMultiLinkItem(it.id))} className="px-1 text-xs text-red-500">빼기</button>
+          {sections.map((s, i) => (
+            <div key={s.id} className="flex items-center gap-2 rounded-xl border border-line px-3 py-2">
+              {editingSection?.id === s.id ? (
+                <>
+                  <input value={editingSection.title} onChange={(e) => setEditingSection({ id: s.id, title: e.target.value })} className="field flex-1 py-1 text-sm" autoFocus />
+                  <button onClick={() => { run(() => renameSection(s.id, editingSection.title)); setEditingSection(null); }} className="btn-brand px-3 py-1 text-xs">저장</button>
+                </>
+              ) : (
+                <>
+                  <b className="flex-1 text-sm">{s.title}</b>
+                  <span className="text-[11px] text-sub">{items.filter((x) => x.sectionId === s.id).length}개</span>
+                  <button onClick={() => setEditingSection({ id: s.id, title: s.title })} className="text-xs text-sub underline">이름</button>
+                  <button onClick={() => run(() => moveSection(s.id, "up"))} disabled={i === 0} className="text-xs text-sub disabled:opacity-25">▲</button>
+                  <button onClick={() => run(() => moveSection(s.id, "down"))} disabled={i === sections.length - 1} className="text-xs text-sub disabled:opacity-25">▼</button>
+                  <button onClick={() => run(() => deleteSection(s.id))} className="text-xs text-red-500">삭제</button>
+                </>
+              )}
             </div>
           ))}
+          <div className="flex gap-2">
+            <input value={newSection} onChange={(e) => setNewSection(e.target.value)} placeholder="새 섹션 이름 (예: 이번 주 신상)" className="field flex-1"
+              onKeyDown={(e) => e.key === "Enter" && newSection.trim() && (run(() => createSection(newSection)), setNewSection(""))} />
+            <button onClick={() => { run(() => createSection(newSection)); setNewSection(""); }} disabled={pending || !newSection.trim()} className="btn-line px-4 text-sm">+ 섹션 추가</button>
+          </div>
         </div>
       </div>
 
-      {/* 추가 가능한 상품 (내가 코드 만든 것) */}
+      {/* 페이지 상품 */}
+      <div className="card mt-4 p-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-base font-bold">페이지 상품 <span className="text-sm font-normal text-sub">({items.length})</span></h2>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-sub">내 수수료율 {percent}%</span>
+            <div className="flex overflow-hidden rounded-lg border border-line text-xs">
+              <button onClick={() => setView("list")} className={`px-2.5 py-1 ${view === "list" ? "bg-brand text-white" : "text-sub"}`}>리스트</button>
+              <button onClick={() => setView("card")} className={`px-2.5 py-1 ${view === "card" ? "bg-brand text-white" : "text-sub"}`}>카드</button>
+            </div>
+          </div>
+        </div>
+
+        {items.length === 0 && <div className="py-4 text-center text-sm text-sub">아래 목록에서 상품을 추가해보세요.</div>}
+
+        {groups.map(({ section, rows }) =>
+          rows.length === 0 && section == null && sections.length > 0 && items.length > 0 ? null : rows.length === 0 ? (
+            section ? <div key={section.id} className="mt-3 text-xs text-sub">〈{section.title}〉 비어 있음 — 상품의 섹션 선택에서 옮겨보세요.</div> : null
+          ) : (
+            <div key={section?.id ?? "default"} className="mt-4">
+              <div className="mb-2 text-[13px] font-bold text-ink/70">{section ? `〈${section.title}〉` : "기본 진열"}</div>
+              {view === "list" ? (
+                <div className="space-y-1.5">
+                  {rows.map((it, i) => <ItemRow key={it.id} it={it} i={i} len={rows.length} />)}
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-2">
+                  {rows.map((it, i) => <ItemCard key={it.id} it={it} i={i} len={rows.length} />)}
+                </div>
+              )}
+            </div>
+          )
+        )}
+      </div>
+
+      {/* 담을 수 있는 상품 */}
       <div className="card mt-4 p-4">
         <h2 className="text-base font-bold">담을 수 있는 상품 <span className="text-sm font-normal text-sub">— 내가 코드 만든 상품</span></h2>
-        <div className="mt-3 space-y-2">
+        <div className="mt-3 space-y-1.5">
           {candidates.length === 0 && (
             <div className="py-4 text-center text-sm text-sub">상품 상세에서 &lsquo;내 코드 만들기&rsquo;를 하면 여기 나타나요.</div>
           )}
           {candidates.map((c) => (
-            <div key={c.productId} className="flex items-center gap-3 rounded-xl border border-line p-2">
-              {c.image && <img src={c.image} className="h-12 w-12 rounded-lg bg-[#fafafa] object-contain" alt="" />}
+            <div key={c.productId} className="flex items-center gap-2 rounded-xl border border-line px-2 py-1.5">
+              {c.image && <img src={c.image} className="h-9 w-9 shrink-0 rounded-md bg-[#fafafa] object-contain" alt="" />}
               <div className="min-w-0 flex-1">
-                <div className="truncate text-[13px] font-bold">{c.brand && <span className="mr-1 text-sub">{c.brand}</span>}{c.name}</div>
-                <div className="text-xs text-sub">{c.salePrice != null && won(c.salePrice)}{c.commission != null && <b className="ml-2 text-brand">수수료 {won(c.commission)}</b>}</div>
+                <div className="truncate text-[12.5px] font-bold">{c.brand && <span className="mr-1 font-semibold text-sub">{c.brand}</span>}{c.name}</div>
+                <div className="text-[11px] text-sub">{c.salePrice != null && won(c.salePrice)}{c.commission != null && <b className="ml-1.5 text-brand">수수료 {won(c.commission)}</b>}</div>
               </div>
-              <button onClick={() => run(() => addMultiLinkItem(c.productId))} disabled={pending} className="btn-line px-3 py-1.5 text-sm">+ 추가</button>
+              <button onClick={() => run(() => addMultiLinkItem(c.productId))} disabled={pending} className="btn-line px-3 py-1 text-xs">+ 추가</button>
             </div>
           ))}
         </div>
       </div>
 
-      {/* 추천 신청 DB */}
+      {/* 취향 등록 DB */}
       <div className="card mt-4 p-4">
         <h2 className="text-base font-bold">
-          추천 신청 <span className="text-sm font-normal text-sub">({leads.length})</span>
-          {newLeads.length > 0 && <span className="ml-2 rounded-full bg-brand px-2 py-0.5 text-xs font-bold text-white">새 신청 {newLeads.length}</span>}
+          고객 취향 등록 <span className="text-sm font-normal text-sub">({leads.length})</span>
+          {newLeads.length > 0 && <span className="ml-2 rounded-full bg-brand px-2 py-0.5 text-xs font-bold text-white">새 등록 {newLeads.length}</span>}
         </h2>
         <div className="mt-3 space-y-2">
-          {leads.length === 0 && <div className="py-4 text-center text-sm text-sub">멀티링크의 &lsquo;추천받기&rsquo;로 들어온 고객 정보가 여기 쌓여요.</div>}
+          {leads.length === 0 && <div className="py-4 text-center text-sm text-sub">멀티링크의 &lsquo;내 취향 등록하기&rsquo;로 들어온 고객 정보가 여기 쌓여요.</div>}
           {leads.map((l) => (
             <div key={l.id} className={`rounded-xl border p-3 ${l.status === "new" ? "border-brand/40 bg-brandsoft/40" : "border-line"}`}>
               <div className="flex items-center gap-2">

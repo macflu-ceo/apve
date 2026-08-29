@@ -27,7 +27,7 @@ function useIsActive() {
 export function ShopNav({ tabs }: { tabs: Tab[] }) {
   const isActive = useIsActive();
   return (
-    <nav className="hidden lg:block">
+    <nav className="hidden">
       <ul className="flex gap-6 text-[15px] font-bold">
         {tabs.map((t) => (
           <li key={t.href}>
@@ -52,7 +52,7 @@ export function ShopNav({ tabs }: { tabs: Tab[] }) {
 export function ShopNavMobile({ tabs }: { tabs: Tab[] }) {
   const isActive = useIsActive();
   return (
-    <nav className="lg:hidden">
+    <nav className="">
       <ul className="no-scrollbar flex gap-5 overflow-x-auto px-4 pb-2 text-[15px] font-bold">
         {tabs.map((t) => (
           <li key={t.href} className="whitespace-nowrap">

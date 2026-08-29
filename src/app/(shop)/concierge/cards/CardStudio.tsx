@@ -54,7 +54,7 @@ export default function CardStudio() {
   const pool = results.length ? results : linked;
 
   return (
-    <div className="vecard-root grid gap-6 lg:grid-cols-[380px_1fr]">
+    <div className="vecard-root grid gap-6">
       <style>{CSS}</style>
 
       <div className="space-y-4">

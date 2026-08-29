@@ -1,4 +1,5 @@
 import { getCurrentPartner } from "@/lib/session";
+import { prisma } from "@/lib/db";
 import { listActiveQuestions } from "@/lib/concierge";
 import { getConciergeViewer } from "@/lib/concierge-access";
 import { parseList } from "@/lib/format";
@@ -15,7 +16,26 @@ const TIERS = [
 export default async function ConciergePage() {
   // 컨시어지 자격이면 전용 허브(도구 3종)로, 아니면 아래 가입 랜딩으로
   const concierge = await getConciergeViewer();
-  if (concierge) return <ConciergeHub name={concierge.name} conciergeNo={concierge.conciergeNo} />;
+  if (concierge) {
+    const notices = await prisma.conciergeNotice.findMany({
+      where: { published: true },
+      orderBy: [{ pinned: "desc" }, { createdAt: "desc" }],
+      take: 5,
+      select: { id: true, title: true, pinned: true, createdAt: true },
+    });
+    return (
+      <ConciergeHub
+        name={concierge.name}
+        conciergeNo={concierge.conciergeNo}
+        notices={notices.map((n) => ({
+          id: n.id,
+          title: n.title,
+          pinned: n.pinned,
+          date: n.createdAt.toLocaleDateString("ko-KR", { month: "numeric", day: "numeric" }),
+        }))}
+      />
+    );
+  }
 
   const partner = await getCurrentPartner();
   const questions = (await listActiveQuestions()).map((q) => ({

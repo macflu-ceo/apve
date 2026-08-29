@@ -85,7 +85,7 @@ export default function TimeSaleBanner({
 
   return (
     <Link href="/timesale" className="block text-white" style={bg}>
-      <div className="mx-auto flex max-w-shell items-center gap-2 px-3 pb-2.5 sm:gap-3 sm:px-4 pt-[max(0.625rem,env(safe-area-inset-top))]">
+      <div className="mx-auto flex max-w-shell items-center gap-2 px-3 pb-2.5 pt-[max(0.625rem,env(safe-area-inset-top))]">
         <span
           className="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-black tracking-wide"
           style={live ? { backgroundColor: "#fff", color: colorTo } : { backgroundColor: "rgba(255,255,255,0.2)" }}
@@ -104,14 +104,14 @@ export default function TimeSaleBanner({
           </span>
         )}
 
-        <span className="hidden text-xs font-semibold text-white/85 sm:inline">
+        <span className="hidden text-xs font-semibold text-white/85">
           {live ? liveText : upcomingText}
         </span>
 
         <div className="ml-auto flex shrink-0 items-center gap-2">
           {t ? (
             <>
-              <span className="hidden text-[11px] font-medium text-white/70 sm:inline">
+              <span className="hidden text-[11px] font-medium text-white/70">
                 {live ? "종료까지" : "오픈까지"}
               </span>
               <div className="flex items-center gap-0.5 font-mono text-sm font-bold tabular-nums">

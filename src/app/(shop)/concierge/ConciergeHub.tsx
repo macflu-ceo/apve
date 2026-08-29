@@ -2,7 +2,8 @@ import Link from "next/link";
 import { conciergeCode } from "@/lib/concierge-access";
 
 /** 컨시어지 전용 허브 — 매장 링크 생성기 · 상품카드 생성기 · 전용 공지 */
-export default function ConciergeHub({ name, conciergeNo }: { name: string; conciergeNo: number }) {
+type Notice = { id: string; title: string; pinned: boolean; date: string };
+export default function ConciergeHub({ name, conciergeNo, notices = [] }: { name: string; conciergeNo: number; notices?: Notice[] }) {
   const tools = [
     {
       href: "/me/multilink",
@@ -22,12 +23,6 @@ export default function ConciergeHub({ name, conciergeNo }: { name: string; conc
       title: "상품카드 생성기",
       desc: "복사한 상품으로 고객에게 보낼 카드 이미지를 즉시 만듭니다. (단일·리스트형)",
     },
-    {
-      href: "/concierge/notices",
-      emoji: "📢",
-      title: "컨시어지 공지",
-      desc: "본사 공지·자료를 확인합니다. 첨부파일 다운로드 지원.",
-    },
   ];
 
   return (
@@ -38,6 +33,29 @@ export default function ConciergeHub({ name, conciergeNo }: { name: string; conc
         <div className="mt-0.5 text-sm text-white/70">
           컨시어지 번호 <b className="text-[#A9B8FF]">{conciergeCode(conciergeNo)}</b>
         </div>
+      </div>
+
+      {/* 공지 — 메인에서 바로 확인 (최대 5개) */}
+      <div className="card mb-6 p-5">
+        <div className="mb-3 flex items-baseline justify-between">
+          <h2 className="text-base font-bold">📢 컨시어지 공지</h2>
+          <Link href="/concierge/notices" className="text-xs font-semibold text-brand">공지 더보기 →</Link>
+        </div>
+        {notices.length === 0 ? (
+          <div className="py-3 text-center text-sm text-sub">등록된 공지가 없습니다.</div>
+        ) : (
+          <ul className="divide-y divide-line">
+            {notices.map((n) => (
+              <li key={n.id}>
+                <Link href={`/concierge/notices/${n.id}`} className="flex items-center gap-2 py-2.5 hover:bg-brandsoft/40">
+                  {n.pinned && <span className="shrink-0 rounded bg-brand px-1.5 py-0.5 text-[10px] font-bold text-white">고정</span>}
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium">{n.title}</span>
+                  <span className="shrink-0 text-xs text-sub">{n.date}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       <div className="space-y-3">

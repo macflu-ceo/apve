@@ -43,7 +43,7 @@ export default function AppInstallBar({
   return (
     <div className="relative z-40 flex items-center gap-2 bg-ink px-4 py-2 text-white">
       <span className="text-lg">📱</span>
-      <div className="min-w-0 flex-1 text-xs leading-tight sm:text-sm">
+      <div className="min-w-0 flex-1 text-xs leading-tight">
         <b>앱에서 더 높은 수수료</b> — 첫 판매 특별 혜택은 앱 전용
       </div>
       <button

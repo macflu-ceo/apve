@@ -118,7 +118,7 @@ export default function BannerCarousel({
             <Link
               key={i}
               href={b.linkUrl || "#"}
-              className={`relative mx-2 aspect-square w-[74%] shrink-0 overflow-hidden rounded-xl2 transition-all duration-500 sm:w-[52%] md:w-[40%] ${
+              className={`relative mx-2 aspect-square w-[74%] shrink-0 overflow-hidden rounded-xl2 transition-all duration-500 ${
                 active ? "scale-100 opacity-100 shadow-lg" : "scale-[0.86] opacity-45"
               }`}
               style={
@@ -130,7 +130,7 @@ export default function BannerCarousel({
             >
               {light && <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />}
               <div className="absolute inset-x-0 bottom-0 p-5">
-                <div className={`text-xl font-black md:text-2xl ${light ? "text-white" : "text-ink"}`}>{b.title}</div>
+                <div className={`text-xl font-black ${light ? "text-white" : "text-ink"}`}>{b.title}</div>
                 {b.subtitle && (
                   <div className={`mt-1 text-sm font-semibold ${light ? "text-white/85" : "text-ink/60"}`}>{b.subtitle}</div>
                 )}

@@ -61,8 +61,8 @@ export default function AppConsent() {
   );
 
   return (
-    <div className="fixed inset-0 z-[90] flex items-end justify-center bg-black/50 sm:items-center">
-      <div className="w-full max-w-md rounded-t-2xl bg-white p-6 sm:rounded-2xl">
+    <div className="fixed inset-0 z-[90] flex items-end justify-center bg-black/50">
+      <div className="w-full max-w-md rounded-t-2xl bg-white p-6">
         <div className="text-lg font-black text-ink">돈버는 명품샵 시작하기</div>
         <p className="mt-1 text-sm text-ink/60">서비스 이용을 위해 아래 항목에 동의해 주세요.</p>
 

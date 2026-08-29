@@ -154,7 +154,7 @@ export default async function MyPage() {
       ) : (
         <>
           {/* 요약 */}
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3">
             <div className="card p-4">
               <div className="text-xs text-sub">판매 건수</div>
               <div className="mt-1 text-lg font-bold">{validSales.length}건</div>

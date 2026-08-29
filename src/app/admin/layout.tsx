@@ -81,7 +81,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <div className="sticky top-0 z-40">
         {/* 백오피스 전용 헤더 (쇼핑몰과 분리) */}
         <header className="bg-ink text-white">
-          <div className="mx-auto flex max-w-shell items-center justify-between px-4 py-3">
+          <div className="mx-auto flex max-w-[1200px] items-center justify-between px-4 py-3">
             <div className="flex items-center gap-2">
               <Logo height={18} light />
               <span className="rounded bg-white/15 px-2 py-0.5 text-xs font-bold">ADMIN</span>
@@ -99,14 +99,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         {/* 상단 대분류(그룹) 바 */}
         <div className="border-b border-line bg-[#f7f6f4]/95 backdrop-blur">
-          <div className="mx-auto max-w-shell px-4 py-2">
+          <div className="mx-auto max-w-[1200px] px-4 py-2">
             <AdminTopNav groups={ADMIN_GROUPS} />
           </div>
         </div>
       </div>
 
       {/* 좌측: 선택 그룹의 하위 메뉴 / 우측: 콘텐츠 */}
-      <div className="mx-auto grid max-w-shell gap-6 px-4 py-6 md:grid-cols-[180px_1fr]">
+      <div className="mx-auto grid max-w-[1200px] gap-6 px-4 py-6 md:grid-cols-[180px_1fr]">
         <aside>
           <AdminSideNav groups={ADMIN_GROUPS} />
         </aside>

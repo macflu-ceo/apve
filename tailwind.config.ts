@@ -24,7 +24,7 @@ const config: Config = {
         ],
       },
       maxWidth: {
-        shell: "1200px",
+        shell: "480px",
       },
       borderRadius: {
         xl2: "20px",

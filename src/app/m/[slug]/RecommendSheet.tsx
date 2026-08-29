@@ -47,7 +47,7 @@ export default function RecommendSheet({ slug, conciergeName }: { slug: string; 
           onClick={() => setOpen(true)}
           className="w-full rounded-2xl bg-[#4A60FF] py-4 text-[16px] font-extrabold text-white shadow-[0_10px_28px_rgba(74,96,255,.4)] active:scale-[0.98]"
         >
-          🎁 나에게 맞는 명품 추천받기
+          💎 내 취향 등록하기
         </button>
       </div>
 
@@ -71,9 +71,9 @@ export default function RecommendSheet({ slug, conciergeName }: { slug: string; 
               </div>
             ) : (
               <>
-                <div className="text-lg font-extrabold">맞춤 추천받기</div>
+                <div className="text-lg font-extrabold">내 취향 등록하기</div>
                 <p className="mt-1 text-[13px] text-gray-500">
-                  남겨주신 취향으로 {conciergeName} 님이 딱 맞는 상품을 추천해드려요.
+                  취향을 등록해두시면 {conciergeName} 님이 딱 맞는 상품이 들어올 때마다 추천해드려요.
                 </p>
 
                 <div className="mt-4 space-y-4">
@@ -129,7 +129,7 @@ export default function RecommendSheet({ slug, conciergeName }: { slug: string; 
 
                   <button onClick={submit} disabled={pending}
                     className="w-full rounded-2xl bg-[#4A60FF] py-4 text-[15px] font-extrabold text-white shadow-[0_8px_20px_rgba(74,96,255,.35)] disabled:opacity-60">
-                    {pending ? "접수 중…" : "추천 신청하기"}
+                    {pending ? "등록 중…" : "취향 등록하기"}
                   </button>
                   <p className="pb-1 text-center text-[11px] leading-relaxed text-gray-400">
                     남겨주신 정보는 맞춤 추천 목적으로만 사용됩니다.

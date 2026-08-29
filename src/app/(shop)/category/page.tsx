@@ -36,7 +36,7 @@ export default async function CategoryPage({
           조건에 맞는 상품이 없습니다.
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-x-3 gap-y-6 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+        <div className="grid grid-cols-2 gap-x-3 gap-y-6">
           {products.map((p) => (
             <ProductCard key={p.id} product={p} percent={rate.percent} boost={boostMap.get(p.goodsNo) ?? 0} confirmed={rate.isMine} />
           ))}

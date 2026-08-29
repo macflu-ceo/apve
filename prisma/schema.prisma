@@ -475,15 +475,29 @@ model MultiLink {
   active        Boolean  @default(true)
   views         Int      @default(0)
   items         MultiLinkItem[]
+  sections      MultiLinkSection[]
   leads         RecommendLead[]
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+}
+
+/// 멀티링크 진열 섹션 (컨시어지가 직접 만드는 카테고리)
+model MultiLinkSection {
+  id          String          @id @default(cuid())
+  multiLink   MultiLink       @relation(fields: [multiLinkId], references: [id], onDelete: Cascade)
+  multiLinkId String
+  title       String
+  sort        Int             @default(0)
+  items       MultiLinkItem[]
+  createdAt   DateTime        @default(now())
 }
 
 model MultiLinkItem {
   id          String    @id @default(cuid())
   multiLink   MultiLink @relation(fields: [multiLinkId], references: [id], onDelete: Cascade)
   multiLinkId String
+  section     MultiLinkSection? @relation(fields: [sectionId], references: [id], onDelete: SetNull)
+  sectionId   String?
   product     Product   @relation(fields: [productId], references: [id])
   productId   String
   sort        Int       @default(0)

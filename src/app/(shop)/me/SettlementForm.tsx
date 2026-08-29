@@ -131,12 +131,12 @@ export default function SettlementForm({
             <label className="text-xs text-sub">주소 *</label>
             <input className="field mt-1" value={f.address} onChange={(e) => set("address", e.target.value)} />
           </div>
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3">
             <div>
               <label className="text-xs text-sub">은행명 *</label>
               <input className="field mt-1" value={f.bankName} onChange={(e) => set("bankName", e.target.value)} placeholder="국민은행" />
             </div>
-            <div className="sm:col-span-2">
+            <div className="">
               <label className="text-xs text-sub">계좌번호 *</label>
               <input className="field mt-1" value={f.bankAccount} onChange={(e) => set("bankAccount", e.target.value)} />
             </div>
@@ -146,7 +146,7 @@ export default function SettlementForm({
             <input className="field mt-1" value={f.accountHolder} onChange={(e) => set("accountHolder", e.target.value)} />
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3">
             <DocUpload kind="idCard" label="신분증 사본" value={f.idCardPath} onChange={(p) => set("idCardPath", p)} />
             <DocUpload kind="bankbook" label="통장 사본" value={f.bankbookPath} onChange={(p) => set("bankbookPath", p)} />
           </div>

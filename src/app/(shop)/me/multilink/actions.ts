@@ -101,6 +101,67 @@ export async function moveMultiLinkItem(itemId: string, dir: "up" | "down") {
   return { ok: true };
 }
 
+// ── 진열 섹션 관리 ──
+export async function createSection(title: string) {
+  const r = await myMultiLink();
+  if ("error" in r) return { ok: false, message: r.error };
+  const t = title.trim().slice(0, 20);
+  if (!t) return { ok: false, message: "섹션 이름을 입력하세요." };
+  const count = await prisma.multiLinkSection.count({ where: { multiLinkId: r.ml.id } });
+  if (count >= 10) return { ok: false, message: "섹션은 최대 10개까지 만들 수 있어요." };
+  const max = await prisma.multiLinkSection.aggregate({ where: { multiLinkId: r.ml.id }, _max: { sort: true } });
+  await prisma.multiLinkSection.create({ data: { multiLinkId: r.ml.id, title: t, sort: (max._max.sort ?? 0) + 1 } });
+  refresh(r.ml.slug);
+  return { ok: true };
+}
+
+export async function renameSection(sectionId: string, title: string) {
+  const r = await myMultiLink();
+  if ("error" in r) return { ok: false, message: r.error };
+  const t = title.trim().slice(0, 20);
+  if (!t) return { ok: false, message: "섹션 이름을 입력하세요." };
+  await prisma.multiLinkSection.updateMany({ where: { id: sectionId, multiLinkId: r.ml.id }, data: { title: t } });
+  refresh(r.ml.slug);
+  return { ok: true };
+}
+
+export async function deleteSection(sectionId: string) {
+  const r = await myMultiLink();
+  if ("error" in r) return { ok: false, message: r.error };
+  await prisma.multiLinkSection.deleteMany({ where: { id: sectionId, multiLinkId: r.ml.id } }); // 상품은 기본 진열로 이동(SetNull)
+  refresh(r.ml.slug);
+  return { ok: true };
+}
+
+export async function moveSection(sectionId: string, dir: "up" | "down") {
+  const r = await myMultiLink();
+  if ("error" in r) return { ok: false, message: r.error };
+  const secs = await prisma.multiLinkSection.findMany({
+    where: { multiLinkId: r.ml.id },
+    orderBy: [{ sort: "asc" }, { createdAt: "asc" }],
+  });
+  const idx = secs.findIndex((x) => x.id === sectionId);
+  const swap = dir === "up" ? idx - 1 : idx + 1;
+  if (idx < 0 || swap < 0 || swap >= secs.length) return { ok: true };
+  const order = secs.map((x) => x.id);
+  [order[idx], order[swap]] = [order[swap], order[idx]];
+  await prisma.$transaction(order.map((id, i) => prisma.multiLinkSection.update({ where: { id }, data: { sort: i + 1 } })));
+  refresh(r.ml.slug);
+  return { ok: true };
+}
+
+export async function setItemSection(itemId: string, sectionId: string | null) {
+  const r = await myMultiLink();
+  if ("error" in r) return { ok: false, message: r.error };
+  if (sectionId) {
+    const sec = await prisma.multiLinkSection.findFirst({ where: { id: sectionId, multiLinkId: r.ml.id } });
+    if (!sec) return { ok: false, message: "섹션이 없습니다." };
+  }
+  await prisma.multiLinkItem.updateMany({ where: { id: itemId, multiLinkId: r.ml.id }, data: { sectionId } });
+  refresh(r.ml.slug);
+  return { ok: true };
+}
+
 export async function setLeadStatus(leadId: string, status: "new" | "done") {
   const r = await myMultiLink();
   if ("error" in r) return { ok: false, message: r.error };
