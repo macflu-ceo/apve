@@ -110,7 +110,7 @@ export default async function MultiLinkPage({ params }: { params: { slug: string
         </div>
 
         {/* ── 정품 보증 카드 (디폴트) ── */}
-        <div className="-mt-8 px-4">
+        <div className="relative z-10 -mt-8 px-4">
           <div className="flex items-center gap-3 rounded-2xl bg-white p-4 shadow-[0_6px_24px_rgba(20,30,80,.1)]">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#EEF1FF] text-xl">🛡️</div>
             <div>
