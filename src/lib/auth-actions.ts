@@ -7,6 +7,7 @@ import { verifyIdentity, verifyPortoneIdentity } from "@/lib/identity";
 import { TERMS_VERSION } from "@/lib/terms";
 import { getIdentityTicket, clearIdentityTicket, isRaonConfigured } from "@/lib/identity-raon";
 import { createGodoAgent } from "@/lib/godomall/agent";
+import { alertSignup } from "@/lib/report/alerts";
 
 /** 닉네임 설정/변경 — 마이페이지에서 최초 1회만 허용 */
 export async function changeNickname(nickname: string) {
@@ -155,6 +156,8 @@ export async function signup(input: {
   clearIdentityTicket(); // 티켓 일회용 소진
   // 고도몰에 영업사원(분류) 회원 자동 등록 — 판매 추적의 전제. 실패해도 가입은 진행(크론이 보정).
   if (created.code) await createGodoAgent(created.code, realName, input.email.trim()).catch(() => {});
+  // MD 실시간 알림 (실패해도 가입엔 영향 없음)
+  await alertSignup({ name: realName, username, code: created.code });
   // 가입 즉시 로그인 + 판매 코드까지 자동 발급 — 바로 링크 발급 가능
   setSession(created.id);
   return { ok: true, message: "가입 완료! 바로 판매를 시작할 수 있어요." };

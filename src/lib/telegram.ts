@@ -9,6 +9,7 @@ export async function sendTelegram(text: string): Promise<{ ok: boolean; error?:
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ chat_id: chat, text, parse_mode: "HTML", disable_web_page_preview: true }),
+      signal: AbortSignal.timeout(5000), // 발송이 유저 요청을 붙잡지 않도록 5초 제한
     });
     const d = await res.json().catch(() => ({}));
     return res.ok && d?.ok ? { ok: true } : { ok: false, error: d?.description || `HTTP ${res.status}` };

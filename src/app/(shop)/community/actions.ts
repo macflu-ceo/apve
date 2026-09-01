@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db";
 import { getSessionPartner } from "@/lib/auth";
 import { getActiveCommunityCategories } from "@/lib/community";
 import { findObjectionable } from "@/lib/community-moderation";
+import { alertCommunityPost } from "@/lib/report/alerts";
 
 /** 커뮤니티 글 작성 — 승인된 회원만 */
 export async function createCommunityPost(input: {
@@ -35,6 +36,7 @@ export async function createCommunityPost(input: {
       imagesJson: input.images.length ? JSON.stringify(input.images.slice(0, 8)) : null,
     },
   });
+  await alertCommunityPost({ category: input.category, title, nickname: partner.nickname ?? partner.name });
   revalidatePath("/community");
   return { ok: true, id: post.id, message: "등록되었습니다." };
 }

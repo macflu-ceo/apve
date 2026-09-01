@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/db";
+import { alertConcierge } from "@/lib/report/alerts";
 
 export async function submitConciergeApplication(input: {
   name: string;
@@ -23,5 +24,6 @@ export async function submitConciergeApplication(input: {
       answersJson: JSON.stringify(input.answers ?? {}),
     },
   });
+  await alertConcierge({ name: input.name.trim(), phone: input.phone.trim(), job: input.job?.trim() || null, region: input.region?.trim() || null });
   return { ok: true, message: "신청이 접수되었습니다. 담당자가 곧 연락드릴게요." };
 }

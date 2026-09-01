@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import { syncConciergeSales } from "@/lib/godomall/sales";
 import { ensureGodoAgents } from "@/lib/godomall/agent";
+import { alertError } from "@/lib/report/alerts";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -20,6 +21,7 @@ export async function GET(req: Request) {
     const r = await syncConciergeSales(kstDate(-14), kstDate(0));
     return NextResponse.json({ ok: true, ...r, agents });
   } catch (e) {
+    await alertError("판매동기화", e); // 장애 신호 실시간 알림
     return NextResponse.json({ ok: false, error: e instanceof Error ? e.message : "sync failed" }, { status: 500 });
   }
 }

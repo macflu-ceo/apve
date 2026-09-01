@@ -1,9 +1,11 @@
-// 데일리 리포트 테스트/수동 실행
-//   미리보기(발송X): npx tsx scripts/daily_report.ts [YYYY-MM-DD]
-//   텔레그램 발송:   npx tsx scripts/daily_report.ts --send
-//   chat_id 조회:    npx tsx scripts/daily_report.ts --chatid   (봇에게 메시지 먼저 보낸 뒤)
+// 정기 보고 테스트/수동 실행 (일/주/월)
+//   미리보기(발송X):  npx tsx scripts/daily_report.ts            (오늘 기준 자동 단위)
+//                     npx tsx scripts/daily_report.ts --week     (주보고 강제)
+//                     npx tsx scripts/daily_report.ts --month    (월보고 강제)
+//   텔레그램 발송:     npx tsx scripts/daily_report.ts --send
+//   chat_id 조회:      npx tsx scripts/daily_report.ts --chatid  (봇에게 메시지 먼저 보낸 뒤)
 import "./loadenv";
-import { buildDailyReport } from "../src/lib/report/daily";
+import { buildReport, pickPeriod, type Period } from "../src/lib/report/report";
 import { sendTelegram, getTelegramChatId } from "../src/lib/telegram";
 
 async function main() {
@@ -13,9 +15,9 @@ async function main() {
     console.log("발견된 chat_id:", ids.length ? ids.join(", ") : "(없음 — 봇에게 아무 메시지나 먼저 보내세요)");
     return;
   }
-  const date = args.find((a) => /^\d{4}-\d{2}-\d{2}$/.test(a));
-  const report = await buildDailyReport(date);
-  console.log("── 리포트 미리보기 (" + report.date + ") ──\n");
+  const period: Period = args.includes("--month") ? "month" : args.includes("--week") ? "week" : args.includes("--day") ? "day" : pickPeriod();
+  const report = await buildReport(period);
+  console.log(`── ${period} 보고 미리보기 (${report.from}~${report.to}) ──\n`);
   console.log(report.text.replace(/<\/?b>/g, ""));
   console.log("");
   if (args.includes("--send")) {

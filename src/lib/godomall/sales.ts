@@ -8,6 +8,7 @@
 import { prisma } from "@/lib/db";
 import { getPartnerGrade } from "@/lib/grade";
 import { boostFromWindows } from "@/lib/timesale";
+import { alertSale } from "@/lib/report/alerts";
 
 /** 고도몰 API 한 행 */
 export interface GodoSaleRow {
@@ -167,12 +168,21 @@ export async function syncConciergeSales(from: string, to: string): Promise<Sync
       source: "godomall",
     };
 
+    // 신규 판매인지 판별 (알림은 신규 & 최근 주문만 → 과거 백필 시 알림 폭탄 방지)
+    const existed = await prisma.sale.findUnique({ where: { syncKey }, select: { id: true } });
     await prisma.sale.upsert({
       where: { syncKey },
       update: payload,
       create: { syncKey, ...payload },
     });
     result.upserted++;
+
+    if (!existed && row.settleStatus !== "canceled") {
+      const ageDays = (Date.now() - orderedAt.getTime()) / 86400000;
+      if (ageDays <= 3) {
+        await alertSale({ goodsName: row.goodsNm, amount, commission, code: row.code, status: row.settleStatus });
+      }
+    }
   }
 
   return result;
