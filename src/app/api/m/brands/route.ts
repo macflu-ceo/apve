@@ -10,9 +10,18 @@ export async function GET() {
     distinct: ["brand"],
     select: { brand: true },
   });
+  // 고도몰 데이터에 섞인 HTML 엔티티 복원 (&#039; &amp; 등)
+  const decode = (v: string) =>
+    v
+      .replace(/&#0?39;/g, "'")
+      .replace(/&quot;/g, '"')
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&nbsp;/g, " ");
   const seen = new Map<string, string>();
   for (const r of rows) {
-    const b = (r.brand ?? "").trim();
+    const b = decode((r.brand ?? "").trim());
     if (!b) continue;
     const key = b.toLowerCase();
     // 같은 브랜드면 'Title Case' 형태(전부 대문자가 아닌 쪽)를 우선 노출
