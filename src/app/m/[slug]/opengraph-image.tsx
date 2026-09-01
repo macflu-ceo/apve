@@ -1,6 +1,4 @@
 import { ImageResponse } from "next/og";
-import { readFile } from "fs/promises";
-import path from "path";
 import { prisma } from "@/lib/db";
 
 // 멀티링크 공유 미리보기(OG) 이미지 — 컨시어지별 자동 생성
@@ -18,7 +16,7 @@ function firstImage(imagesJson: string | null): string | null {
 }
 
 export default async function Image({ params }: { params: { slug: string } }) {
-  const font = await readFile(path.join(process.cwd(), "src/assets/NotoSansKR-Bold.woff"));
+  const font = await fetch("https://www.cashboutique.co.kr/fonts/NotoSansKR-Bold.woff").then((r) => r.arrayBuffer());
 
   const ml = await prisma.multiLink.findUnique({
     where: { slug: params.slug },
