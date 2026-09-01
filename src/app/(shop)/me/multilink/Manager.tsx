@@ -56,7 +56,7 @@ export default function Manager({
   const [newSection, setNewSection] = useState("");
   const [editingSection, setEditingSection] = useState<{ id: string; title: string } | null>(null);
 
-  const url = `https://www.cashboutique.co.kr/m/${ml.slug}`;
+  const url = `https://veca.sh/${ml.slug}`;
   const run = (fn: () => Promise<{ ok: boolean; message?: string }>) =>
     start(async () => {
       const r = await fn();

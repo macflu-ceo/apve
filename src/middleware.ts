@@ -4,6 +4,21 @@ import type { NextRequest } from "next/server";
 // 앱 웹뷰가 최초 진입 시 ?platform=app 을 달고 오면 쿠키로 고정.
 // (UA 마커를 못 붙이는 래퍼를 위한 폴백. 이후 요청은 쿠키로 앱 판별)
 export function middleware(req: NextRequest) {
+  // ── veca.sh 단축 도메인: veca.sh/코드 → 멀티링크(/m/코드)를 같은 주소로 서빙 ──
+  const host = (req.headers.get("host") ?? "").toLowerCase();
+  if (host === "veca.sh" || host === "www.veca.sh") {
+    const path = req.nextUrl.pathname;
+    if (path === "/") {
+      // 루트는 본 사이트로
+      return NextResponse.redirect("https://www.cashboutique.co.kr", 308);
+    }
+    if (!path.startsWith("/m/") && !path.startsWith("/api") && /^\/[a-z0-9-]+$/i.test(path)) {
+      const url = req.nextUrl.clone();
+      url.pathname = `/m${path.toLowerCase()}`;
+      return NextResponse.rewrite(url);
+    }
+  }
+
   const res = NextResponse.next();
   const p = req.nextUrl.searchParams.get("platform");
   if (p === "app" || p === "web") {
