@@ -43,7 +43,7 @@ export default async function RecommendLeadsAdmin() {
                 <td className="whitespace-nowrap px-3 py-2.5">{l.phone}</td>
                 <td className="px-3 py-2.5">
                   <div className="flex max-w-[280px] flex-wrap gap-1">
-                    {[l.brands, l.ageRange, l.gender, l.budget, l.sizes && `사이즈 ${l.sizes}`]
+                    {[l.brands, l.categories, l.ageRange, l.gender, l.budget, l.sizes]
                       .filter(Boolean)
                       .map((v, i) => (
                         <span key={i} className="rounded-full bg-brandsoft px-2 py-0.5 text-[11px]">{v}</span>

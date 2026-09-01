@@ -533,6 +533,7 @@ model RecommendLead {
   name        String
   phone       String
   brands      String?
+  categories  String?
   ageRange    String?
   gender      String?
   budget      String?

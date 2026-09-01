@@ -35,7 +35,7 @@ type Section = { id: string; title: string };
 type Banner = { id: string; imageUrl: string; title: string; sectionId: string | null };
 type Lead = {
   id: string; name: string; phone: string;
-  brands: string | null; ageRange: string | null; gender: string | null;
+  brands: string | null; categories: string | null; ageRange: string | null; gender: string | null;
   budget: string | null; sizes: string | null; memo: string | null;
   status: string; createdAt: string;
 };
@@ -372,7 +372,7 @@ export default function Manager({
                 <span className="ml-auto text-[11px] text-sub">{l.createdAt}</span>
               </div>
               <div className="mt-1.5 flex flex-wrap gap-1">
-                {[l.brands, l.ageRange, l.gender, l.budget, l.sizes && `사이즈 ${l.sizes}`].filter(Boolean).map((v, i) => (
+                {[l.brands, l.categories, l.ageRange, l.gender, l.budget, l.sizes].filter(Boolean).map((v, i) => (
                   <span key={i} className="rounded-full bg-white px-2 py-0.5 text-[11px] text-ink ring-1 ring-line">{v}</span>
                 ))}
               </div>

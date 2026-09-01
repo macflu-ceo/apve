@@ -8,6 +8,7 @@ export async function submitRecommendLead(input: {
   name: string;
   phone: string;
   brands: string[];
+  categories: string[];
   ageRange: string;
   gender: string;
   budget: string;
@@ -29,6 +30,7 @@ export async function submitRecommendLead(input: {
     name: name.slice(0, 30),
     phone: phone.slice(0, 20),
     brands: clip(input.brands.join(", "), 200),
+    categories: clip(input.categories.join(", "), 120),
     ageRange: clip(input.ageRange, 20),
     gender: clip(input.gender, 10),
     budget: clip(input.budget, 30),

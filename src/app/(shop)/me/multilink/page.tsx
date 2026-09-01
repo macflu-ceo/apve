@@ -85,6 +85,7 @@ export default async function MultiLinkAdminPage() {
         name: l.name,
         phone: l.phone,
         brands: l.brands,
+        categories: l.categories,
         ageRange: l.ageRange,
         gender: l.gender,
         budget: l.budget,
