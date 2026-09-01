@@ -84,7 +84,12 @@ export default function ShopBody({
   groups: ShopGroup[];
   items: ShopItem[];
 }) {
-  const categories = Array.from(new Set(items.map((i) => i.category).filter((c): c is string => !!c)));
+  const catLabel = (c: string | null): string | null => {
+    if (!c) return null;
+    const parts = c.split(">").map((x) => x.trim()).filter(Boolean);
+    return parts[1] ?? parts[0] ?? null;
+  };
+  const categories = Array.from(new Set(items.map((i) => catLabel(i.category)).filter((c): c is string => !!c)));
   const [cat, setCat] = useState<string | null>(null);
   const [view, setView] = useState<"grid" | "list">("grid");
   const [catOpen, setCatOpen] = useState(false);
@@ -98,7 +103,7 @@ export default function ShopBody({
     setView(v);
     try { localStorage.setItem("ml_view", v); } catch { /* noop */ }
   };
-  const visible = cat ? items.filter((i) => i.category === cat) : items;
+  const visible = cat ? items.filter((i) => catLabel(i.category) === cat) : items;
 
   return (
     <>
@@ -140,7 +145,7 @@ export default function ShopBody({
 
       {/* ── 카테고리 필터 (컴팩트 + 더보기) ── */}
       {categories.length > 1 && (() => {
-        const LIMIT = 4;
+        const LIMIT = 5;
         // 선택된 카테고리는 접힌 상태에서도 항상 보이게
         const head = categories.slice(0, LIMIT);
         if (cat && !head.includes(cat)) head[LIMIT - 1] = cat;
@@ -148,7 +153,7 @@ export default function ShopBody({
         const chip = (on: boolean) =>
           `shrink-0 rounded-full px-2.5 py-1 text-[11.5px] font-bold transition ${on ? "bg-gray-900 text-white" : "bg-white text-gray-500 ring-1 ring-gray-200"}`;
         return (
-          <div className={`mt-5 px-4 ${catOpen ? "flex flex-wrap gap-1.5" : "flex gap-1.5 overflow-hidden"}`}>
+          <div className="mt-5 flex flex-wrap gap-1.5 px-4">
             <button onClick={() => setCat(null)} className={chip(cat === null)}>전체</button>
             {shown.map((c) => (
               <button key={c} onClick={() => setCat(cat === c ? null : c)} className={chip(cat === c)}>
