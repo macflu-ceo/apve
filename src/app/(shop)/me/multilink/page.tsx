@@ -23,12 +23,15 @@ export default async function MultiLinkAdminPage() {
   // 멀티링크 확보
   let ml = await prisma.multiLink.findUnique({ where: { partnerId: partner.id } });
   if (!ml) {
+    const chars = "abcdefghjkmnpqrstuvwxyz23456789";
+    let slug = "";
+    for (let attempt = 0; attempt < 20; attempt++) {
+      let s = "";
+      for (let i = 0; i < 4; i++) s += chars[Math.floor(Math.random() * chars.length)];
+      if (!(await prisma.multiLink.findUnique({ where: { slug: s }, select: { id: true } }))) { slug = s; break; }
+    }
     ml = await prisma.multiLink.create({
-      data: {
-        partnerId: partner.id,
-        slug: (partner.code ?? partner.id.slice(-8)).toLowerCase(),
-        displayName: partner.name,
-      },
+      data: { partnerId: partner.id, slug: slug || partner.id.slice(-6), displayName: partner.name },
     });
   }
 

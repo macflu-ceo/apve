@@ -4,6 +4,19 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { getSessionPartner } from "@/lib/auth";
 
+
+/** 짧은 멀티링크 주소(4자리) 생성 — 혼동 문자(l,1,o,0,i) 제외 */
+async function generateShortSlug(): Promise<string> {
+  const chars = "abcdefghjkmnpqrstuvwxyz23456789";
+  for (let attempt = 0; attempt < 20; attempt++) {
+    let s = "";
+    for (let i = 0; i < 4; i++) s += chars[Math.floor(Math.random() * chars.length)];
+    const dup = await prisma.multiLink.findUnique({ where: { slug: s }, select: { id: true } });
+    if (!dup) return s;
+  }
+  throw new Error("슬러그 생성 실패");
+}
+
 /** 컨시어지 본인 확인 + 멀티링크 확보(없으면 생성) */
 async function myMultiLink() {
   const partner = await getSessionPartner();
@@ -14,7 +27,7 @@ async function myMultiLink() {
     ml = await prisma.multiLink.create({
       data: {
         partnerId: partner.id,
-        slug: (partner.code ?? partner.id.slice(-8)).toLowerCase(),
+        slug: await generateShortSlug(),
         displayName: partner.name,
       },
     });
