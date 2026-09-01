@@ -1,7 +1,7 @@
 "use client";
 
 // 멀티링크 샵 본문 — 배너(기획전)·카테고리 필터·진열 섹션
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 
 export type ShopItem = {
@@ -32,17 +32,41 @@ export function ProductCard({ item }: { item: ShopItem }) {
       <div className="aspect-square bg-[#FAFAFC]">
         {item.image && <img src={item.image} alt={item.name} className="h-full w-full object-contain" loading="lazy" />}
       </div>
-      <div className="p-3">
-        {item.brand && <div className="text-[11px] font-semibold text-gray-400">{item.brand}</div>}
-        <div className="mt-0.5 line-clamp-2 text-[12.5px] font-bold leading-snug text-gray-900">{item.name}</div>
-        <div className="mt-1.5 text-[14px] font-extrabold text-gray-900">
-          {item.discount != null && <span className="mr-1 text-[#13b6a6]">{item.discount}%</span>}
+      <div className="p-2">
+        {item.brand && <div className="truncate text-[10px] font-semibold text-gray-400">{item.brand}</div>}
+        <div className="mt-0.5 line-clamp-2 text-[11px] font-bold leading-snug text-gray-900">{item.name}</div>
+        <div className="mt-1 text-[12px] font-extrabold text-gray-900">
+          {item.discount != null && <span className="mr-0.5 text-[#13b6a6]">{item.discount}%</span>}
           {item.salePrice != null && won(item.salePrice)}
         </div>
-        {item.listPrice != null && item.discount != null && (
-          <div className="text-[11px] text-gray-300 line-through">{won(item.listPrice)}</div>
-        )}
       </div>
+    </a>
+  );
+}
+
+export function ProductRow({ item }: { item: ShopItem }) {
+  return (
+    <a
+      href={item.url}
+      target="_blank"
+      rel="noopener"
+      className="flex items-center gap-3 rounded-xl bg-white p-2.5 shadow-[0_1px_8px_rgba(20,30,80,.06)] transition active:scale-[0.99]"
+    >
+      <div className="h-16 w-16 shrink-0 rounded-lg bg-[#FAFAFC]">
+        {item.image && <img src={item.image} alt={item.name} className="h-full w-full object-contain" loading="lazy" />}
+      </div>
+      <div className="min-w-0 flex-1">
+        {item.brand && <div className="text-[10.5px] font-semibold text-gray-400">{item.brand}</div>}
+        <div className="truncate text-[13px] font-bold text-gray-900">{item.name}</div>
+        <div className="mt-0.5 text-[13.5px] font-extrabold text-gray-900">
+          {item.discount != null && <span className="mr-1 text-[#13b6a6]">{item.discount}%</span>}
+          {item.salePrice != null && won(item.salePrice)}
+          {item.listPrice != null && item.discount != null && (
+            <span className="ml-1.5 text-[11px] font-normal text-gray-300 line-through">{won(item.listPrice)}</span>
+          )}
+        </div>
+      </div>
+      <span className="shrink-0 text-gray-300">›</span>
     </a>
   );
 }
@@ -62,13 +86,34 @@ export default function ShopBody({
 }) {
   const categories = Array.from(new Set(items.map((i) => i.category).filter((c): c is string => !!c)));
   const [cat, setCat] = useState<string | null>(null);
+  const [view, setView] = useState<"grid" | "list">("grid");
+  useEffect(() => {
+    try {
+      const v = localStorage.getItem("ml_view");
+      if (v === "list" || v === "grid") setView(v);
+    } catch { /* noop */ }
+  }, []);
+  const switchView = (v: "grid" | "list") => {
+    setView(v);
+    try { localStorage.setItem("ml_view", v); } catch { /* noop */ }
+  };
   const visible = cat ? items.filter((i) => i.category === cat) : items;
 
   return (
     <>
+      {/* ── 보기 방식 토글 ── */}
+      {items.length > 0 && (
+        <div className="mt-5 flex justify-end px-4">
+          <div className="flex overflow-hidden rounded-full bg-white text-[12px] font-bold ring-1 ring-gray-200">
+            <button onClick={() => switchView("grid")} className={`px-3.5 py-1.5 ${view === "grid" ? "bg-gray-900 text-white" : "text-gray-500"}`}>▦ 상품형</button>
+            <button onClick={() => switchView("list")} className={`px-3.5 py-1.5 ${view === "list" ? "bg-gray-900 text-white" : "text-gray-500"}`}>☰ 리스트형</button>
+          </div>
+        </div>
+      )}
+
       {/* ── 이미지 배너 (기획전) ── */}
       {banners.length > 0 && (
-        <div className="mt-6 space-y-3 px-4">
+        <div className="mt-3 space-y-3 px-4">
           {banners.map((b) => {
             const inner = (
               <div className="relative overflow-hidden rounded-2xl shadow-[0_4px_18px_rgba(20,30,80,.1)]">
@@ -125,11 +170,19 @@ export default function ShopBody({
                 {gi === 0 && <span className="text-[11px] text-gray-400">{displayName} PICK</span>}
               </div>
             )}
-            <div className={g.title ? "mt-3 grid grid-cols-2 gap-3" : "grid grid-cols-2 gap-3"}>
-              {rows.map((item) => (
-                <ProductCard key={item.id} item={item} />
-              ))}
-            </div>
+            {view === "grid" ? (
+              <div className={g.title ? "mt-3 grid grid-cols-3 gap-2" : "grid grid-cols-3 gap-2"}>
+                {rows.map((item) => (
+                  <ProductCard key={item.id} item={item} />
+                ))}
+              </div>
+            ) : (
+              <div className={g.title ? "mt-3 space-y-2" : "space-y-2"}>
+                {rows.map((item) => (
+                  <ProductRow key={item.id} item={item} />
+                ))}
+              </div>
+            )}
           </div>
         );
       })}

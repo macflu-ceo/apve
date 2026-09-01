@@ -84,7 +84,7 @@ export default async function BannerCollectionPage({ params }: { params: { slug:
           {items.length === 0 ? (
             <div className="mt-14 text-center text-sm text-gray-400">아직 담긴 상품이 없어요.</div>
           ) : (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-2">
               {items.map((item) => (
                 <ProductCard key={item.id} item={item} />
               ))}
