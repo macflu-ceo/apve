@@ -6,12 +6,30 @@ import { submitRecommendLead } from "./actions";
 
 const FAMOUS_BRANDS = ["샤넬", "루이비통", "구찌", "디올", "프라다", "미우미우", "보테가", "발렌시아가"];
 const CATEGORIES = ["가방", "지갑·소품", "신발", "아우터", "상의", "바지·스커트", "시계·주얼리"];
-const SIZE_FIELDS: Record<string, { label: string; placeholder: string }> = {
-  신발: { label: "신발 사이즈", placeholder: "예: 240 / EU38" },
-  아우터: { label: "아우터 사이즈", placeholder: "예: 55 / M / IT38" },
-  상의: { label: "상의 사이즈", placeholder: "예: 55 / M" },
-  "바지·스커트": { label: "하의 사이즈", placeholder: "예: 26 / 55" },
+const SIZE_FIELDS: Record<string, { label: string; options: string[]; note: string }> = {
+  신발: {
+    label: "신발 사이즈",
+    options: ["220", "225", "230", "235", "240", "245", "250", "255", "260", "265", "270", "275", "280"],
+    note: "신발은 브랜드·라스트마다 핏이 달라, 내 사이즈의 재고를 만나는 일이 가장 어렵습니다. 등록해두시면 사이즈가 확인된 상품만 정성껏 골라 추천드립니다.",
+  },
+  아우터: {
+    label: "아우터 사이즈",
+    options: ["44(XS)", "55(S)", "66(M)", "77(L)", "88(XL)"],
+    note: "",
+  },
+  상의: {
+    label: "상의 사이즈",
+    options: ["44(XS)", "55(S)", "66(M)", "77(L)", "88(XL)"],
+    note: "",
+  },
+  "바지·스커트": {
+    label: "하의 사이즈",
+    options: ["24", "25", "26", "27", "28", "29", "30", "31", "32", "34"],
+    note: "",
+  },
 };
+const CLOTHING_NOTE =
+  "이탈리아·프랑스 등 해외 사이즈 표기는 저희가 국내 기준으로 변환해 확인합니다. 익숙한 한국 사이즈로만 선택해 주세요 — 맞음새 검수까지 마친 상품으로 추천드립니다.";
 const AGES = ["20대", "30대", "40대", "50대+"];
 const GENDERS = ["여성", "남성"];
 const BUDGETS = ["100만원 이하", "100~300만원", "300~500만원", "500만원 이상"];
@@ -26,7 +44,7 @@ export default function RecommendSheet({ slug, conciergeName }: { slug: string; 
   const [phone, setPhone] = useState("");
   const [brands, setBrands] = useState<string[]>([]);
   const [cats, setCats] = useState<string[]>([]);
-  const [sizeMap, setSizeMap] = useState<Record<string, string>>({});
+  const [sizeMap, setSizeMap] = useState<Record<string, string[]>>({});
   const [ageRange, setAgeRange] = useState("");
   const [gender, setGender] = useState("");
   const [budget, setBudget] = useState("");
@@ -59,7 +77,7 @@ export default function RecommendSheet({ slug, conciergeName }: { slug: string; 
   const submit = () =>
     start(async () => {
       const sizes = sizeCats
-        .map((c) => (sizeMap[c]?.trim() ? `${SIZE_FIELDS[c].label} ${sizeMap[c].trim()}` : null))
+        .map((c) => (sizeMap[c]?.length ? `${SIZE_FIELDS[c].label} ${sizeMap[c].join("/")}` : null))
         .filter(Boolean)
         .join(" · ");
       const r = await submitRecommendLead({
@@ -108,7 +126,7 @@ export default function RecommendSheet({ slug, conciergeName }: { slug: string; 
               <>
                 <div className="text-lg font-extrabold">내 취향 등록하기</div>
                 <p className="mt-1 text-[13px] text-gray-500">
-                  취향을 등록해두시면 {conciergeName} 님이 딱 맞는 상품이 들어올 때마다 추천해드려요.
+                  한 번 등록해두시면, 이탈리아 부티크에 취향에 맞는 상품이 입고될 때마다 {conciergeName} 님이 가장 먼저 알려드립니다.
                 </p>
 
                 <div className="mt-4 space-y-4">
@@ -166,21 +184,40 @@ export default function RecommendSheet({ slug, conciergeName }: { slug: string; 
                     </div>
                   </div>
 
-                  {/* 선택한 카테고리별 사이즈 */}
+                  {/* 선택한 카테고리별 사이즈 (한국 기준 객관식, 복수 선택) */}
                   {sizeCats.length > 0 && (
-                    <div className="space-y-2 rounded-xl bg-[#F4F6FF] p-3">
-                      <div className="text-[13px] font-bold text-gray-700">내 사이즈</div>
-                      {sizeCats.map((c) => (
-                        <div key={c} className="flex items-center gap-2">
-                          <span className="w-24 shrink-0 text-[12.5px] font-semibold text-gray-600">{SIZE_FIELDS[c].label}</span>
-                          <input
-                            value={sizeMap[c] ?? ""}
-                            onChange={(e) => setSizeMap({ ...sizeMap, [c]: e.target.value })}
-                            placeholder={SIZE_FIELDS[c].placeholder}
-                            className="flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-[#4A60FF]"
-                          />
-                        </div>
-                      ))}
+                    <div className="space-y-3 rounded-xl bg-[#F4F6FF] p-3.5">
+                      <div className="text-[13px] font-bold text-gray-700">
+                        내 사이즈 <span className="font-normal text-gray-400">— 한국 기준 · 복수 선택 가능</span>
+                      </div>
+                      {sizeCats.map((c) => {
+                        const field = SIZE_FIELDS[c];
+                        const selected = sizeMap[c] ?? [];
+                        const toggleSize = (v: string) =>
+                          setSizeMap({ ...sizeMap, [c]: selected.includes(v) ? selected.filter((x) => x !== v) : [...selected, v] });
+                        return (
+                          <div key={c}>
+                            <div className="mb-1.5 text-[12.5px] font-semibold text-gray-600">{field.label}</div>
+                            <div className="flex flex-wrap gap-1.5">
+                              {field.options.map((o) => (
+                                <button
+                                  key={o}
+                                  onClick={() => toggleSize(o)}
+                                  className={`rounded-lg px-2.5 py-1.5 text-[12px] font-semibold transition ${
+                                    selected.includes(o) ? "bg-[#4A60FF] text-white" : "bg-white text-gray-600 ring-1 ring-gray-200"
+                                  }`}
+                                >
+                                  {o}
+                                </button>
+                              ))}
+                            </div>
+                            {field.note && <p className="mt-1.5 text-[11px] leading-relaxed text-gray-500">{field.note}</p>}
+                          </div>
+                        );
+                      })}
+                      {sizeCats.some((c) => c !== "신발") && (
+                        <p className="border-t border-[#E3E8FF] pt-2.5 text-[11px] leading-relaxed text-gray-500">{CLOTHING_NOTE}</p>
+                      )}
                     </div>
                   )}
 
