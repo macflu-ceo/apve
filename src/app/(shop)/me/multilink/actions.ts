@@ -70,13 +70,13 @@ export async function addMultiLinkItem(productId: string) {
   const count = await prisma.multiLinkItem.count({ where: { multiLinkId: r.ml.id } });
   if (count >= 30) return { ok: false, message: "최대 30개까지 담을 수 있어요." };
   const max = await prisma.multiLinkItem.aggregate({ where: { multiLinkId: r.ml.id }, _max: { sort: true } });
-  await prisma.multiLinkItem.upsert({
+  const item = await prisma.multiLinkItem.upsert({
     where: { multiLinkId_productId: { multiLinkId: r.ml.id, productId } },
     update: {},
     create: { multiLinkId: r.ml.id, productId, sort: (max._max.sort ?? 0) + 1 },
   });
   refresh(r.ml.slug);
-  return { ok: true };
+  return { ok: true, id: item.id };
 }
 
 export async function removeMultiLinkItem(itemId: string) {

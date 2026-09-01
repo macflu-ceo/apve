@@ -1,7 +1,7 @@
 "use client";
 
 // 컨시어지 멀티링크 관리 — 프로필·진열 섹션·상품 큐레이션·취향등록 DB
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   updateMultiLinkProfile,
@@ -55,6 +55,13 @@ export default function Manager({
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
+  // 낙관적 로컬 상태 — 조작 즉시 화면 반영, 서버 반영은 백그라운드
+  const [localItems, setLocalItems] = useState<Item[]>(items);
+  const [localCands, setLocalCands] = useState<Candidate[]>(candidates);
+  const [localLeads, setLocalLeads] = useState<Lead[]>(leads);
+  useEffect(() => setLocalItems(items), [items]);
+  useEffect(() => setLocalCands(candidates), [candidates]);
+  useEffect(() => setLocalLeads(leads), [leads]);
   const [profile, setProfile] = useState({ displayName: ml.displayName, bio: ml.bio, avatarUrl: ml.avatarUrl, coverUrl: ml.coverUrl });
   const [msg, setMsg] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -71,6 +78,54 @@ export default function Manager({
       router.refresh();
     });
 
+  // 화면 즉시 반영형 — 서버는 조용히, 실패했을 때만 되돌림
+  const runQuiet = (fn: () => Promise<{ ok: boolean; message?: string }>) => {
+    fn().then((r) => {
+      if (!r.ok) {
+        if (r.message) setMsg(r.message);
+        router.refresh(); // 실패 → 서버 상태로 복구
+      }
+    }).catch(() => router.refresh());
+  };
+
+  const removeItemLocal = (it: Item) => {
+    setLocalItems((v) => v.filter((x) => x.id !== it.id));
+    setLocalCands((v) => [{ productId: it.productId, name: it.name, brand: it.brand, image: it.image, salePrice: it.salePrice, commission: it.commission }, ...v]);
+    runQuiet(() => removeMultiLinkItem(it.id));
+  };
+  const addItemLocal = (c: Candidate) => {
+    const tmpId = `tmp-${c.productId}`;
+    setLocalCands((v) => v.filter((x) => x.productId !== c.productId));
+    setLocalItems((v) => [...v, { id: tmpId, sectionId: null, ...c }]);
+    addMultiLinkItem(c.productId).then((r) => {
+      if (r.ok && "id" in r && r.id) {
+        setLocalItems((v) => v.map((x) => (x.id === tmpId ? { ...x, id: r.id as string } : x)));
+      } else {
+        if (r.message) setMsg(r.message);
+        router.refresh();
+      }
+    }).catch(() => router.refresh());
+  };
+  const moveItemLocal = (it: Item, dir: "up" | "down", rows: Item[]) => {
+    const idx = rows.findIndex((x) => x.id === it.id);
+    const swap = dir === "up" ? idx - 1 : idx + 1;
+    if (idx < 0 || swap < 0 || swap >= rows.length) return;
+    const a = rows[idx].id, b = rows[swap].id;
+    setLocalItems((v) => {
+      const ia = v.findIndex((x) => x.id === a), ib = v.findIndex((x) => x.id === b);
+      const nv = [...v]; [nv[ia], nv[ib]] = [nv[ib], nv[ia]]; return nv;
+    });
+    runQuiet(() => moveMultiLinkItem(it.id, dir));
+  };
+  const setItemSectionLocal = (it: Item, sectionId: string | null) => {
+    setLocalItems((v) => v.map((x) => (x.id === it.id ? { ...x, sectionId } : x)));
+    runQuiet(() => setItemSection(it.id, sectionId));
+  };
+  const setLeadStatusLocal = (l: Lead, status: "new" | "done") => {
+    setLocalLeads((v) => v.map((x) => (x.id === l.id ? { ...x, status } : x)));
+    runQuiet(() => setLeadStatus(l.id, status));
+  };
+
   async function uploadImage(f: File, key: "avatarUrl" | "coverUrl") {
     setUploading(true);
     try {
@@ -86,16 +141,16 @@ export default function Manager({
     setUploading(false);
   }
 
-  const newLeads = leads.filter((l) => l.status === "new");
+  const newLeads = localLeads.filter((l) => l.status === "new");
   const groups: { section: Section | null; rows: Item[] }[] = [
-    ...sections.map((s) => ({ section: s as Section | null, rows: items.filter((i) => i.sectionId === s.id) })),
-    { section: null, rows: items.filter((i) => i.sectionId == null) },
+    ...sections.map((s) => ({ section: s as Section | null, rows: localItems.filter((i) => i.sectionId === s.id) })),
+    { section: null, rows: localItems.filter((i) => i.sectionId == null) },
   ];
 
   const SectionSelect = ({ it }: { it: Item }) => (
     <select
       value={it.sectionId ?? ""}
-      onChange={(e) => run(() => setItemSection(it.id, e.target.value || null))}
+      onChange={(e) => setItemSectionLocal(it, e.target.value || null)}
       className="rounded-lg border border-line bg-white px-1.5 py-1 text-[11px] text-sub"
     >
       <option value="">기본 진열</option>
@@ -105,7 +160,7 @@ export default function Manager({
     </select>
   );
 
-  const ItemRow = ({ it, i, len }: { it: Item; i: number; len: number }) => (
+  const ItemRow = ({ it, i, len, rows }: { it: Item; i: number; len: number; rows: Item[] }) => (
     <div className="flex items-center gap-2 rounded-xl border border-line px-2 py-1.5">
       {it.image && <img src={it.image} className="h-9 w-9 shrink-0 rounded-md bg-[#fafafa] object-contain" alt="" />}
       <div className="min-w-0 flex-1">
@@ -119,14 +174,14 @@ export default function Manager({
       </div>
       <SectionSelect it={it} />
       <div className="flex flex-col">
-        <button onClick={() => run(() => moveMultiLinkItem(it.id, "up"))} disabled={i === 0} className="px-1 text-[10px] leading-3 text-sub disabled:opacity-25">▲</button>
-        <button onClick={() => run(() => moveMultiLinkItem(it.id, "down"))} disabled={i === len - 1} className="px-1 text-[10px] leading-3 text-sub disabled:opacity-25">▼</button>
+        <button onClick={() => moveItemLocal(it, "up", rows)} disabled={i === 0} className="px-1 text-[10px] leading-3 text-sub disabled:opacity-25">▲</button>
+        <button onClick={() => moveItemLocal(it, "down", rows)} disabled={i === len - 1} className="px-1 text-[10px] leading-3 text-sub disabled:opacity-25">▼</button>
       </div>
-      <button onClick={() => run(() => removeMultiLinkItem(it.id))} className="px-1 text-[11px] text-red-500">빼기</button>
+      <button onClick={() => removeItemLocal(it)} className="px-1 text-[11px] text-red-500">빼기</button>
     </div>
   );
 
-  const ItemCard = ({ it, i, len }: { it: Item; i: number; len: number }) => (
+  const ItemCard = ({ it, i, len, rows }: { it: Item; i: number; len: number; rows: Item[] }) => (
     <div className="rounded-xl border border-line p-2">
       <div className="aspect-square rounded-lg bg-[#fafafa]">
         {it.image && <img src={it.image} className="h-full w-full object-contain" alt="" />}
@@ -138,9 +193,9 @@ export default function Manager({
       </div>
       <div className="mt-1.5 flex items-center gap-1">
         <SectionSelect it={it} />
-        <button onClick={() => run(() => moveMultiLinkItem(it.id, "up"))} disabled={i === 0} className="text-[11px] text-sub disabled:opacity-25">▲</button>
-        <button onClick={() => run(() => moveMultiLinkItem(it.id, "down"))} disabled={i === len - 1} className="text-[11px] text-sub disabled:opacity-25">▼</button>
-        <button onClick={() => run(() => removeMultiLinkItem(it.id))} className="ml-auto text-[11px] text-red-500">빼기</button>
+        <button onClick={() => moveItemLocal(it, "up", rows)} disabled={i === 0} className="text-[11px] text-sub disabled:opacity-25">▲</button>
+        <button onClick={() => moveItemLocal(it, "down", rows)} disabled={i === len - 1} className="text-[11px] text-sub disabled:opacity-25">▼</button>
+        <button onClick={() => removeItemLocal(it)} className="ml-auto text-[11px] text-red-500">빼기</button>
       </div>
     </div>
   );
@@ -215,7 +270,7 @@ export default function Manager({
               ) : (
                 <>
                   <b className="flex-1 text-sm">{s.title}</b>
-                  <span className="text-[11px] text-sub">{items.filter((x) => x.sectionId === s.id).length}개</span>
+                  <span className="text-[11px] text-sub">{localItems.filter((x) => x.sectionId === s.id).length}개</span>
                   <button onClick={() => setEditingSection({ id: s.id, title: s.title })} className="text-xs text-sub underline">이름</button>
                   <button onClick={() => run(() => moveSection(s.id, "up"))} disabled={i === 0} className="text-xs text-sub disabled:opacity-25">▲</button>
                   <button onClick={() => run(() => moveSection(s.id, "down"))} disabled={i === sections.length - 1} className="text-xs text-sub disabled:opacity-25">▼</button>
@@ -304,7 +359,7 @@ export default function Manager({
       {/* 페이지 상품 */}
       <div className="card mt-4 p-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-bold">페이지 상품 <span className="text-sm font-normal text-sub">({items.length})</span></h2>
+          <h2 className="text-base font-bold">페이지 상품 <span className="text-sm font-normal text-sub">({localItems.length})</span></h2>
           <div className="flex items-center gap-2">
             <span className="text-xs text-sub">내 수수료율 {percent}%</span>
             <div className="flex overflow-hidden rounded-lg border border-line text-xs">
@@ -314,21 +369,21 @@ export default function Manager({
           </div>
         </div>
 
-        {items.length === 0 && <div className="py-4 text-center text-sm text-sub">아래 목록에서 상품을 추가해보세요.</div>}
+        {localItems.length === 0 && <div className="py-4 text-center text-sm text-sub">아래 목록에서 상품을 추가해보세요.</div>}
 
         {groups.map(({ section, rows }) =>
-          rows.length === 0 && section == null && sections.length > 0 && items.length > 0 ? null : rows.length === 0 ? (
+          rows.length === 0 && section == null && sections.length > 0 && localItems.length > 0 ? null : rows.length === 0 ? (
             section ? <div key={section.id} className="mt-3 text-xs text-sub">〈{section.title}〉 비어 있음 — 상품의 섹션 선택에서 옮겨보세요.</div> : null
           ) : (
             <div key={section?.id ?? "default"} className="mt-4">
               <div className="mb-2 text-[13px] font-bold text-ink/70">{section ? `〈${section.title}〉` : "기본 진열"}</div>
               {view === "list" ? (
                 <div className="space-y-1.5">
-                  {rows.map((it, i) => <ItemRow key={it.id} it={it} i={i} len={rows.length} />)}
+                  {rows.map((it, i) => <ItemRow key={it.id} it={it} i={i} len={rows.length} rows={rows} />)}
                 </div>
               ) : (
                 <div className="grid grid-cols-2 gap-2">
-                  {rows.map((it, i) => <ItemCard key={it.id} it={it} i={i} len={rows.length} />)}
+                  {rows.map((it, i) => <ItemCard key={it.id} it={it} i={i} len={rows.length} rows={rows} />)}
                 </div>
               )}
             </div>
@@ -340,17 +395,17 @@ export default function Manager({
       <div className="card mt-4 p-4">
         <h2 className="text-base font-bold">담을 수 있는 상품 <span className="text-sm font-normal text-sub">— 내가 코드 만든 상품</span></h2>
         <div className="mt-3 space-y-1.5">
-          {candidates.length === 0 && (
+          {localCands.length === 0 && (
             <div className="py-4 text-center text-sm text-sub">상품 상세에서 &lsquo;내 코드 만들기&rsquo;를 하면 여기 나타나요.</div>
           )}
-          {candidates.map((c) => (
+          {localCands.map((c) => (
             <div key={c.productId} className="flex items-center gap-2 rounded-xl border border-line px-2 py-1.5">
               {c.image && <img src={c.image} className="h-9 w-9 shrink-0 rounded-md bg-[#fafafa] object-contain" alt="" />}
               <div className="min-w-0 flex-1">
                 <div className="truncate text-[12.5px] font-bold">{c.brand && <span className="mr-1 font-semibold text-sub">{c.brand}</span>}{c.name}</div>
                 <div className="text-[11px] text-sub">{c.salePrice != null && won(c.salePrice)}{c.commission != null && <b className="ml-1.5 text-brand">수수료 {won(c.commission)}</b>}</div>
               </div>
-              <button onClick={() => run(() => addMultiLinkItem(c.productId))} disabled={pending} className="btn-line px-3 py-1 text-xs">+ 추가</button>
+              <button onClick={() => addItemLocal(c)} className="btn-line px-3 py-1 text-xs">+ 추가</button>
             </div>
           ))}
         </div>
@@ -359,12 +414,12 @@ export default function Manager({
       {/* 취향 등록 DB */}
       <div className="card mt-4 p-4">
         <h2 className="text-base font-bold">
-          고객 취향 등록 <span className="text-sm font-normal text-sub">({leads.length})</span>
+          고객 취향 등록 <span className="text-sm font-normal text-sub">({localLeads.length})</span>
           {newLeads.length > 0 && <span className="ml-2 rounded-full bg-brand px-2 py-0.5 text-xs font-bold text-white">새 등록 {newLeads.length}</span>}
         </h2>
         <div className="mt-3 space-y-2">
-          {leads.length === 0 && <div className="py-4 text-center text-sm text-sub">멀티링크의 &lsquo;내 취향 등록하기&rsquo;로 들어온 고객 정보가 여기 쌓여요.</div>}
-          {leads.map((l) => (
+          {localLeads.length === 0 && <div className="py-4 text-center text-sm text-sub">멀티링크의 &lsquo;내 취향 등록하기&rsquo;로 들어온 고객 정보가 여기 쌓여요.</div>}
+          {localLeads.map((l) => (
             <div key={l.id} className={`rounded-xl border p-3 ${l.status === "new" ? "border-brand/40 bg-brandsoft/40" : "border-line"}`}>
               <div className="flex items-center gap-2">
                 <b className="text-sm">{l.name}</b>
@@ -378,7 +433,7 @@ export default function Manager({
               </div>
               {l.memo && <div className="mt-1.5 text-xs text-sub">💬 {l.memo}</div>}
               <button
-                onClick={() => run(() => setLeadStatus(l.id, l.status === "new" ? "done" : "new"))}
+                onClick={() => setLeadStatusLocal(l, l.status === "new" ? "done" : "new")}
                 className={`mt-2 rounded-lg px-3 py-1 text-xs font-bold ${l.status === "new" ? "bg-brand text-white" : "bg-brandsoft text-sub"}`}
               >
                 {l.status === "new" ? "응대 완료로 표시" : "완료됨 ↺"}
