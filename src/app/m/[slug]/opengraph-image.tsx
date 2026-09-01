@@ -78,10 +78,12 @@ export default async function Image({ params }: { params: { slug: string } }) {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  fontSize: 54,
+                  fontSize: 40,
+                  fontWeight: 700,
+                  color: "#4A60FF",
                 }}
               >
-                🛍️
+                VÉ
               </div>
             )}
             <div style={{ display: "flex", flexDirection: "column", marginLeft: 28 }}>
@@ -110,7 +112,7 @@ export default async function Image({ params }: { params: { slug: string } }) {
                 fontSize: 24,
               }}
             >
-              🛡️ 100% 정품 보증
+              100% 정품 보증
             </div>
             <div
               style={{
@@ -121,7 +123,7 @@ export default async function Image({ params }: { params: { slug: string } }) {
                 fontSize: 24,
               }}
             >
-              ✈️ 부티크 직계약
+              이탈리아 부티크 직계약
             </div>
           </div>
         </div>
@@ -163,10 +165,12 @@ export default async function Image({ params }: { params: { slug: string } }) {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                fontSize: 110,
+                fontSize: 72,
+                fontWeight: 700,
+                color: "#4A60FF",
               }}
             >
-              🛍️
+              VÉ
             </div>
           )}
         </div>
