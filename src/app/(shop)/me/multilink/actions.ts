@@ -176,6 +176,63 @@ export async function setItemSection(itemId: string, sectionId: string | null) {
   return { ok: true };
 }
 
+// ── 이미지 배너(기획전) 관리 ──
+export async function addBanner(input: { imageUrl: string; title: string; sectionId: string | null }) {
+  const r = await myMultiLink();
+  if ("error" in r) return { ok: false, message: r.error };
+  if (!input.imageUrl.trim()) return { ok: false, message: "배너 이미지를 올려주세요." };
+  const count = await prisma.multiLinkBanner.count({ where: { multiLinkId: r.ml.id } });
+  if (count >= 5) return { ok: false, message: "배너는 최대 5개까지 만들 수 있어요." };
+  const max = await prisma.multiLinkBanner.aggregate({ where: { multiLinkId: r.ml.id }, _max: { sort: true } });
+  await prisma.multiLinkBanner.create({
+    data: {
+      multiLinkId: r.ml.id,
+      imageUrl: input.imageUrl.trim(),
+      title: input.title.trim().slice(0, 30) || null,
+      sectionId: input.sectionId,
+      sort: (max._max.sort ?? 0) + 1,
+    },
+  });
+  refresh(r.ml.slug);
+  return { ok: true };
+}
+
+export async function updateBanner(bannerId: string, input: { title: string; sectionId: string | null }) {
+  const r = await myMultiLink();
+  if ("error" in r) return { ok: false, message: r.error };
+  await prisma.multiLinkBanner.updateMany({
+    where: { id: bannerId, multiLinkId: r.ml.id },
+    data: { title: input.title.trim().slice(0, 30) || null, sectionId: input.sectionId },
+  });
+  refresh(r.ml.slug);
+  return { ok: true };
+}
+
+export async function deleteBanner(bannerId: string) {
+  const r = await myMultiLink();
+  if ("error" in r) return { ok: false, message: r.error };
+  await prisma.multiLinkBanner.deleteMany({ where: { id: bannerId, multiLinkId: r.ml.id } });
+  refresh(r.ml.slug);
+  return { ok: true };
+}
+
+export async function moveBanner(bannerId: string, dir: "up" | "down") {
+  const r = await myMultiLink();
+  if ("error" in r) return { ok: false, message: r.error };
+  const rows = await prisma.multiLinkBanner.findMany({
+    where: { multiLinkId: r.ml.id },
+    orderBy: [{ sort: "asc" }, { createdAt: "asc" }],
+  });
+  const idx = rows.findIndex((x) => x.id === bannerId);
+  const swap = dir === "up" ? idx - 1 : idx + 1;
+  if (idx < 0 || swap < 0 || swap >= rows.length) return { ok: true };
+  const order = rows.map((x) => x.id);
+  [order[idx], order[swap]] = [order[swap], order[idx]];
+  await prisma.$transaction(order.map((id, i) => prisma.multiLinkBanner.update({ where: { id }, data: { sort: i + 1 } })));
+  refresh(r.ml.slug);
+  return { ok: true };
+}
+
 export async function setLeadStatus(leadId: string, status: "new" | "done") {
   const r = await myMultiLink();
   if ("error" in r) return { ok: false, message: r.error };

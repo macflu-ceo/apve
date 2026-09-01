@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { partnerLink } from "@/lib/godomall/link";
 import RecommendSheet from "./RecommendSheet";
+import ShopBody, { type ShopItem } from "./ShopBody";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +26,7 @@ async function getData(slug: string) {
     include: {
       partner: { select: { code: true, name: true } },
       sections: { orderBy: [{ sort: "asc" }, { createdAt: "asc" }] },
+      banners: { orderBy: [{ sort: "asc" }, { createdAt: "asc" }] },
       items: {
         orderBy: [{ sort: "asc" }, { createdAt: "asc" }],
         include: { product: true },
@@ -60,45 +62,25 @@ export default async function MultiLinkPage({ params }: { params: { slug: string
 
   const code = ml.partner.code ?? "";
   const items = ml.items.filter((i) => i.product.active);
+  const shopItems: ShopItem[] = items.map((i) => ({
+    id: i.id,
+    url: partnerLink(i.product.goodsNo, code),
+    name: i.product.name.replace(/^\[[^\]]*\]\s*/, ""),
+    brand: i.product.brand,
+    category: i.product.category,
+    image: firstImage(i.product.imagesJson),
+    salePrice: i.product.salePrice,
+    listPrice: i.product.listPrice,
+    discount: discount(i.product.listPrice, i.product.salePrice),
+    sectionKey: i.sectionId ?? "default",
+  }));
   const groups = [
-    ...ml.sections
-      .map((s) => ({ key: s.id, title: s.title, rows: items.filter((i) => i.sectionId === s.id) }))
-      .filter((g) => g.rows.length > 0),
+    ...ml.sections.map((s) => ({ key: s.id, title: s.title })),
     ...(items.some((i) => i.sectionId == null)
-      ? [{ key: "default", title: ml.sections.length > 0 ? "추천 상품" : "", rows: items.filter((i) => i.sectionId == null) }]
+      ? [{ key: "default", title: ml.sections.length > 0 ? "추천 상품" : "" }]
       : []),
   ];
-
-  const Card = ({ item }: { item: (typeof items)[number] }) => {
-    const p = item.product;
-    const img = firstImage(p.imagesJson);
-    const d = discount(p.listPrice, p.salePrice);
-    return (
-      <a
-        href={partnerLink(p.goodsNo, code)}
-        target="_blank"
-        rel="noopener"
-        className={`block overflow-hidden rounded-2xl bg-white shadow-[0_2px_14px_rgba(20,30,80,.07)] transition active:scale-[0.98] `}
-      >
-        <div className="aspect-square bg-[#FAFAFC]">
-          {img && <img src={img} alt={p.name} className="h-full w-full object-contain" loading="lazy" />}
-        </div>
-        <div className="p-3">
-          {p.brand && <div className="text-[11px] font-semibold text-gray-400">{p.brand}</div>}
-          <div className="mt-0.5 line-clamp-2 text-[12.5px] font-bold leading-snug text-gray-900">
-            {p.name.replace(/^\[[^\]]*\]\s*/, "")}
-          </div>
-          <div className="mt-1.5 text-[14px] font-extrabold text-gray-900">
-            {d != null && <span className="mr-1 text-[#13b6a6]">{d}%</span>}
-            {p.salePrice != null && won(p.salePrice)}
-          </div>
-          {p.listPrice != null && d != null && (
-            <div className="text-[11px] text-gray-300 line-through">{won(p.listPrice)}</div>
-          )}
-        </div>
-      </a>
-    );
-  };
+  const banners = ml.banners.map((b) => ({ id: b.id, imageUrl: b.imageUrl, title: b.title, hasSection: b.sectionId != null }));
 
   return (
     <div className="min-h-dvh bg-[#F3F5FB]">
@@ -139,22 +121,8 @@ export default async function MultiLinkPage({ params }: { params: { slug: string
           </div>
         </div>
 
-        {/* ── 진열 섹션 ── */}
-        {groups.map((g, gi) => (
-          <div key={g.key} className="mt-7 px-4">
-            {g.title && (
-              <div className="flex items-baseline justify-between px-1">
-                <h2 className="text-[17px] font-extrabold text-gray-900">{g.title}</h2>
-                {gi === 0 && <span className="text-[11px] text-gray-400">{ml.displayName} PICK</span>}
-              </div>
-            )}
-            <div className={g.title ? "mt-3 grid grid-cols-2 gap-3" : "grid grid-cols-2 gap-3"}>
-              {g.rows.map((item) => (
-                <Card key={item.id} item={item} />
-              ))}
-            </div>
-          </div>
-        ))}
+        {/* ── 배너·카테고리 필터·진열 섹션 ── */}
+        <ShopBody slug={ml.slug} displayName={ml.displayName} banners={banners} groups={groups} items={shopItems} />
 
         {items.length === 0 && (
           <div className="mt-16 text-center text-sm text-gray-400">아직 등록된 상품이 없어요.</div>

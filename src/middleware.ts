@@ -12,9 +12,9 @@ export function middleware(req: NextRequest) {
       // 루트는 본 사이트로
       return NextResponse.redirect("https://www.cashboutique.co.kr", 308);
     }
-    if (!path.startsWith("/m/") && !path.startsWith("/api") && /^\/[a-z0-9-]+$/i.test(path)) {
+    if (!path.startsWith("/m/") && !path.startsWith("/api") && /^\/[a-z0-9-]+(\/f\/[a-z0-9-]+)?$/i.test(path)) {
       const url = req.nextUrl.clone();
-      url.pathname = `/m${path.toLowerCase()}`;
+      url.pathname = `/m${path}`;
       return NextResponse.rewrite(url);
     }
   }

@@ -478,9 +478,23 @@ model MultiLink {
   views         Int      @default(0)
   items         MultiLinkItem[]
   sections      MultiLinkSection[]
+  banners       MultiLinkBanner[]
   leads         RecommendLead[]
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+}
+
+/// 멀티링크 이미지 배너 — 누르면 연결된 섹션의 상품목록(기획전)으로
+model MultiLinkBanner {
+  id          String            @id @default(cuid())
+  multiLink   MultiLink         @relation(fields: [multiLinkId], references: [id], onDelete: Cascade)
+  multiLinkId String
+  imageUrl    String
+  title       String?
+  section     MultiLinkSection? @relation(fields: [sectionId], references: [id], onDelete: SetNull)
+  sectionId   String?
+  sort        Int               @default(0)
+  createdAt   DateTime          @default(now())
 }
 
 /// 멀티링크 진열 섹션 (컨시어지가 직접 만드는 카테고리)
@@ -491,6 +505,7 @@ model MultiLinkSection {
   title       String
   sort        Int             @default(0)
   items       MultiLinkItem[]
+  banners     MultiLinkBanner[]
   createdAt   DateTime        @default(now())
 }
 

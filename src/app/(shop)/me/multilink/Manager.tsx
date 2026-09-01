@@ -14,6 +14,10 @@ import {
   moveSection,
   setItemSection,
   setLeadStatus,
+  addBanner,
+  updateBanner,
+  deleteBanner,
+  moveBanner,
 } from "./actions";
 
 type Item = {
@@ -28,6 +32,7 @@ type Item = {
 };
 type Candidate = Omit<Item, "id" | "sectionId">;
 type Section = { id: string; title: string };
+type Banner = { id: string; imageUrl: string; title: string; sectionId: string | null };
 type Lead = {
   id: string; name: string; phone: string;
   brands: string | null; ageRange: string | null; gender: string | null;
@@ -38,11 +43,12 @@ type Lead = {
 const won = (n: number) => n.toLocaleString() + "원";
 
 export default function Manager({
-  ml, percent, sections, items, candidates, leads,
+  ml, percent, sections, banners, items, candidates, leads,
 }: {
   ml: { slug: string; displayName: string; bio: string; avatarUrl: string; coverUrl: string; views: number };
   percent: number;
   sections: Section[];
+  banners: Banner[];
   items: Item[];
   candidates: Candidate[];
   leads: Lead[];
@@ -54,6 +60,7 @@ export default function Manager({
   const [uploading, setUploading] = useState(false);
   const [view, setView] = useState<"list" | "card">("list");
   const [newSection, setNewSection] = useState("");
+  const [newBanner, setNewBanner] = useState({ imageUrl: "", title: "", sectionId: "" });
   const [editingSection, setEditingSection] = useState<{ id: string; title: string } | null>(null);
 
   const url = `https://veca.sh/${ml.slug}`;
@@ -221,6 +228,75 @@ export default function Manager({
             <input value={newSection} onChange={(e) => setNewSection(e.target.value)} placeholder="새 섹션 이름 (예: 이번 주 신상)" className="field flex-1"
               onKeyDown={(e) => e.key === "Enter" && newSection.trim() && (run(() => createSection(newSection)), setNewSection(""))} />
             <button onClick={() => { run(() => createSection(newSection)); setNewSection(""); }} disabled={pending || !newSection.trim()} className="btn-line px-4 text-sm">+ 섹션 추가</button>
+          </div>
+        </div>
+      </div>
+
+      {/* 이미지 배너 (기획전) */}
+      <div className="card mt-4 p-4">
+        <h2 className="text-base font-bold">이미지 배너 <span className="text-sm font-normal text-sub">— 섹션을 연결하면 눌렀을 때 기획전으로 열려요</span></h2>
+        <div className="mt-3 space-y-2">
+          {banners.map((b, i) => (
+            <div key={b.id} className="flex items-center gap-2 rounded-xl border border-line p-2">
+              <img src={b.imageUrl} className="h-12 w-20 shrink-0 rounded-lg object-cover" alt="" />
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-[12.5px] font-bold">{b.title || "(제목 없음)"}</div>
+                <select
+                  value={b.sectionId ?? ""}
+                  onChange={(e) => run(() => updateBanner(b.id, { title: b.title, sectionId: e.target.value || null }))}
+                  className="mt-0.5 rounded-lg border border-line bg-white px-1.5 py-0.5 text-[11px] text-sub"
+                >
+                  <option value="">연결 안 함 (이미지만)</option>
+                  {sections.map((s) => (
+                    <option key={s.id} value={s.id}>기획전: {s.title}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex flex-col">
+                <button onClick={() => run(() => moveBanner(b.id, "up"))} disabled={i === 0} className="px-1 text-[10px] leading-3 text-sub disabled:opacity-25">▲</button>
+                <button onClick={() => run(() => moveBanner(b.id, "down"))} disabled={i === banners.length - 1} className="px-1 text-[10px] leading-3 text-sub disabled:opacity-25">▼</button>
+              </div>
+              <button onClick={() => run(() => deleteBanner(b.id))} className="px-1 text-[11px] text-red-500">삭제</button>
+            </div>
+          ))}
+
+          <div className="rounded-xl border border-dashed border-line p-3">
+            <div className="flex items-center gap-3">
+              <label className="block shrink-0 cursor-pointer">
+                {newBanner.imageUrl ? (
+                  <img src={newBanner.imageUrl} className="h-14 w-24 rounded-lg object-cover" alt="" />
+                ) : (
+                  <div className="flex h-14 w-24 items-center justify-center rounded-lg bg-brandsoft text-[11px] font-bold text-brand">+ 이미지</div>
+                )}
+                <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                  const f = e.target.files?.[0]; if (!f) return;
+                  setUploading(true);
+                  try {
+                    const fd = new FormData(); fd.append("file", f);
+                    const res = await fetch("/api/upload", { method: "POST", body: fd });
+                    const d = await res.json();
+                    if (d.url) setNewBanner((v) => ({ ...v, imageUrl: d.url })); else setMsg(d.error ?? "업로드 실패");
+                  } catch { setMsg("업로드 실패"); }
+                  setUploading(false);
+                }} />
+              </label>
+              <div className="flex-1 space-y-1.5">
+                <input value={newBanner.title} onChange={(e) => setNewBanner({ ...newBanner, title: e.target.value })} placeholder="배너 제목 (예: 가을 신상 기획전)" className="field w-full py-1.5 text-sm" />
+                <select value={newBanner.sectionId} onChange={(e) => setNewBanner({ ...newBanner, sectionId: e.target.value })} className="w-full rounded-lg border border-line bg-white px-2 py-1.5 text-sm text-sub">
+                  <option value="">연결 안 함 (이미지만)</option>
+                  {sections.map((s) => (
+                    <option key={s.id} value={s.id}>기획전으로 연결: {s.title}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <button
+              onClick={() => { run(() => addBanner({ imageUrl: newBanner.imageUrl, title: newBanner.title, sectionId: newBanner.sectionId || null })); setNewBanner({ imageUrl: "", title: "", sectionId: "" }); }}
+              disabled={pending || uploading || !newBanner.imageUrl}
+              className="btn-brand mt-2 w-full py-2 text-sm"
+            >
+              {uploading ? "이미지 업로드 중…" : "+ 배너 추가"}
+            </button>
           </div>
         </div>
       </div>

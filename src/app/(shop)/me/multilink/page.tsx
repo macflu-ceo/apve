@@ -35,7 +35,7 @@ export default async function MultiLinkAdminPage() {
     });
   }
 
-  const [items, links, leads, grade, sections] = await Promise.all([
+  const [items, links, leads, grade, sections, banners] = await Promise.all([
     prisma.multiLinkItem.findMany({
       where: { multiLinkId: ml.id },
       orderBy: [{ sort: "asc" }, { createdAt: "asc" }],
@@ -50,6 +50,7 @@ export default async function MultiLinkAdminPage() {
     prisma.recommendLead.findMany({ where: { multiLinkId: ml.id }, orderBy: { createdAt: "desc" }, take: 100 }),
     getPartnerGrade(partner.id),
     prisma.multiLinkSection.findMany({ where: { multiLinkId: ml.id }, orderBy: [{ sort: "asc" }, { createdAt: "asc" }] }),
+    prisma.multiLinkBanner.findMany({ where: { multiLinkId: ml.id }, orderBy: [{ sort: "asc" }, { createdAt: "asc" }] }),
   ]);
 
   const percent = grade?.percent ?? 0;
@@ -76,6 +77,7 @@ export default async function MultiLinkAdminPage() {
       }}
       percent={percent}
       sections={sections.map((s) => ({ id: s.id, title: s.title }))}
+      banners={banners.map((b) => ({ id: b.id, imageUrl: b.imageUrl, title: b.title ?? "", sectionId: b.sectionId }))}
       items={items.map((i) => ({ id: i.id, sectionId: i.sectionId, ...toItem(i.product) }))}
       candidates={links.filter((l) => !inPage.has(l.productId) && l.product.active).map((l) => toItem(l.product))}
       leads={leads.map((l) => ({
