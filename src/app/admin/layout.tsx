@@ -62,6 +62,7 @@ const ADMIN_GROUPS = [
       { href: "/admin/concierge-stores", label: "매장 관리" },
       { href: "/admin/concierge-coupons", label: "쿠폰·집계" },
       { href: "/admin/concierge-reservations", label: "방문 예약" },
+      { href: "/admin/multilinks", label: "멀티링크 페이지" },
       { href: "/admin/recommend-leads", label: "멀티링크 추천신청" },
     ],
   },
