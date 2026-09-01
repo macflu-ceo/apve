@@ -36,14 +36,18 @@ async function getData(slug: string) {
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const ml = await getData(params.slug);
   if (!ml || !ml.active) return { title: { absolute: "VIA ÉLITE" } };
+  const desc = ml.bio ?? "이탈리아 부티크 직계약 100% 정품, 특별한 가격으로 추천해드려요.";
   return {
     title: { absolute: `${ml.displayName}의 명품샵 | VIA ÉLITE` },
-    description: ml.bio ?? "이탈리아 부티크 직계약 100% 정품, 특별한 가격으로 추천해드려요.",
+    description: desc,
     openGraph: {
       title: `${ml.displayName}의 명품샵`,
-      description: ml.bio ?? "이탈리아 부티크 직계약, 100% 정품 명품을 특별한 가격으로.",
-      ...(ml.avatarUrl ? { images: [ml.avatarUrl] } : {}),
+      description: desc,
+      url: `https://veca.sh/${ml.slug}`,
+      siteName: "VIA ÉLITE",
+      type: "website",
     },
+    twitter: { card: "summary_large_image" },
   };
 }
 
