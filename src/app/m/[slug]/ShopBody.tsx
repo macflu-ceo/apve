@@ -87,6 +87,7 @@ export default function ShopBody({
   const categories = Array.from(new Set(items.map((i) => i.category).filter((c): c is string => !!c)));
   const [cat, setCat] = useState<string | null>(null);
   const [view, setView] = useState<"grid" | "list">("grid");
+  const [catOpen, setCatOpen] = useState(false);
   useEffect(() => {
     try {
       const v = localStorage.getItem("ml_view");
@@ -137,26 +138,31 @@ export default function ShopBody({
         </div>
       )}
 
-      {/* ── 카테고리 필터 ── */}
-      {categories.length > 1 && (
-        <div className="mt-6 flex gap-1.5 overflow-x-auto px-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <button
-            onClick={() => setCat(null)}
-            className={`shrink-0 rounded-full px-3.5 py-1.5 text-[13px] font-bold ${cat === null ? "bg-gray-900 text-white" : "bg-white text-gray-600 ring-1 ring-gray-200"}`}
-          >
-            전체
-          </button>
-          {categories.map((c) => (
-            <button
-              key={c}
-              onClick={() => setCat(cat === c ? null : c)}
-              className={`shrink-0 rounded-full px-3.5 py-1.5 text-[13px] font-bold ${cat === c ? "bg-gray-900 text-white" : "bg-white text-gray-600 ring-1 ring-gray-200"}`}
-            >
-              {c}
-            </button>
-          ))}
-        </div>
-      )}
+      {/* ── 카테고리 필터 (컴팩트 + 더보기) ── */}
+      {categories.length > 1 && (() => {
+        const LIMIT = 4;
+        // 선택된 카테고리는 접힌 상태에서도 항상 보이게
+        const head = categories.slice(0, LIMIT);
+        if (cat && !head.includes(cat)) head[LIMIT - 1] = cat;
+        const shown = catOpen ? categories : head;
+        const chip = (on: boolean) =>
+          `shrink-0 rounded-full px-2.5 py-1 text-[11.5px] font-bold transition ${on ? "bg-gray-900 text-white" : "bg-white text-gray-500 ring-1 ring-gray-200"}`;
+        return (
+          <div className={`mt-5 px-4 ${catOpen ? "flex flex-wrap gap-1.5" : "flex gap-1.5 overflow-hidden"}`}>
+            <button onClick={() => setCat(null)} className={chip(cat === null)}>전체</button>
+            {shown.map((c) => (
+              <button key={c} onClick={() => setCat(cat === c ? null : c)} className={chip(cat === c)}>
+                {c}
+              </button>
+            ))}
+            {categories.length > LIMIT && (
+              <button onClick={() => setCatOpen(!catOpen)} className="shrink-0 rounded-full bg-gray-100 px-2.5 py-1 text-[11.5px] font-bold text-gray-500">
+                {catOpen ? "접기 ∧" : `+${categories.length - head.length} 더보기`}
+              </button>
+            )}
+          </div>
+        );
+      })()}
 
       {/* ── 진열 섹션 ── */}
       {groups.map((g, gi) => {
