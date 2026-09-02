@@ -68,7 +68,7 @@ export async function dedupeActiveProducts(commit: boolean): Promise<{ groups: n
   const dupKeys = new Set<string>();
   for (const r of rows) {
     const img = firstImageUrl(r.imagesJson);
-    const imgK = img ? `${bkey(r.brand ?? "")}|${img}` : null;
+    const imgK = img; // 대표이미지 URL 단독(브랜드 표기가 달라도 동일 이미지면 같은 상품) — 가장 정확
     const nameK = nameKey(r.brand, r.name);
     const dupByImg = imgK != null && seenImg.has(imgK);
     const dupByName = seenName.has(nameK);
