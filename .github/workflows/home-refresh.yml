@@ -1,0 +1,31 @@
+name: 홈 자동 갱신 (재고·상품·섹션)
+
+# 매일 05:00 KST(20:00 UTC) 자동 실행 + 수동 실행 버튼
+on:
+  schedule:
+    - cron: "0 20 * * *"
+  workflow_dispatch: {}
+
+concurrency:
+  group: home-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      GODO_SALES_API_URL: https://api.viaelite.co.kr/concierge/sales
+      GODO_SALES_API_KEY: ${{ secrets.GODO_SALES_API_KEY }}
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm ci
+      - run: npx prisma generate
+      # 재고·가격 최신화 + 신규 차액 상품 등록 + 섹션 재편성 + 텔레그램 알림
+      - run: npx tsx scripts/home_refresh.ts --commit --notify
