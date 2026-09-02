@@ -30,6 +30,9 @@ const NEW_LIMIT_DEFAULT = 100;
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const bkey = (s: string) => (s || "").toLowerCase().replace(/[^a-z가-힣]/g, "");
+// 동일 상품 식별 키 — 브랜드+상품명 정규화(색상/재등록 변형이 다른 goodsNo여도 같은 상품으로 묶음)
+const nameKey = (brand: string | null, name: string | null) =>
+  bkey(brand ?? "") + "|" + (name ?? "").toLowerCase().replace(/\s+/g, " ").trim();
 function detectTitle(nm: string): string | null {
   const s = (nm || "").toLowerCase();
   for (const c of SECTION_KW) if (c.kw.some((k) => s.includes(k))) return c.title;
@@ -133,32 +136,39 @@ export async function runHomeRefresh(opts: { commit: boolean; injectNew: boolean
   // ④ 섹션 재편성 (품절 제외, 차액순, 브랜드 다양성)
   log("④ 섹션 재편성…");
   const active = await prisma.product.findMany({ where: { active: true }, select: { id: true, name: true, brand: true, listPrice: true, salePrice: true } });
-  const buckets = new Map<string, { id: string; brand: string; disc: number }[]>();
+  const buckets = new Map<string, { id: string; brand: string; nameKey: string; disc: number }[]>();
   for (const s of SECTION_KW) buckets.set(s.title, []);
   for (const p of active) {
     const t = detectTitle(p.name);
     if (!t) continue;
     const lp = p.listPrice ?? 0, sp = p.salePrice ?? 0;
-    buckets.get(t)!.push({ id: p.id, brand: p.brand ?? "", disc: lp > 0 && sp > 0 ? lp - sp : 0 });
+    buckets.get(t)!.push({ id: p.id, brand: p.brand ?? "", nameKey: nameKey(p.brand, p.name), disc: lp > 0 && sp > 0 ? lp - sp : 0 });
   }
+  const seenName = new Set<string>(); // 동일 상품(이름) 중복 노출 방지 — 전 섹션 통틀어 1회
   const sections: { title: string; n: number }[] = [];
   for (const s of SECTION_KW) {
     const arr = buckets.get(s.title)!.sort((a, b) => b.disc - a.disc);
     const per = new Map<string, number>();
     const ids: string[] = [];
     for (const p of arr) {
+      if (seenName.has(p.nameKey)) continue; // 중복 상품 스킵
       const k = bkey(p.brand);
       if ((per.get(k) || 0) >= MAX_PER_BRAND) continue;
-      ids.push(p.id); per.set(k, (per.get(k) || 0) + 1);
+      ids.push(p.id); per.set(k, (per.get(k) || 0) + 1); seenName.add(p.nameKey);
       if (ids.length >= PER_SECTION) break;
     }
     if (opts.commit) {
       const sec = await prisma.section.findFirst({ where: { title: s.title } });
       if (sec) {
-        await prisma.$transaction([
-          prisma.sectionProduct.deleteMany({ where: { sectionId: sec.id } }),
-          ...ids.map((productId, i) => prisma.sectionProduct.create({ data: { sectionId: sec.id, productId, sort: i } })),
-        ]);
+        // 한 섹션 실패해도 전체 잡이 죽지 않도록 방어 (동시 실행 레이스 등)
+        try {
+          await prisma.$transaction([
+            prisma.sectionProduct.deleteMany({ where: { sectionId: sec.id } }),
+            ...ids.map((productId, i) => prisma.sectionProduct.create({ data: { sectionId: sec.id, productId, sort: i } })),
+          ]);
+        } catch (e) {
+          log(`   ⚠️ 섹션 교체 실패(${s.title}): ${e instanceof Error ? e.message : e}`);
+        }
       }
     }
     sections.push({ title: s.title, n: ids.length });

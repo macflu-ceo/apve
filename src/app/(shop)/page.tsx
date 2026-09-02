@@ -42,15 +42,26 @@ export default async function HomePage() {
   const banners = dbBanners.length > 0 ? dbBanners : DEFAULT_BANNERS;
   const categories = dbCategories.length > 0 ? dbCategories : DEFAULT_CHIPS;
 
+  // 동일 상품(브랜드+상품명) 중복 노출 방지 — 색상/재등록 변형이 다른 goodsNo여도 한 번만
+  const dedupByName = <T extends { brand: string | null; name: string }>(list: T[]): T[] => {
+    const seen = new Set<string>();
+    return list.filter((p) => {
+      const key = (p.brand ?? "").toLowerCase().replace(/\s+/g, "") + "|" + p.name.toLowerCase().replace(/\s+/g, " ").trim();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  };
+
   // 섹션이 있으면 섹션대로, 없으면 전체 상품을 기본 섹션으로
   const sections =
     dbSections.length > 0
       ? dbSections.map((s) => ({
           title: s.title,
           subtitle: s.subtitle,
-          products: s.products.map((sp) => sp.product).filter((p) => p.active),
+          products: dedupByName(s.products.map((sp) => sp.product).filter((p) => p.active)),
         }))
-      : [{ title: "관심 가질 만한 상품", subtitle: "엄선한 명품 셀렉션이에요", products: allProducts }];
+      : [{ title: "관심 가질 만한 상품", subtitle: "엄선한 명품 셀렉션이에요", products: dedupByName(allProducts) }];
 
   return (
     <div className="pb-8">
