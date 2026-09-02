@@ -33,6 +33,61 @@ const bkey = (s: string) => (s || "").toLowerCase().replace(/[^a-z가-힣]/g, ""
 // 동일 상품 식별 키 — 브랜드+상품명 정규화(색상/재등록 변형이 다른 goodsNo여도 같은 상품으로 묶음)
 const nameKey = (brand: string | null, name: string | null) =>
   bkey(brand ?? "") + "|" + (name ?? "").toLowerCase().replace(/\s+/g, " ").trim();
+
+/** 대표 이미지 URL 정규화 (쿼리 제거·소문자) — 없으면 null */
+function firstImageUrl(imagesJson: string | null): string | null {
+  try {
+    const arr = JSON.parse(imagesJson || "[]");
+    const u = Array.isArray(arr) && arr.length ? String(arr[0]) : "";
+    if (!u) return null;
+    return u.split("?")[0].trim().toLowerCase();
+  } catch { return null; }
+}
+/**
+ * 동일 상품 정리 — 같은 (브랜드+대표이미지) 그룹에서 재고 있고 차액 큰 하나만 남기고 나머지 active=false.
+ * 매일 재고갱신 직후 호출(품절 아닌 중복이 되살아나도 매번 재정리).
+ */
+export async function dedupeActiveProducts(commit: boolean): Promise<{ groups: number; hidden: number }> {
+  const rows = await prisma.product.findMany({
+    where: { active: true },
+    select: { id: true, brand: true, name: true, imagesJson: true, stock: true, listPrice: true, salePrice: true },
+  });
+  // 품질 좋은 순으로 정렬 후, 대표이미지 또는 브랜드+상품명 중 하나라도 이미 등장했으면 중복으로 판단해 숨김
+  rows.sort((a, b) => {
+    const sa = (a.stock ?? 0) > 0 ? 1 : 0, sb = (b.stock ?? 0) > 0 ? 1 : 0;
+    if (sa !== sb) return sb - sa; // 재고 있는 것 우선
+    const da = (a.listPrice ?? 0) - (a.salePrice ?? 0), db = (b.listPrice ?? 0) - (b.salePrice ?? 0);
+    if (da !== db) return db - da; // 차액 큰 것 우선
+    const pa = a.salePrice ?? Number.MAX_SAFE_INTEGER, pb = b.salePrice ?? Number.MAX_SAFE_INTEGER;
+    if (pa !== pb) return pa - pb; // 판매가 낮은 것 우선
+    return a.id < b.id ? -1 : 1;
+  });
+  const seenImg = new Set<string>();
+  const seenName = new Set<string>();
+  const losers: string[] = [];
+  const dupKeys = new Set<string>();
+  for (const r of rows) {
+    const img = firstImageUrl(r.imagesJson);
+    const imgK = img ? `${bkey(r.brand ?? "")}|${img}` : null;
+    const nameK = nameKey(r.brand, r.name);
+    const dupByImg = imgK != null && seenImg.has(imgK);
+    const dupByName = seenName.has(nameK);
+    if (dupByImg || dupByName) {
+      losers.push(r.id);
+      dupKeys.add(dupByImg && imgK ? imgK : nameK);
+    } else {
+      if (imgK) seenImg.add(imgK);
+      seenName.add(nameK);
+    }
+  }
+  if (commit && losers.length) {
+    const CH = 200;
+    for (let i = 0; i < losers.length; i += CH) {
+      await prisma.product.updateMany({ where: { id: { in: losers.slice(i, i + CH) } }, data: { active: false } }).catch(() => {});
+    }
+  }
+  return { groups: dupKeys.size, hidden: losers.length };
+}
 function detectTitle(nm: string): string | null {
   const s = (nm || "").toLowerCase();
   for (const c of SECTION_KW) if (c.kw.some((k) => s.includes(k))) return c.title;
@@ -48,6 +103,7 @@ export interface HomeRefreshResult {
   reactivated: number;
   newImported: number;
   newErrors: number;
+  dupHidden: number;
   sections: { title: string; n: number }[];
   committed: boolean;
   ms: number;
@@ -133,6 +189,11 @@ export async function runHomeRefresh(opts: { commit: boolean; injectNew: boolean
     log(`   신규 ${newImported}${opts.commit ? "" : "(예정)"}${newErrors ? ` · 실패 ${newErrors}` : ""}`);
   }
 
+  // ③.5 동일 상품 정리 (브랜드+대표이미지 기준, 재고갱신 직후라 되살아난 중복도 재정리)
+  log("③.5 동일 상품 정리…");
+  const dedup = await dedupeActiveProducts(opts.commit);
+  log(`   중복 ${dedup.groups}그룹 · ${dedup.hidden}개 비활성`);
+
   // ④ 섹션 재편성 (품절 제외, 차액순, 브랜드 다양성)
   log("④ 섹션 재편성…");
   const active = await prisma.product.findMany({ where: { active: true }, select: { id: true, name: true, brand: true, listPrice: true, salePrice: true } });
@@ -175,7 +236,7 @@ export async function runHomeRefresh(opts: { commit: boolean; injectNew: boolean
   }
   log("   완료");
 
-  return { poolSize: pool.size, stockUpdated, deactivated, reactivated, newImported, newErrors, sections, committed: opts.commit, ms: Date.now() - t0 };
+  return { poolSize: pool.size, stockUpdated, deactivated, reactivated, newImported, newErrors, dupHidden: dedup.hidden, sections, committed: opts.commit, ms: Date.now() - t0 };
 }
 
 /** 결과 → 텔레그램 알림 텍스트 */
@@ -186,6 +247,7 @@ export function homeRefreshText(r: HomeRefreshResult): string {
     `🔄 <b>홈 자동 갱신 완료</b> (${min}분)`,
     `· 재고·가격 최신화 ${r.stockUpdated}건 (품절제외 ${r.deactivated} · 재입고 ${r.reactivated})`,
     `· 신규 등록 ${r.newImported}${r.newErrors ? ` (실패 ${r.newErrors})` : ""}`,
+    `· 동일상품 정리 ${r.dupHidden}개 비활성`,
     `· 섹션 재편성: ${secLine} (총 ${r.sections.reduce((a, s) => a + s.n, 0)}개)`,
   ].join("\n");
 }
