@@ -4,30 +4,38 @@
 import { useEffect, useState, useTransition } from "react";
 import { submitRecommendLead } from "./actions";
 
-const FAMOUS_BRANDS = ["샤넬", "루이비통", "구찌", "디올", "프라다", "미우미우", "보테가", "발렌시아가"];
+const FAMOUS_BRANDS = ["구찌", "디올", "프라다", "미우미우", "보테가", "발렌시아가", "셀린느", "로에베"];
 const CATEGORIES = ["가방", "지갑·소품", "신발", "아우터", "상의", "바지·스커트", "시계·주얼리"];
-const SIZE_FIELDS: Record<string, { label: string; options: string[]; note: string }> = {
-  신발: {
-    label: "신발 사이즈",
-    options: ["220", "225", "230", "235", "240", "245", "250", "255", "260", "265", "270", "275", "280"],
-    note: "신발은 브랜드·라스트마다 핏이 달라, 내 사이즈의 재고를 만나는 일이 가장 어렵습니다. 등록해두시면 사이즈가 확인된 상품만 정성껏 골라 추천드립니다.",
-  },
-  아우터: {
-    label: "아우터 사이즈",
-    options: ["44(XS)", "55(S)", "66(M)", "77(L)", "88(XL)"],
-    note: "",
-  },
-  상의: {
-    label: "상의 사이즈",
-    options: ["44(XS)", "55(S)", "66(M)", "77(L)", "88(XL)"],
-    note: "",
-  },
-  "바지·스커트": {
+// 카테고리 → 사이즈 필드 키 (아우터·상의는 같은 사이즈 체계라 통합)
+const SIZE_KEY: Record<string, string> = { 신발: "신발", 아우터: "의류", 상의: "의류", "바지·스커트": "하의" };
+const SHOE_NOTE =
+  "신발은 브랜드·라스트마다 핏이 달라, 내 사이즈의 재고를 만나는 일이 가장 어렵습니다. 등록해두시면 사이즈가 확인된 상품만 정성껏 골라 추천드립니다.";
+function sizeField(key: string, gender: string): { label: string; options: string[]; note: string } {
+  const female = gender !== "남성"; // 미선택 시 여성 기준 + 남성 선택 시 전환
+  if (key === "신발")
+    return {
+      label: "신발 사이즈 (mm)",
+      options: female
+        ? ["220", "225", "230", "235", "240", "245", "250", "255"]
+        : ["250", "255", "260", "265", "270", "275", "280", "285", "290"],
+      note: SHOE_NOTE,
+    };
+  if (key === "의류")
+    return {
+      label: "상의·아우터 사이즈",
+      options: female
+        ? ["44(XS)", "55(S)", "66(M)", "77(L)", "88(XL)"]
+        : ["90(S)", "95(M)", "100(L)", "105(XL)", "110(2XL)"],
+      note: "",
+    };
+  return {
     label: "하의 사이즈",
-    options: ["24", "25", "26", "27", "28", "29", "30", "31", "32", "34"],
+    options: female
+      ? ["24", "25", "26", "27", "28", "29", "30"]
+      : ["28", "29", "30", "31", "32", "33", "34", "36"],
     note: "",
-  },
-};
+  };
+}
 const CLOTHING_NOTE =
   "이탈리아·프랑스 등 해외 사이즈 표기는 저희가 국내 기준으로 변환해 확인합니다. 익숙한 한국 사이즈로만 선택해 주세요 — 맞음새 검수까지 마친 상품으로 추천드립니다.";
 const AGES = ["20대", "30대", "40대", "50대+"];
@@ -72,12 +80,12 @@ export default function RecommendSheet({ slug, conciergeName }: { slug: string; 
     .filter((b) => brandQuery.trim() === "" || b.toLowerCase().includes(brandQuery.trim().toLowerCase()))
     .slice(0, 30);
 
-  const sizeCats = cats.filter((c) => SIZE_FIELDS[c]);
+  const sizeKeys = Array.from(new Set(cats.map((c) => SIZE_KEY[c]).filter((k): k is string => !!k)));
 
   const submit = () =>
     start(async () => {
-      const sizes = sizeCats
-        .map((c) => (sizeMap[c]?.length ? `${SIZE_FIELDS[c].label} ${sizeMap[c].join("/")}` : null))
+      const sizes = sizeKeys
+        .map((k) => (sizeMap[k]?.length ? `${sizeField(k, gender).label} ${sizeMap[k].join("/")}` : null))
         .filter(Boolean)
         .join(" · ");
       const r = await submitRecommendLead({
@@ -174,6 +182,15 @@ export default function RecommendSheet({ slug, conciergeName }: { slug: string; 
                     )}
                   </div>
 
+                  <div>
+                    <div className="mb-2 text-[13px] font-bold text-gray-700">성별</div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {GENDERS.map((g) => (
+                        <button key={g} onClick={() => { setGender(g); setSizeMap({}); }} className={chip(gender === g)}>{g}</button>
+                      ))}
+                    </div>
+                  </div>
+
                   {/* 관심 카테고리 */}
                   <div>
                     <div className="mb-2 text-[13px] font-bold text-gray-700">관심 카테고리 <span className="font-normal text-gray-400">(복수 선택)</span></div>
@@ -184,19 +201,19 @@ export default function RecommendSheet({ slug, conciergeName }: { slug: string; 
                     </div>
                   </div>
 
-                  {/* 선택한 카테고리별 사이즈 (한국 기준 객관식, 복수 선택) */}
-                  {sizeCats.length > 0 && (
+                  {/* 선택한 카테고리별 사이즈 (성별·한국 기준 객관식, 복수 선택) */}
+                  {sizeKeys.length > 0 && (
                     <div className="space-y-3 rounded-xl bg-[#F4F6FF] p-3.5">
                       <div className="text-[13px] font-bold text-gray-700">
-                        내 사이즈 <span className="font-normal text-gray-400">— 한국 기준 · 복수 선택 가능</span>
+                        내 사이즈 <span className="font-normal text-gray-400">— {gender || "여성"} 기준 · 복수 선택 가능</span>
                       </div>
-                      {sizeCats.map((c) => {
-                        const field = SIZE_FIELDS[c];
-                        const selected = sizeMap[c] ?? [];
+                      {sizeKeys.map((k) => {
+                        const field = sizeField(k, gender);
+                        const selected = sizeMap[k] ?? [];
                         const toggleSize = (v: string) =>
-                          setSizeMap({ ...sizeMap, [c]: selected.includes(v) ? selected.filter((x) => x !== v) : [...selected, v] });
+                          setSizeMap({ ...sizeMap, [k]: selected.includes(v) ? selected.filter((x) => x !== v) : [...selected, v] });
                         return (
-                          <div key={c}>
+                          <div key={k}>
                             <div className="mb-1.5 text-[12.5px] font-semibold text-gray-600">{field.label}</div>
                             <div className="flex flex-wrap gap-1.5">
                               {field.options.map((o) => (
@@ -215,7 +232,7 @@ export default function RecommendSheet({ slug, conciergeName }: { slug: string; 
                           </div>
                         );
                       })}
-                      {sizeCats.some((c) => c !== "신발") && (
+                      {sizeKeys.some((k) => k !== "신발") && (
                         <p className="border-t border-[#E3E8FF] pt-2.5 text-[11px] leading-relaxed text-gray-500">{CLOTHING_NOTE}</p>
                       )}
                     </div>
@@ -226,15 +243,6 @@ export default function RecommendSheet({ slug, conciergeName }: { slug: string; 
                     <div className="flex flex-wrap gap-1.5">
                       {AGES.map((a) => (
                         <button key={a} onClick={() => setAgeRange(a)} className={chip(ageRange === a)}>{a}</button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="mb-2 text-[13px] font-bold text-gray-700">성별</div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {GENDERS.map((g) => (
-                        <button key={g} onClick={() => setGender(g)} className={chip(gender === g)}>{g}</button>
                       ))}
                     </div>
                   </div>

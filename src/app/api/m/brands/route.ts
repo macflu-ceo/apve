@@ -19,10 +19,12 @@ export async function GET() {
       .replace(/&lt;/g, "<")
       .replace(/&gt;/g, ">")
       .replace(/&nbsp;/g, " ");
+  // 취급하지 않는 브랜드 제외 (병행 공급 불가 브랜드)
+  const EXCLUDE = /chanel|샤넬|louis\s*vuitton|루이\s*비통|루이비통|goyard|고야드|herm[eè]s|에르메스/i;
   const seen = new Map<string, string>();
   for (const r of rows) {
     const b = decode((r.brand ?? "").trim());
-    if (!b) continue;
+    if (!b || EXCLUDE.test(b)) continue;
     const key = b.toLowerCase();
     // 같은 브랜드면 'Title Case' 형태(전부 대문자가 아닌 쪽)를 우선 노출
     const cur = seen.get(key);
