@@ -133,7 +133,8 @@ export default async function GoodsPage({ params }: { params: { goodsNo: string 
   return (
     <div className="px-4 pb-12 pt-4">
       {rate.platform === "app" && <AppBackButton />}
-      <div className="grid gap-8">
+      {/* grid-cols-1(minmax 0): 큰 원본 이미지가 열 너비를 화면 밖으로 밀지 못하게 */}
+      <div className="grid grid-cols-1 gap-8">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       {/* 이미지 (스와이프 갤러리 + 썸네일 — 공통 배너 제외) */}
       <div>

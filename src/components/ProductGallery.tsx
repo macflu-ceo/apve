@@ -36,8 +36,9 @@ export default function ProductGallery({
   return (
     <div>
       {/* 큰 이미지 */}
+      {/* w-full + 이미지 absolute: 원본 이미지가 커도 박스가 화면 밖으로 커지지 않게 고정 */}
       <div
-        className="relative aspect-[3/4] overflow-hidden rounded-xl2 bg-[#f5f4f2] select-none"
+        className="relative aspect-[3/4] w-full overflow-hidden rounded-xl2 bg-[#f5f4f2] select-none"
         onTouchStart={(e) => setTouchX(e.touches[0].clientX)}
         onTouchEnd={(e) => {
           if (touchX != null) {
@@ -51,7 +52,7 @@ export default function ProductGallery({
         <img
           src={visible[cur]}
           alt={alt}
-          className="h-full w-full object-cover"
+          className="absolute inset-0 h-full w-full object-cover"
           onError={() => markBroken(visible[cur])}
         />
 
