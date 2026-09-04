@@ -34,6 +34,23 @@ const bkey = (s: string) => (s || "").toLowerCase().replace(/[^a-z가-힣]/g, ""
 const nameKey = (brand: string | null, name: string | null) =>
   bkey(brand ?? "") + "|" + (name ?? "").toLowerCase().replace(/\s+/g, " ").trim();
 
+/** 오늘(KST) 날짜 시드 YYYYMMDD */
+function todaySeed(): number {
+  return parseInt(new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10).replace(/-/g, ""), 10);
+}
+/** 결정적 PRNG (mulberry32) — 같은 시드면 같은 순서, 날짜 바뀌면 라인업 바뀜 */
+function mulberry32(a: number) {
+  return function () {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function shuffle<T>(arr: T[], rnd: () => number): void {
+  for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; }
+}
+
 /** 대표 이미지 URL 정규화 (쿼리 제거·소문자) — 없으면 null */
 function firstImageUrl(imagesJson: string | null): string | null {
   try {
@@ -95,6 +112,56 @@ function detectTitle(nm: string): string | null {
 }
 
 interface PoolItem { goodsNo: string; goodsNm: string; sellPrice: number; listPrice: number; stock: number; soldOut: boolean; discAmt: number; tier: number }
+
+/**
+ * 섹션 재편성 — 카테고리별 '좋은 딜 풀(차액 상위 다수)'에서 매일 날짜 시드로 섞어 100개 선정.
+ * → 매일 라인업이 바뀌면서도 딜 품질 유지. 브랜드 다양성 캡 + 동일상품(이미지/이름) 중복 제거.
+ */
+export async function refillSections(commit: boolean, seed: number = todaySeed(), log: (s: string) => void = () => {}): Promise<{ title: string; n: number }[]> {
+  const active = await prisma.product.findMany({ where: { active: true }, select: { id: true, name: true, brand: true, listPrice: true, salePrice: true, imagesJson: true } });
+  const buckets = new Map<string, { id: string; brand: string; nameKey: string; imgKey: string | null; disc: number }[]>();
+  for (const s of SECTION_KW) buckets.set(s.title, []);
+  for (const p of active) {
+    const t = detectTitle(p.name);
+    if (!t) continue;
+    const lp = p.listPrice ?? 0, sp = p.salePrice ?? 0;
+    buckets.get(t)!.push({ id: p.id, brand: p.brand ?? "", nameKey: nameKey(p.brand, p.name), imgKey: firstImageUrl(p.imagesJson), disc: lp > 0 && sp > 0 ? lp - sp : 0 });
+  }
+  const rnd = mulberry32(seed >>> 0);
+  const seenName = new Set<string>(), seenImg = new Set<string>();
+  const out: { title: string; n: number }[] = [];
+  for (const s of SECTION_KW) {
+    const sorted = buckets.get(s.title)!.sort((a, b) => b.disc - a.disc);
+    const POOL = Math.min(sorted.length, Math.max(PER_SECTION * 4, 400)); // 차액 상위 풀에서 로테이션
+    const pool = sorted.slice(0, POOL);
+    shuffle(pool, rnd); // 매일 시드로 섞어 라인업 신선화
+    const per = new Map<string, number>();
+    const ids: string[] = [];
+    for (const p of pool) {
+      if (seenName.has(p.nameKey)) continue;
+      if (p.imgKey && seenImg.has(p.imgKey)) continue;
+      const k = bkey(p.brand);
+      if ((per.get(k) || 0) >= MAX_PER_BRAND) continue;
+      ids.push(p.id); per.set(k, (per.get(k) || 0) + 1); seenName.add(p.nameKey); if (p.imgKey) seenImg.add(p.imgKey);
+      if (ids.length >= PER_SECTION) break;
+    }
+    if (commit) {
+      const sec = await prisma.section.findFirst({ where: { title: s.title } });
+      if (sec) {
+        try {
+          await prisma.$transaction([
+            prisma.sectionProduct.deleteMany({ where: { sectionId: sec.id } }),
+            ...ids.map((productId, i) => prisma.sectionProduct.create({ data: { sectionId: sec.id, productId, sort: i } })),
+          ]);
+        } catch (e) {
+          log(`   ⚠️ 섹션 교체 실패(${s.title}): ${e instanceof Error ? e.message : e}`);
+        }
+      }
+    }
+    out.push({ title: s.title, n: ids.length });
+  }
+  return out;
+}
 
 export interface HomeRefreshResult {
   poolSize: number;
@@ -194,46 +261,9 @@ export async function runHomeRefresh(opts: { commit: boolean; injectNew: boolean
   const dedup = await dedupeActiveProducts(opts.commit);
   log(`   중복 ${dedup.groups}그룹 · ${dedup.hidden}개 비활성`);
 
-  // ④ 섹션 재편성 (품절 제외, 차액순, 브랜드 다양성)
+  // ④ 섹션 재편성 (매일 로테이션 + 중복 제거)
   log("④ 섹션 재편성…");
-  const active = await prisma.product.findMany({ where: { active: true }, select: { id: true, name: true, brand: true, listPrice: true, salePrice: true } });
-  const buckets = new Map<string, { id: string; brand: string; nameKey: string; disc: number }[]>();
-  for (const s of SECTION_KW) buckets.set(s.title, []);
-  for (const p of active) {
-    const t = detectTitle(p.name);
-    if (!t) continue;
-    const lp = p.listPrice ?? 0, sp = p.salePrice ?? 0;
-    buckets.get(t)!.push({ id: p.id, brand: p.brand ?? "", nameKey: nameKey(p.brand, p.name), disc: lp > 0 && sp > 0 ? lp - sp : 0 });
-  }
-  const seenName = new Set<string>(); // 동일 상품(이름) 중복 노출 방지 — 전 섹션 통틀어 1회
-  const sections: { title: string; n: number }[] = [];
-  for (const s of SECTION_KW) {
-    const arr = buckets.get(s.title)!.sort((a, b) => b.disc - a.disc);
-    const per = new Map<string, number>();
-    const ids: string[] = [];
-    for (const p of arr) {
-      if (seenName.has(p.nameKey)) continue; // 중복 상품 스킵
-      const k = bkey(p.brand);
-      if ((per.get(k) || 0) >= MAX_PER_BRAND) continue;
-      ids.push(p.id); per.set(k, (per.get(k) || 0) + 1); seenName.add(p.nameKey);
-      if (ids.length >= PER_SECTION) break;
-    }
-    if (opts.commit) {
-      const sec = await prisma.section.findFirst({ where: { title: s.title } });
-      if (sec) {
-        // 한 섹션 실패해도 전체 잡이 죽지 않도록 방어 (동시 실행 레이스 등)
-        try {
-          await prisma.$transaction([
-            prisma.sectionProduct.deleteMany({ where: { sectionId: sec.id } }),
-            ...ids.map((productId, i) => prisma.sectionProduct.create({ data: { sectionId: sec.id, productId, sort: i } })),
-          ]);
-        } catch (e) {
-          log(`   ⚠️ 섹션 교체 실패(${s.title}): ${e instanceof Error ? e.message : e}`);
-        }
-      }
-    }
-    sections.push({ title: s.title, n: ids.length });
-  }
+  const sections = await refillSections(opts.commit, todaySeed(), log);
   log("   완료");
 
   return { poolSize: pool.size, stockUpdated, deactivated, reactivated, newImported, newErrors, dupHidden: dedup.hidden, sections, committed: opts.commit, ms: Date.now() - t0 };
