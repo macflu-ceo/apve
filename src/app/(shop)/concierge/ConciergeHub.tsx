@@ -3,7 +3,18 @@ import { conciergeCode } from "@/lib/concierge-access";
 
 /** 컨시어지 전용 허브 — 매장 링크 생성기 · 상품카드 생성기 · 전용 공지 */
 type Notice = { id: string; title: string; pinned: boolean; date: string };
-export default function ConciergeHub({ name, conciergeNo, notices = [] }: { name: string; conciergeNo: number; notices?: Notice[] }) {
+export default function ConciergeHub({
+  name,
+  conciergeNo,
+  notices = [],
+  term,
+}: {
+  name: string;
+  conciergeNo: number;
+  notices?: Notice[];
+  /** 이번 3개월 구간 성적 — 없으면 자격 시작일이 안 찍힌 예전 회원 */
+  term?: { daysLeft: number | null; sales: number; rate: number; target: number };
+}) {
   const tools = [
     {
       href: "/me/multilink",
@@ -33,6 +44,35 @@ export default function ConciergeHub({ name, conciergeNo, notices = [] }: { name
         <div className="mt-0.5 text-sm text-white/70">
           컨시어지 번호 <b className="text-[#A9B8FF]">{conciergeCode(conciergeNo)}</b>
         </div>
+
+        {/* 자격 유지 상황 — 기한이 지나면 자동으로 풀리므로 늘 보이게 둔다 */}
+        {term && term.daysLeft != null && (
+          <div className="mt-4 rounded-xl bg-white/10 p-3">
+            <div className="flex items-baseline justify-between text-xs">
+              <span className="text-white/70">
+                이번 구간 <b className="text-white">{term.daysLeft}일</b> 남음
+              </span>
+              <span className="tabular-nums text-white/70">
+                <b className={term.rate >= 100 ? "text-[#7CE2A8]" : "text-white"}>
+                  {(term.sales / 10000).toLocaleString()}만
+                </b>
+                {" / "}
+                {(term.target / 10000).toLocaleString()}만원
+              </span>
+            </div>
+            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/15">
+              <div
+                className={`h-full rounded-full ${term.rate >= 100 ? "bg-[#7CE2A8]" : "bg-[#A9B8FF]"}`}
+                style={{ width: `${Math.min(100, term.rate)}%` }}
+              />
+            </div>
+            <p className="mt-2 text-[11px] leading-relaxed text-white/50">
+              {term.rate >= 100
+                ? "이번 구간 조건을 채웠습니다."
+                : `3개월 안에 ${(term.target / 10000).toLocaleString()}만원을 채워야 자격이 유지됩니다.`}
+            </p>
+          </div>
+        )}
       </div>
 
       {/* 공지 — 메인에서 바로 확인 (최대 5개) */}
