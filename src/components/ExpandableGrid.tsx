@@ -24,7 +24,7 @@ export default function ExpandableGrid({
 
   return (
     <>
-      <div className="grid grid-cols-2 gap-x-3 gap-y-6">
+      <div className="grid grid-cols-3 gap-x-2 gap-y-5">
         {shown}
       </div>
 

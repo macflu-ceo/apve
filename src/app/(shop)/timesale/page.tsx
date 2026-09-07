@@ -57,7 +57,7 @@ export default async function TimeSalePage() {
           <div className="mt-4 text-xs text-sub">준비된 상품 {items.length}개</div>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-x-3 gap-y-6">
+        <div className="grid grid-cols-3 gap-x-2 gap-y-5">
           {items.map(({ product: p, boost }) => {
             const img = parseList(p.imagesJson)[0];
             const base = p.salePrice != null ? Math.round((p.salePrice * rate.percent) / 100) : null;

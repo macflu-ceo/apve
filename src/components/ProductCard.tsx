@@ -50,24 +50,24 @@ export default function ProductCard({
           <div className="flex h-full items-center justify-center text-sub">No Image</div>
         )}
         {rank != null && (
-          <span className="absolute left-2 top-2 rounded-md bg-ink/85 px-2 py-0.5 text-xs font-bold text-white">
+          <span className="absolute left-1.5 top-1.5 rounded-md bg-ink/85 px-1.5 py-0.5 text-[11px] font-bold text-white">
             {rank}
           </span>
         )}
 
         {/* 상품 태그 (좌측 하단) */}
         {tags.length > 0 && (
-          <div className="absolute bottom-2 left-2 flex flex-wrap gap-1">
-            {tags.slice(0, 2).map((t, i) => (
-              <span key={i} className="rounded-[4px] bg-ink/85 px-1.5 py-0.5 text-[11px] font-bold text-white">
+          <div className="absolute bottom-1.5 left-1.5 flex flex-wrap gap-1">
+            {tags.slice(0, 1).map((t, i) => (
+              <span key={i} className="rounded-[4px] bg-ink/85 px-1.5 py-0.5 text-[10px] font-bold text-white">
                 {t}
               </span>
             ))}
           </div>
         )}
 
-        <button className="absolute bottom-2 right-2 text-white/90 drop-shadow" aria-label="찜">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+        <button className="absolute bottom-1.5 right-1.5 text-white/90 drop-shadow" aria-label="찜">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
             <path d="M12 21s-7-4.5-9.5-8.5A5 5 0 0112 6a5 5 0 019.5 6.5C19 16.5 12 21 12 21z" />
           </svg>
         </button>
@@ -75,31 +75,32 @@ export default function ProductCard({
 
       {/* 이름 길이가 제각각이라 가격이 카드마다 다른 높이에 걸렸다.
           이름 블록이 남는 자리를 먹고, 가격 아래는 카드 바닥에 붙는다. */}
-      <div className="flex flex-1 flex-col pt-2">
-        <div className="text-[13px] font-bold">{product.brand ?? "명품"}</div>
-        <div className="mt-0.5 line-clamp-2 text-[13px] leading-snug text-ink/60">{product.name}</div>
+      {/* 3열 폭에 맞춘 컴팩트 타이포 */}
+      <div className="flex flex-1 flex-col pt-1.5">
+        <div className="truncate text-[11px] font-bold">{product.brand ?? "명품"}</div>
+        <div className="mt-0.5 line-clamp-2 text-[11px] leading-snug text-ink/60">{product.name}</div>
 
-        <div className="mt-auto pt-1 text-[11px] text-sub line-through">
+        <div className="mt-auto pt-1 text-[10px] text-sub line-through">
           {product.listPrice && discount > 0 ? won(product.listPrice) : "\u00a0"}
         </div>
-        <div className="mt-0.5 flex items-center gap-1.5">
-          {discount > 0 && <span className="text-[16px] font-extrabold text-deal">{discount}%</span>}
-          <span className="text-[16px] font-extrabold">{won(product.salePrice)}</span>
+        <div className="mt-0.5 flex items-center gap-1 whitespace-nowrap">
+          {discount > 0 && <span className="text-[13.5px] font-extrabold text-deal">{discount}%</span>}
+          <span className="text-[13.5px] font-extrabold tracking-tight">{won(product.salePrice)}</span>
         </div>
         {boosted > 0 ? (
           <div className="mt-1 flex flex-wrap items-center gap-1">
-            <span className="inline-flex items-center gap-1 rounded bg-red-50 px-1.5 py-0.5 text-[11px] font-bold text-red-600 ring-1 ring-red-200">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+            <span className="inline-flex items-center gap-0.5 rounded bg-red-50 px-1 py-0.5 text-[10px] font-bold text-red-600 ring-1 ring-red-200">
+              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
                 <path d="M12 20V5M5 12l7-7 7 7" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
-              {confirmed ? "" : "최대 "}수수료 {percent + boost}% {won(boosted)}
+              {confirmed ? "" : "최대 "}수수료 {won(boosted)}
             </span>
-            <span className="rounded bg-red-600 px-1 py-0.5 text-[10px] font-black text-white">+{boost}%p</span>
+            <span className="rounded bg-red-600 px-1 py-0.5 text-[9px] font-black text-white">+{boost}%p</span>
           </div>
         ) : (
           commission > 0 && (
             // flex 컬럼에선 stretch로 가로로 늘어나므로 self-start로 내용 폭만 차지
-            <div className="mt-1 self-start rounded bg-brandsoft px-1.5 py-0.5 text-[11px] font-bold text-brand">
+            <div className="mt-1 self-start rounded bg-brandsoft px-1 py-0.5 text-[10px] font-bold text-brand">
               {confirmed ? "" : "최대 "}수수료 {won(commission)}
             </div>
           )

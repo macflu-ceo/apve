@@ -60,7 +60,7 @@ export default async function ExhibitionPage({ params }: { params: { id: string 
         {products.length === 0 ? (
           <div className="rounded-xl2 bg-[#f7f7f7] p-12 text-center text-sub">아직 담긴 상품이 없습니다.</div>
         ) : (
-          <div className="grid grid-cols-2 gap-x-3 gap-y-6">
+          <div className="grid grid-cols-3 gap-x-2 gap-y-5">
             {products.map((p) => (
               <ProductCard key={p.id} product={p} percent={rate.percent} boost={boostMap.get(p.goodsNo) ?? 0} confirmed={rate.isMine} />
             ))}
