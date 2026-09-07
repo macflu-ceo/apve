@@ -27,15 +27,19 @@ export function ProductCard({ item }: { item: ShopItem }) {
       href={item.url}
       target="_blank"
       rel="noopener"
-      className="block overflow-hidden rounded-2xl bg-white shadow-[0_2px_14px_rgba(20,30,80,.07)] transition active:scale-[0.98]"
+      className="flex h-full flex-col overflow-hidden rounded-2xl bg-white shadow-[0_2px_14px_rgba(20,30,80,.07)] transition active:scale-[0.98]"
     >
-      <div className="aspect-square bg-[#FAFAFC]">
+      <div className="aspect-square shrink-0 bg-[#FAFAFC]">
         {item.image && <img src={item.image} alt={item.name} className="h-full w-full object-contain" loading="lazy" />}
       </div>
-      <div className="p-2">
+      {/* 이름이 한 줄인 카드와 두 줄인 카드가 섞이면 가격 줄이 들쭉날쭉해진다. 가격은 카드 바닥 기준. */}
+      <div className="flex flex-1 flex-col p-2">
         {item.brand && <div className="truncate text-[10px] font-semibold text-gray-400">{item.brand}</div>}
         <div className="mt-0.5 line-clamp-2 text-[11px] font-bold leading-snug text-gray-900">{item.name}</div>
-        <div className="mt-1 text-[12px] font-extrabold text-gray-900">
+        <div className="mt-auto pt-1 text-[10px] text-gray-300 line-through">
+          {item.listPrice != null && item.discount != null ? won(item.listPrice) : "\u00a0"}
+        </div>
+        <div className="text-[12px] font-extrabold text-gray-900">
           {item.discount != null && <span className="mr-0.5 text-[#13b6a6]">{item.discount}%</span>}
           {item.salePrice != null && won(item.salePrice)}
         </div>

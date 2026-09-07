@@ -41,7 +41,7 @@ export default function ProductCard({
       : 0;
 
   return (
-    <Link href={`/goods/${product.goodsNo}`} className="group block">
+    <Link href={`/goods/${product.goodsNo}`} className="group flex h-full flex-col">
       <div className="relative aspect-[3/4] w-full overflow-hidden rounded-xl bg-[#f5f4f2]">
         {img ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -73,13 +73,15 @@ export default function ProductCard({
         </button>
       </div>
 
-      <div className="pt-2">
+      {/* 이름 길이가 제각각이라 가격이 카드마다 다른 높이에 걸렸다.
+          이름 블록이 남는 자리를 먹고, 가격 아래는 카드 바닥에 붙는다. */}
+      <div className="flex flex-1 flex-col pt-2">
         <div className="text-[13px] font-bold">{product.brand ?? "명품"}</div>
-        <div className="mt-0.5 line-clamp-1 text-[13px] text-ink/60">{product.name}</div>
+        <div className="mt-0.5 line-clamp-2 text-[13px] leading-snug text-ink/60">{product.name}</div>
 
-        {product.listPrice && discount > 0 && (
-          <div className="mt-1 text-[11px] text-sub line-through">{won(product.listPrice)}</div>
-        )}
+        <div className="mt-auto pt-1 text-[11px] text-sub line-through">
+          {product.listPrice && discount > 0 ? won(product.listPrice) : "\u00a0"}
+        </div>
         <div className="mt-0.5 flex items-center gap-1.5">
           {discount > 0 && <span className="text-[16px] font-extrabold text-deal">{discount}%</span>}
           <span className="text-[16px] font-extrabold">{won(product.salePrice)}</span>

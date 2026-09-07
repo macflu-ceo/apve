@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { shopTitle } from "@/lib/shop-title";
 import { conciergeCode } from "@/lib/concierge-access";
 import ConciergeBadge from "./ConciergeBadge";
+import PerksCard from "./PerksCard";
 import { prisma } from "@/lib/db";
 import { partnerLink } from "@/lib/godomall/link";
 import RecommendSheet from "./RecommendSheet";
@@ -114,15 +115,9 @@ export default async function MultiLinkPage({ params }: { params: { slug: string
           </div>
         </div>
 
-        {/* ── 정품 보증 카드 (디폴트) ── */}
+        {/* ── 공식 컨시어지 혜택 (펼침) ── */}
         <div className="relative z-10 -mt-8 px-4">
-          <div className="flex items-center gap-3 rounded-2xl bg-white p-4 shadow-[0_6px_24px_rgba(20,30,80,.1)]">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#EEF1FF] text-xl">🛡️</div>
-            <div>
-              <div className="text-[13.5px] font-extrabold text-gray-900">정품이 아니면 200% 보상</div>
-              <div className="text-[11.5px] text-gray-500">이탈리아 부티크 직계약 공급 · VIA ÉLITE 정품 보증</div>
-            </div>
-          </div>
+          <PerksCard />
         </div>
 
         {/* ── 배너·카테고리 필터·진열 섹션 ── */}
