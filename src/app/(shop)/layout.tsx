@@ -130,12 +130,13 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
       </header>
       </div>
 
-      <main className="mx-auto max-w-shell pb-24">{children}</main>
+      {/* 하단 여백은 푸터(mt-10)와 페이지 자체 패딩으로 충분 — 겹겹이 쌓이던 pb 제거 */}
+      <main className="mx-auto max-w-shell">{children}</main>
 
       {/* 하단 탭바 (모바일 전용) — 현재 탭 강조 */}
       <BottomNav />
 
-      <footer className="mt-16 border-t border-line bg-[#faf9f8] pb-24">
+      <footer className="mt-10 border-t border-line bg-[#faf9f8] pb-24">
         <div className="mx-auto max-w-shell px-4 py-10">
           <div className="grid gap-8">
             {/* 브랜드 */}

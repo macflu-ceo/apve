@@ -163,7 +163,7 @@ export default async function GoodsPage({ params }: { params: { goodsNo: string 
   };
 
   return (
-    <div className="px-4 pb-12 pt-4">
+    <div className="px-4 pb-6 pt-4">
       {rate.platform === "app" && <AppBackButton />}
       {/* grid-cols-1(minmax 0): 큰 원본 이미지가 열 너비를 화면 밖으로 밀지 못하게 */}
       <div className="grid grid-cols-1 gap-8">
