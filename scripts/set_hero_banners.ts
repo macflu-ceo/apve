@@ -4,10 +4,10 @@ import { prisma } from "../src/lib/db";
 
 // 링크(게시글 ID) → 새 이미지/문구 매핑
 const MAP: { match: string; imageUrl: string; title: string; subtitle: string }[] = [
-  { match: "cmt36v6iv", imageUrl: "/banners/hv1.jpg", title: "컨시어지 되면 수수료 12%", subtitle: "누적 판매로 등급 업, 더 큰 수수료" }, // 컨시어지
-  { match: "cmt36v7cl", imageUrl: "/banners/hv2.jpg", title: "첫 판매 수수료 20%",     subtitle: "가입하고 첫 판매하면 20% 지급" },   // 첫판매
-  { match: "cmt36v70r", imageUrl: "/banners/hv3.jpg", title: "20% 바우처 받기",        subtitle: "리뷰·홍보 인증하면 즉시 지급" },     // 바우처
-  { match: "cmt2yoqq9", imageUrl: "/banners/hv4.jpg", title: "지금, 베타 오픈",         subtitle: "돈버는 명품샵에서 바로 시작" },      // 베타
+  { match: "cmt36v6iv", imageUrl: "/banners/vb1.jpg", title: "컨시어지 되면 수수료 12%", subtitle: "누적 판매로 등급 업, 더 큰 수수료" }, // 컨시어지
+  { match: "cmt36v7cl", imageUrl: "/banners/vb2.jpg", title: "첫 판매 수수료 20%",     subtitle: "가입하고 첫 판매하면 20% 지급" },   // 첫판매
+  { match: "cmt36v70r", imageUrl: "/banners/vb3.jpg", title: "20% 바우처 받기",        subtitle: "리뷰·홍보 인증하면 즉시 지급" },     // 바우처
+  { match: "cmt2yoqq9", imageUrl: "/banners/vb4.jpg", title: "지금, 베타 오픈",         subtitle: "돈버는 명품샵에서 바로 시작" },      // 베타
 ];
 
 async function main() {

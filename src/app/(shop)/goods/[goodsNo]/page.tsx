@@ -6,6 +6,7 @@ import { won, parseList } from "@/lib/format";
 import { getSiteSetting } from "@/lib/settings";
 import { getViewerRate } from "@/lib/grade";
 import AppUpsellButton from "@/components/AppUpsellButton";
+import ProductCard from "@/components/ProductCard";
 import { getSessionPartner } from "@/lib/auth";
 import { activeBoostForProduct } from "@/lib/timesale";
 import SizeGuideModal from "@/components/SizeGuideModal";
@@ -112,6 +113,33 @@ export default async function GoodsPage({ params }: { params: { goodsNo: string 
     boost > 0 && product.salePrice != null
       ? Math.round((product.salePrice * (rate.percent + boost)) / 100)
       : null;
+
+  // 관련 상품 — 같은 브랜드·같은 카테고리에서 랜덤 6개씩 (동일 상품명 중복 제외)
+  const shuffle = <T,>(arr: T[]): T[] => {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  };
+  const nameKey = (p: { brand: string | null; name: string }) =>
+    (p.brand ?? "").toLowerCase() + "|" + p.name.toLowerCase().replace(/\s+/g, " ").trim();
+  const dedup = <T extends { brand: string | null; name: string }>(list: T[]): T[] => {
+    const seen = new Set<string>([nameKey(product)]);
+    return list.filter((p) => (seen.has(nameKey(p)) ? false : (seen.add(nameKey(p)), true)));
+  };
+  const [brandPool, catPool] = await Promise.all([
+    product.brand
+      ? prisma.product.findMany({ where: { active: true, brand: product.brand, id: { not: product.id } }, take: 80 })
+      : Promise.resolve([]),
+    product.category
+      ? prisma.product.findMany({ where: { active: true, category: product.category, id: { not: product.id } }, take: 80 })
+      : Promise.resolve([]),
+  ]);
+  const sameBrand = dedup(shuffle(brandPool)).slice(0, 6);
+  const brandIds = new Set(sameBrand.map((p) => p.id));
+  const sameCat = dedup(shuffle(catPool).filter((p) => !brandIds.has(p.id))).slice(0, 6);
 
   // 구조화 데이터 (Google 리치 결과용 Product 스키마)
   const jsonLd = {
@@ -314,6 +342,28 @@ export default async function GoodsPage({ params }: { params: { goodsNo: string 
         )}
       </div>
       </div>
+
+      {/* ── 관련 상품 (같은 브랜드 · 같은 카테고리, 랜덤) ── */}
+      {sameBrand.length > 0 && (
+        <section className="mt-12">
+          <div className="text-lg font-black">{product.brand}의 다른 상품</div>
+          <div className="mt-3 grid grid-cols-3 gap-x-2 gap-y-5">
+            {sameBrand.map((p) => (
+              <ProductCard key={p.id} product={p} percent={rate.percent} confirmed={rate.isMine} />
+            ))}
+          </div>
+        </section>
+      )}
+      {sameCat.length > 0 && (
+        <section className="mt-12">
+          <div className="text-lg font-black">비슷한 카테고리 상품</div>
+          <div className="mt-3 grid grid-cols-3 gap-x-2 gap-y-5">
+            {sameCat.map((p) => (
+              <ProductCard key={p.id} product={p} percent={rate.percent} confirmed={rate.isMine} />
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }
