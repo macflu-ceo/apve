@@ -98,11 +98,11 @@ export default async function MultiLinkPage({ params }: { params: { slug: string
           {ml.coverUrl && <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/30 via-black/25 to-black/55" />}
           {!ml.coverUrl && <div className="pointer-events-none absolute -right-8 -top-8 h-36 w-36 rounded-full bg-white/10" />}
           {!ml.coverUrl && <div className="pointer-events-none absolute -left-10 bottom-0 h-28 w-28 rounded-full bg-white/10" />}
-          <div className="relative">
-          {/* 오른쪽 상단 인증 마크 — VÉ 모노그램 + 인증 컨시어지 (컨시어지일 때) */}
+          {/* 화면 맨 오른쪽 위 인증 마크 — 커버 컨테이너 기준으로 붙인다 */}
           {ml.partner?.conciergeNo != null && (
             <ConciergeBadge no={conciergeCode(ml.partner.conciergeNo)} name={ml.displayName} />
           )}
+          <div className="relative">
           {ml.avatarUrl ? (
             <img src={ml.avatarUrl} alt="" className="mx-auto h-20 w-20 rounded-full border-[3px] border-white/80 object-cover shadow-lg" />
           ) : (
