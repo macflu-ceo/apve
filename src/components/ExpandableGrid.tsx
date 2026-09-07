@@ -9,8 +9,8 @@ import { Children, useState, type ReactNode } from "react";
  */
 export default function ExpandableGrid({
   children,
-  initial = 8,
-  step = 10,
+  initial = 9, // 3열 그리드 — 줄이 빈칸 없이 차게 3의 배수로
+  step = 12,
 }: {
   children: ReactNode;
   initial?: number;

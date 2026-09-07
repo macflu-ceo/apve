@@ -102,7 +102,7 @@ export default async function HomePage() {
           {sec.products.length === 0 ? (
             <div className="rounded-xl2 bg-[#f7f7f7] p-10 text-center text-sm text-sub">진열된 상품이 없습니다.</div>
           ) : (
-            <ExpandableGrid initial={8} step={10}>
+            <ExpandableGrid initial={9} step={12}>
               {sec.products.map((p, idx) => (
                 <ProductCard
                   key={p.id}

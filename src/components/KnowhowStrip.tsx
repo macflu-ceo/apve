@@ -22,26 +22,22 @@ export default function KnowhowStrip({ posts, title = "최신 판매 노하우" 
           더보기 →
         </Link>
       </div>
-      <div className="no-scrollbar -mx-1 flex gap-3 overflow-x-auto px-1 pb-1">
-        {posts.map((p) => {
+      {/* 글 대부분이 이미지가 없어서 카드형 대신 텍스트 리스트로.
+          이미지가 있으면 앞에 작은 미리보기 썸네일만 붙는다. */}
+      <div className="divide-y divide-line overflow-hidden rounded-xl2 border border-line bg-white">
+        {posts.slice(0, 5).map((p) => {
           const img = parseList(p.imagesJson)[0];
           return (
-            <Link
-              key={p.id}
-              href={`/community/${p.id}`}
-              className="w-40 shrink-0 overflow-hidden rounded-xl2 border border-line bg-white"
-            >
-              <div className="aspect-[4/3] w-full bg-[#f5f4f2]">
-                {img && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={img} alt="" className="h-full w-full object-cover" />
-                )}
+            <Link key={p.id} href={`/community/${p.id}`} className="flex items-center gap-3 px-3.5 py-3 active:bg-line/20">
+              {img && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={img} alt="" className="h-11 w-11 shrink-0 rounded-lg object-cover" loading="lazy" />
+              )}
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-sm font-semibold leading-snug">{p.title}</div>
+                <div className="mt-0.5 line-clamp-1 text-xs text-sub">{p.content}</div>
               </div>
-              <div className="p-2.5">
-                <div className="line-clamp-2 text-sm font-semibold leading-snug">{p.title}</div>
-                <div className="mt-1 line-clamp-1 text-xs text-sub">{p.content}</div>
-                <div className="mt-1.5 text-[11px] text-sub">{displayAuthor(p.partner)}</div>
-              </div>
+              <span className="shrink-0 text-[11px] text-sub">{displayAuthor(p.partner)}</span>
             </Link>
           );
         })}
