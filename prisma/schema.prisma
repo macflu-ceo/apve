@@ -269,6 +269,10 @@ model Product {
   /// 누적 조회수 (빠른 정렬/표시용 비정규화 카운터)
   views       Int      @default(0)
 
+  /// 고도몰에서 가격·재고를 마지막으로 확인한 시각.
+  /// 갱신이 조용히 멈춰도 이 값이 오래되면 드러난다. null이면 아직 대사한 적 없음.
+  pricedAt    DateTime?
+
   links       IssuedLink[]
   sales       Sale[]
   tryOns      TryOnImage[]

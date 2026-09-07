@@ -48,6 +48,10 @@ export interface CatalogItem {
   isNew: boolean;
   regDt: string;
   viewUrl: string;
+  /// 진열중 여부 — goodsNo 지정 조회에서만 내려온다 (구버전 API는 undefined)
+  display?: boolean;
+  /// 판매중 여부 — 위와 같음
+  selling?: boolean;
 }
 
 export interface CatalogResult {
@@ -103,4 +107,41 @@ export async function fetchDomesticGoodsNos(): Promise<Set<string>> {
     if (r.list.length < 200) break; // 마지막 페이지
   }
   return set;
+}
+
+/**
+ * 등록된 상품을 goodsNo로 정확히 짚어 조회한다 (200개/요청).
+ *
+ * 브랜드 목록을 훑는 방식은 상위 몇 페이지 밖에 있는 상품을 영영 못 잡아,
+ * 그런 상품의 가격이 등록 당시 값으로 굳어버린다. 이 경로는 등록된 상품만
+ * 정확히 조회하므로 요청 수도 훨씬 적다.
+ *
+ * 서버(CatalogController)가 아직 지정 조회를 모르면 goodsNo를 무시하고 엉뚱한
+ * 목록을 준다. 요청하지 않은 goodsNo가 섞여 오면 구버전으로 보고 null을 돌려주니,
+ * 호출부는 예전 경로로 물러설 수 있다.
+ */
+export async function fetchCatalogByGoodsNos(goodsNos: string[]): Promise<Map<string, CatalogItem> | null> {
+  const uniq = Array.from(new Set(goodsNos.map(String).filter(Boolean)));
+  const out = new Map<string, CatalogItem>();
+  for (let i = 0; i < uniq.length; i += 200) {
+    const chunk = uniq.slice(i, i + 200);
+    const url = new URL(catalogUrl());
+    url.searchParams.set("goodsNo", chunk.join(","));
+    url.searchParams.set("limit", "200");
+
+    const res = await fetch(url.toString(), { headers: { "X-API-KEY": API_KEY }, cache: "no-store" });
+    if (!res.ok) throw new Error(`카탈로그 API 오류 (${res.status})`);
+    const data = await res.json();
+    if (data?.error) throw new Error(`카탈로그 API: ${data.message || data.error}`);
+
+    const want = new Set(chunk);
+    const list: CatalogItem[] = Array.isArray(data?.list) ? data.list : [];
+    for (const r of list) {
+      const g = String(r.goodsNo);
+      if (!want.has(g)) return null; // 구버전 — goodsNo 필터를 못 알아들었다
+      out.set(g, { ...r, goodsNo: g });
+    }
+    if (i + 200 < uniq.length) await new Promise((r) => setTimeout(r, 120));
+  }
+  return out;
 }

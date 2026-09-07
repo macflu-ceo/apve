@@ -1,7 +1,8 @@
 // 홈 자동 갱신 — 매일 1회: ① 재고·가격 최신화(+품절 비활성) ② 신규 차액 상품 등록 ③ 섹션 재편성
 // 카탈로그 API(빠름)로 시세·재고를 받아 우리 Product 와 대사(對査)한다. 무거운 작업이라 서버리스 크론엔 부적합 → 로컬/GitHub Actions 권장.
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
-import { fetchCatalog } from "@/lib/godomall/catalog";
+import { fetchCatalog, fetchCatalogByGoodsNos } from "@/lib/godomall/catalog";
 import { importGoodsNos } from "@/lib/godomall/import";
 import { conciergePrice } from "@/lib/pricing";
 
@@ -165,6 +166,14 @@ export async function refillSections(commit: boolean, seed: number = todaySeed()
 
 export interface HomeRefreshResult {
   poolSize: number;
+  /** 카탈로그 수집에 실패한 브랜드 — 비어있지 않으면 그만큼 갱신에서 빠졌다 */
+  poolFailed: string[];
+  /** goodsNo 지정 조회로 정확히 대사했는지 (false면 예전 브랜드풀 방식) */
+  exactMatched: boolean;
+  /** 시세를 확인하지 못한 등록상품 수 */
+  unpriced: number;
+  /** 고도몰에서 내려가 비활성 처리한 상품 수 */
+  delisted: number;
   stockUpdated: number;
   deactivated: number;
   reactivated: number;
@@ -177,8 +186,9 @@ export interface HomeRefreshResult {
 }
 
 /** 유명브랜드 카탈로그 수집 → goodsNo별 시세/재고 맵 */
-async function collectPool(log?: (s: string) => void): Promise<Map<string, PoolItem>> {
+async function collectPool(log?: (s: string) => void): Promise<{ map: Map<string, PoolItem>; failed: string[] }> {
   const map = new Map<string, PoolItem>();
+  const failed = new Set<string>();
   for (const b of BRANDS) {
     for (let page = 1; page <= PAGES; page++) {
       try {
@@ -193,12 +203,16 @@ async function collectPool(log?: (s: string) => void): Promise<Map<string, PoolI
           }
         }
         if (r.list.length < 200) break;
-      } catch { /* 브랜드/페이지 오류 무시 */ }
+      } catch {
+        // 카탈로그 API는 짧은 시간에 몰아치면 unauthorized 를 돌려준다.
+        // 조용히 넘기면 그 브랜드 상품이 통째로 갱신에서 빠진 채 아무도 모른다.
+        failed.add(b.name);
+      }
       await sleep(100);
     }
     log?.(`  ${b.name}`);
   }
-  return map;
+  return { map, failed: [...failed] };
 }
 
 export async function runHomeRefresh(opts: { commit: boolean; injectNew: boolean; newLimit?: number; log?: (s: string) => void } ): Promise<HomeRefreshResult> {
@@ -207,21 +221,57 @@ export async function runHomeRefresh(opts: { commit: boolean; injectNew: boolean
   const newLimit = opts.newLimit ?? NEW_LIMIT_DEFAULT;
 
   log("① 카탈로그 수집…");
-  const pool = await collectPool();
-  log(`   풀 ${pool.size}개`);
+  const { map: pool, failed: poolFailed } = await collectPool();
+  log(`   풀 ${pool.size}개${poolFailed.length ? ` (수집실패 ${poolFailed.length}개 브랜드)` : ""}`);
 
   // ② 재고·가격 최신화 (+품절 비활성 / 재입고 활성)
+  //
+  // 브랜드 목록은 브랜드당 상위 몇 페이지뿐이라, 그 밖에 있는 등록상품은
+  // 예전 코드에서 `풀에 없으면 건너뛰기`로 빠져 등록 당시 가격에 굳어 있었다.
+  // 이제 등록된 goodsNo 를 직접 짚어 조회하고, 브랜드풀은 보조로만 쓴다.
   log("② 재고·가격 최신화…");
   const products = await prisma.product.findMany({ select: { id: true, goodsNo: true, active: true, salePrice: true, listPrice: true, stock: true } });
+
+  let exact: Map<string, { sellPrice: number; listPrice: number; stock: number; soldOut: boolean; display?: boolean; selling?: boolean }> | null = null;
+  try {
+    exact = await fetchCatalogByGoodsNos(products.map((p) => p.goodsNo));
+    if (!exact) log("   지정 조회 미지원 서버 — 브랜드풀로 대사");
+  } catch (e) {
+    log(`   지정 조회 실패(${(e as Error).message}) — 브랜드풀로 대사`);
+  }
+  const exactMatched = exact != null;
+
+  const now = new Date();
   const updates: { id: string; data: Record<string, unknown>; wasActive: boolean; willActive: boolean }[] = [];
+  const checked: string[] = []; // 값은 그대로라 확인 시각만 갱신할 상품
+  let unpriced = 0, delisted = 0;
   for (const p of products) {
-    const it = pool.get(p.goodsNo);
-    if (!it) continue; // 카탈로그에 없으면 손대지 않음(상위페이지 밖일 수 있음)
-    const willActive = !(it.soldOut || it.stock <= 0);
+    const e = exact?.get(p.goodsNo);
+    const it = e ?? pool.get(p.goodsNo);
+
+    if (!it) {
+      // 지정 조회가 성사됐는데도 없으면 고도몰에서 삭제된 상품이다 → 판매 불가.
+      // 지정 조회가 아예 안 됐을 땐 API 문제일 수 있으니 손대지 않는다.
+      if (exactMatched) {
+        delisted++;
+        if (p.active) updates.push({ id: p.id, data: { active: false }, wasActive: true, willActive: false });
+      } else {
+        unpriced++;
+      }
+      continue;
+    }
+
+    // 진열/판매 중지도 노출 대상이 아니다 (지정 조회에서만 내려온다)
+    const offShelf = e ? e.display === false || e.selling === false : false;
+    const willActive = !(it.soldOut || it.stock <= 0 || offShelf);
     const newSale = it.sellPrice > 0 ? conciergePrice(it.sellPrice) : p.salePrice;
     const newList = it.listPrice > 0 ? it.listPrice : p.listPrice;
     const changed = p.active !== willActive || p.stock !== it.stock || p.salePrice !== newSale || p.listPrice !== newList;
-    if (changed) updates.push({ id: p.id, data: { active: willActive, stock: it.stock, salePrice: newSale, listPrice: newList }, wasActive: p.active, willActive });
+    if (changed) {
+      updates.push({ id: p.id, data: { active: willActive, stock: it.stock, salePrice: newSale, listPrice: newList, pricedAt: now }, wasActive: p.active, willActive });
+    } else {
+      checked.push(p.id);
+    }
   }
   let stockUpdated = 0, deactivated = 0, reactivated = 0;
   if (opts.commit) {
@@ -229,13 +279,19 @@ export async function runHomeRefresh(opts: { commit: boolean; injectNew: boolean
     for (let i = 0; i < updates.length; i += CH) {
       await Promise.all(updates.slice(i, i + CH).map((u) => prisma.product.update({ where: { id: u.id }, data: u.data }).then(() => {}).catch(() => {})));
     }
+    // 값이 그대로인 상품은 확인 시각만 남긴다.
+    // updatedAt 을 건드리면 사이트맵의 최종수정일이 매일 전부 바뀌므로 raw 로 pricedAt 만.
+    for (let i = 0; i < checked.length; i += 500) {
+      const ids = checked.slice(i, i + 500);
+      await prisma.$executeRaw`UPDATE "Product" SET "pricedAt" = ${now} WHERE id IN (${Prisma.join(ids)})`.catch(() => {});
+    }
   }
   for (const u of updates) {
     stockUpdated++;
     if (u.wasActive && !u.willActive) deactivated++;
     if (!u.wasActive && u.willActive) reactivated++;
   }
-  log(`   변경 ${stockUpdated} (품절제외 ${deactivated} · 재입고 ${reactivated})`);
+  log(`   확인 ${updates.length + checked.length} · 변경 ${stockUpdated} (품절제외 ${deactivated} · 재입고 ${reactivated} · 내려감 ${delisted} · 미확인 ${unpriced})`);
 
   // ③ 신규 차액 상품 등록
   let newImported = 0, newErrors = 0;
@@ -266,7 +322,7 @@ export async function runHomeRefresh(opts: { commit: boolean; injectNew: boolean
   const sections = await refillSections(opts.commit, todaySeed(), log);
   log("   완료");
 
-  return { poolSize: pool.size, stockUpdated, deactivated, reactivated, newImported, newErrors, dupHidden: dedup.hidden, sections, committed: opts.commit, ms: Date.now() - t0 };
+  return { poolSize: pool.size, poolFailed, exactMatched, unpriced, delisted, stockUpdated, deactivated, reactivated, newImported, newErrors, dupHidden: dedup.hidden, sections, committed: opts.commit, ms: Date.now() - t0 };
 }
 
 /** 결과 → 텔레그램 알림 텍스트 */
@@ -275,7 +331,9 @@ export function homeRefreshText(r: HomeRefreshResult): string {
   const secLine = r.sections.map((s) => s.n).join("/");
   return [
     `🔄 <b>홈 자동 갱신 완료</b> (${min}분)`,
-    `· 재고·가격 최신화 ${r.stockUpdated}건 (품절제외 ${r.deactivated} · 재입고 ${r.reactivated})`,
+    `· 재고·가격 최신화 ${r.stockUpdated}건 (품절제외 ${r.deactivated} · 재입고 ${r.reactivated}${r.delisted ? ` · 내려감 ${r.delisted}` : ""})`,
+    ...(r.exactMatched ? [] : [`· ⚠️ 지정 조회 미작동 — 브랜드풀로만 대사${r.unpriced ? ` (미확인 ${r.unpriced}개)` : ""}`]),
+    ...(r.poolFailed.length ? [`· ⚠️ 카탈로그 수집 실패: ${r.poolFailed.join(", ")}`] : []),
     `· 신규 등록 ${r.newImported}${r.newErrors ? ` (실패 ${r.newErrors})` : ""}`,
     `· 동일상품 정리 ${r.dupHidden}개 비활성`,
     `· 섹션 재편성: ${secLine} (총 ${r.sections.reduce((a, s) => a + s.n, 0)}개)`,
