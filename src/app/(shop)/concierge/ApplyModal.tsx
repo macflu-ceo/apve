@@ -32,8 +32,13 @@ export default function ApplyModal({ questions }: { questions: Question[] }) {
 
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} className="btn-brand mt-4 w-full">
-        컨시어지 가입 신청하기
+      {/* 파란 CTA 카드 위에 놓이므로 흰 버튼으로 대비 */}
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-white px-4 py-3.5 text-sm font-extrabold text-brand transition active:scale-[0.99]"
+      >
+        컨시어지 가입 신청하기 →
       </button>
 
       {open && (

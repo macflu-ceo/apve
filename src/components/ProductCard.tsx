@@ -98,7 +98,8 @@ export default function ProductCard({
           </div>
         ) : (
           commission > 0 && (
-            <div className="mt-1 inline-block rounded bg-brandsoft px-1.5 py-0.5 text-[11px] font-bold text-brand">
+            // flex 컬럼에선 stretch로 가로로 늘어나므로 self-start로 내용 폭만 차지
+            <div className="mt-1 self-start rounded bg-brandsoft px-1.5 py-0.5 text-[11px] font-bold text-brand">
               {confirmed ? "" : "최대 "}수수료 {won(commission)}
             </div>
           )

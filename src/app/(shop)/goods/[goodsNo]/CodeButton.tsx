@@ -24,16 +24,23 @@ export default function CodeButton({
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [appUpsell, setAppUpsell] = useState<{ msg: string; ios: string | null; android: string | null; landing: string | null } | null>(null);
-  // 담은 직후 잠깐 뜨는 안내. 링크를 눌러 넘어갈 수 있어야 하므로 너무 짧으면 안 된다.
-  const [added, setAdded] = useState<string | null>(null);
+  // 담기 흐름: 버튼은 「완료」까지만, 안내는 화면 아래에서 토스트로 올라왔다가
+  // 2초쯤 머문 뒤 흐려지며 내려간다. (보러가기 링크는 그 사이에 누를 수 있다)
+  const [added, setAdded] = useState<{ msg: string; ok: boolean } | null>(null);
+  const [toastShown, setToastShown] = useState(false);
   const [adding, setAdding] = useState(false);
+  const [done, setDone] = useState(false);
 
   async function addToSelection() {
     setAdding(true);
     const r = await addMultiLinkItem(productId);
     setAdding(false);
-    setAdded(r.ok ? "추가되었습니다." : (r.message ?? "담지 못했습니다."));
-    setTimeout(() => setAdded(null), 4000);
+    setDone(true);
+    setTimeout(() => setDone(false), 1800);
+    setAdded({ msg: r.ok ? "내 셀렉션에 들어갔습니다" : (r.message ?? "담지 못했습니다."), ok: !!r.ok });
+    requestAnimationFrame(() => requestAnimationFrame(() => setToastShown(true)));
+    setTimeout(() => setToastShown(false), 2300); // 머무는 시간
+    setTimeout(() => setAdded(null), 2900); // 사라지는 트랜지션 후 제거
   }
 
   async function make() {
@@ -103,19 +110,27 @@ export default function CodeButton({
 
           {/* 코드를 만든 김에 셀렉션까지 — 멀티링크로 건너가 다시 찾을 필요가 없다 */}
           {isConcierge && (
-            <button className="btn-line mt-2 w-full" onClick={addToSelection} disabled={adding}>
-              {adding ? "담는 중…" : "＋ 내 셀렉션에 바로담기"}
+            <button className="btn-line mt-2 w-full" onClick={addToSelection} disabled={adding || done}>
+              {adding ? "담는 중…" : done ? "완료 ✓" : "＋ 내 셀렉션에 바로담기"}
             </button>
           )}
         </div>
       )}
 
       {added && (
-        <div className="mt-2 flex items-center justify-between gap-3 rounded-xl2 bg-ink px-4 py-3 text-sm text-white">
-          <span>{added}</span>
-          <Link href="/me/multilink" className="shrink-0 font-bold text-[#A9B8FF]">
-            멀티링크 보러가기 ›
-          </Link>
+        <div
+          className={`pointer-events-none fixed inset-x-0 bottom-0 z-[70] flex justify-center px-6 pb-[max(5.5rem,env(safe-area-inset-bottom))] transition-all duration-500 ease-out ${
+            toastShown ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
+          }`}
+        >
+          <div className="pointer-events-auto flex items-center gap-3 rounded-full bg-ink/95 py-3 pl-5 pr-4 text-sm text-white shadow-[0_10px_30px_rgba(0,0,0,.35)] backdrop-blur">
+            <span className="whitespace-nowrap">{added.msg}</span>
+            {added.ok && (
+              <Link href="/me/multilink" className="shrink-0 whitespace-nowrap font-bold text-[#A9B8FF]">
+                보러가기 ›
+              </Link>
+            )}
+          </div>
         </div>
       )}
     </div>

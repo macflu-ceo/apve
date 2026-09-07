@@ -108,7 +108,7 @@ export default async function MultiLinkPage({ params }: { params: { slug: string
           <h1 className="mt-1 text-[21px] font-extrabold tracking-tight">{shopTitle(ml)}</h1>
           {ml.bio && <p className="mx-auto mt-1.5 max-w-[300px] text-[13px] leading-relaxed text-white/85">{ml.bio}</p>}
           <div className="mt-3.5 flex flex-wrap justify-center gap-1.5">
-            {ml.partner?.conciergeNo != null && <ConciergeBadge no={conciergeCode(ml.partner.conciergeNo)} />}
+            {ml.partner?.conciergeNo != null && <ConciergeBadge no={conciergeCode(ml.partner.conciergeNo)} name={ml.displayName} />}
             <span className="rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold backdrop-blur">🛡️ 100% 정품 보증</span>
             <span className="rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold backdrop-blur">✈️ 이탈리아 부티크 직계약</span>
           </div>
