@@ -99,16 +99,21 @@ export default async function MultiLinkPage({ params }: { params: { slug: string
           {!ml.coverUrl && <div className="pointer-events-none absolute -right-8 -top-8 h-36 w-36 rounded-full bg-white/10" />}
           {!ml.coverUrl && <div className="pointer-events-none absolute -left-10 bottom-0 h-28 w-28 rounded-full bg-white/10" />}
           <div className="relative">
-          {ml.avatarUrl ? (
-            <img src={ml.avatarUrl} alt="" className="mx-auto h-20 w-20 rounded-full border-[3px] border-white/80 object-cover shadow-lg" />
-          ) : (
-            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border-[3px] border-white/80 bg-white text-3xl shadow-lg">🛍️</div>
-          )}
+          {/* 아바타 + 블루체크식 인증 마크 (컨시어지일 때) */}
+          <div className="relative mx-auto h-20 w-20">
+            {ml.avatarUrl ? (
+              <img src={ml.avatarUrl} alt="" className="h-20 w-20 rounded-full border-[3px] border-white/80 object-cover shadow-lg" />
+            ) : (
+              <div className="flex h-20 w-20 items-center justify-center rounded-full border-[3px] border-white/80 bg-white text-3xl shadow-lg">🛍️</div>
+            )}
+            {ml.partner?.conciergeNo != null && (
+              <ConciergeBadge no={conciergeCode(ml.partner.conciergeNo)} name={ml.displayName} />
+            )}
+          </div>
           <div className="mt-3 text-[10px] font-bold tracking-[0.28em] text-white/70">VIA ÉLITE · ITALY DIRECT</div>
           <h1 className="mt-1 text-[21px] font-extrabold tracking-tight">{shopTitle(ml)}</h1>
           {ml.bio && <p className="mx-auto mt-1.5 max-w-[300px] text-[13px] leading-relaxed text-white/85">{ml.bio}</p>}
           <div className="mt-3.5 flex flex-wrap justify-center gap-1.5">
-            {ml.partner?.conciergeNo != null && <ConciergeBadge no={conciergeCode(ml.partner.conciergeNo)} name={ml.displayName} />}
             <span className="rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold backdrop-blur">🛡️ 100% 정품 보증</span>
             <span className="rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold backdrop-blur">✈️ 이탈리아 부티크 직계약</span>
           </div>

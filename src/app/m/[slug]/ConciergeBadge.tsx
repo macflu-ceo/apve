@@ -4,11 +4,10 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
 /**
- * 공식 컨시어지 뱃지 + 인증서.
+ * 공식 컨시어지 인증 마크 + 인증서.
  *
- * 처음 온 사람은 이 페이지가 개인이 만든 것인지 회사가 인증한 것인지 알 수 없다.
- * 뱃지는 골드로 다른 칩들과 확실히 구분하고, › 표시로 눌리는 것임을 알린다.
- * 눌렀을 때는 가벼운 안내 팝업이 아니라 '인증서' 한 장으로 보여준다.
+ * 인스타 블루체크처럼 프로필 사진 오른쪽 아래에 마크로만 붙는다.
+ * 은은하게 커졌다 작아지는 펄스로 시선을 끌고, 누르면 인증서가 뜬다.
  */
 const GOLD = "#D8B26E";
 
@@ -23,17 +22,23 @@ export default function ConciergeBadge({ no, name }: { no: string; name?: string
 
   return (
     <>
+      <style>{`
+        @keyframes vebadge-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.14); } }
+        @media (prefers-reduced-motion: reduce) { .vebadge-pulse { animation: none !important; } }
+      `}</style>
       <button
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-extrabold text-[#2b2410] shadow-[0_2px_10px_rgba(0,0,0,.25)] ring-1 ring-white/40 transition active:scale-95"
-        style={{ background: "linear-gradient(135deg,#F3DFAE 0%,#D8B26E 55%,#C39B55 100%)" }}
+        aria-label="공식 인증 컨시어지"
         aria-haspopup="dialog"
+        className="vebadge-pulse absolute -bottom-0.5 -right-0.5 flex h-7 w-7 items-center justify-center rounded-full ring-2 ring-white shadow-[0_2px_8px_rgba(0,0,0,.35)]"
+        style={{
+          background: "linear-gradient(135deg,#F3DFAE 0%,#D8B26E 55%,#C39B55 100%)",
+          animation: "vebadge-pulse 2.4s ease-in-out infinite",
+        }}
       >
-        <svg viewBox="0 0 14 14" className="h-3.5 w-3.5 fill-current" aria-hidden>
+        <svg viewBox="0 0 14 14" className="h-3.5 w-3.5 fill-[#2b2410]" aria-hidden>
           <path d="M7 .8l4.6 1.9v4c0 3-2 5.4-4.6 6.5C4.4 12.1 2.4 9.7 2.4 6.7v-4L7 .8zm2.5 4.4L6.3 8.4 4.6 6.7l-.9.9 2.6 2.6 4.1-4.1-.9-.9z" />
         </svg>
-        공식 인증 컨시어지
-        <span aria-hidden className="text-[12px] leading-none opacity-70">›</span>
       </button>
 
       {/* 헤더 스태킹 컨텍스트에 갇히지 않게 body로 포털 — 아래 요소에 가려지는 문제 방지 */}
