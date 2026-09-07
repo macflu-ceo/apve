@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 
 /**
  * 공식 컨시어지 뱃지 + 인증서.
@@ -35,8 +36,9 @@ export default function ConciergeBadge({ no, name }: { no: string; name?: string
         <span aria-hidden className="text-[12px] leading-none opacity-70">›</span>
       </button>
 
-      {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-5">
+      {/* 헤더 스태킹 컨텍스트에 갇히지 않게 body로 포털 — 아래 요소에 가려지는 문제 방지 */}
+      {open && createPortal(
+        <div className="fixed inset-0 z-[80] flex items-center justify-center p-5">
           <div
             className={`absolute inset-0 bg-black/60 backdrop-blur-[2px] transition-opacity duration-300 ${shown ? "opacity-100" : "opacity-0"}`}
             onClick={() => setOpen(false)}
@@ -89,7 +91,8 @@ export default function ConciergeBadge({ no, name }: { no: string; name?: string
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
