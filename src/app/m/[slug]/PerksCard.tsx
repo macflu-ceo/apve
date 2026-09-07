@@ -3,8 +3,9 @@
 import { useState } from "react";
 
 /**
- * 「정품이 아니면 200% 보상」 한 줄만 있던 자리.
- * 공식 컨시어지 샵에서 사야 하는 이유를 인증서 톤(다크·골드)으로 펼쳐 보여준다.
+ * 「정품이 아니면 200% 보상」 자리의 접이식 안내.
+ * 크고 까만 박스는 페이지를 눌러버려서, 아이보리 바탕에 골드 헤어라인으로
+ * 한 줄만 차지하게 줄였다. 펼치면 이유 다섯 가지가 나온다.
  */
 const PERKS = [
   {
@@ -33,54 +34,45 @@ export default function PerksCard() {
   const [open, setOpen] = useState(false);
 
   return (
-    <div
-      className="rounded-2xl p-[1.2px] shadow-[0_8px_28px_rgba(10,12,24,.35)]"
-      style={{ background: "linear-gradient(150deg,rgba(243,223,174,.85),rgba(138,111,62,.45) 45%,rgba(243,223,174,.55))" }}
-    >
-      <div className="overflow-hidden rounded-[15px] bg-[#14151b] text-white">
-        <button
-          onClick={() => setOpen((v) => !v)}
-          aria-expanded={open}
-          className="flex w-full items-center gap-3.5 p-4 text-left"
+    <div className="rounded-xl bg-[#FBF9F3] shadow-[0_2px_10px_rgba(20,30,80,.06)] ring-1 ring-[#D8B26E]/40">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left"
+      >
+        <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0" fill="none" aria-hidden>
+          <path d="M12 2l7.5 3v6.2c0 4.9-3.2 8.8-7.5 10.3C7.7 20 4.5 16.1 4.5 11.2V5L12 2z" stroke="#B08D4C" strokeWidth="1.5" />
+          <path d="M8.7 11.8l2.3 2.3 4.3-4.4" stroke="#B08D4C" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        <div className="min-w-0 flex-1">
+          <span className="text-[12.5px] font-bold text-[#5a4a28]">가품이면 결제금액의 200%를 보상합니다</span>
+          <span className="ml-1.5 hidden text-[10.5px] text-[#a08a5e] min-[360px]:inline">· VIA ÉLITE 공식 컨시어지</span>
+        </div>
+        <svg
+          viewBox="0 0 20 20"
+          className={`h-3.5 w-3.5 shrink-0 fill-[#B08D4C]/70 transition-transform duration-300 ${open ? "rotate-180" : ""}`}
+          aria-hidden
         >
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#D8B26E]/45">
-            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden>
-              <path d="M12 2l7.5 3v6.2c0 4.9-3.2 8.8-7.5 10.3C7.7 20 4.5 16.1 4.5 11.2V5L12 2z" stroke="#D8B26E" strokeWidth="1.3" />
-              <path d="M8.7 11.8l2.3 2.3 4.3-4.4" stroke="#D8B26E" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="text-[9px] font-bold tracking-[0.3em] text-[#D8B26E]/85">VIA ÉLITE OFFICIAL CONCIERGE SHOP</div>
-            <div className="mt-1 text-[14px] font-extrabold leading-snug">가품이면 결제금액의 200%를 보상합니다</div>
-            <div className="mt-0.5 truncate text-[11px] text-white/45">수입신고필증 · 감정 지원 · 부티크 직계약</div>
-          </div>
-          <svg
-            viewBox="0 0 20 20"
-            className={`h-4 w-4 shrink-0 fill-[#D8B26E]/80 transition-transform duration-300 ${open ? "rotate-180" : ""}`}
-            aria-hidden
-          >
-            <path d="M10 13.2L3.8 7l1.1-1.1L10 11l5.1-5.1L16.2 7z" />
-          </svg>
-        </button>
+          <path d="M10 13.2L3.8 7l1.1-1.1L10 11l5.1-5.1L16.2 7z" />
+        </svg>
+      </button>
 
-        <div className={`grid transition-[grid-template-rows] duration-300 ease-out ${open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
-          <div className="overflow-hidden">
-            <div className="mx-4 h-px bg-gradient-to-r from-transparent via-[#D8B26E]/35 to-transparent" aria-hidden />
-            <ul className="space-y-4 px-4 py-4">
-              {PERKS.map((p, i) => (
-                <li key={p.title} className="flex gap-3">
-                  <span className="mt-0.5 shrink-0 text-[11px] font-bold tabular-nums tracking-widest text-[#D8B26E]/70">
-                    {String(i + 1).padStart(2, "0")}
-                  </span>
-                  <div className="min-w-0">
-                    <div className="text-[13px] font-bold text-[#F3DFAE]">{p.title}</div>
-                    <div className="mt-1 text-[11.5px] leading-relaxed text-white/55">{p.desc}</div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-            <div className="px-4 pb-4 text-center text-[9px] tracking-[0.28em] text-white/30">AUTHENTICITY GUARANTEED</div>
-          </div>
+      <div className={`grid transition-[grid-template-rows] duration-300 ease-out ${open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
+        <div className="overflow-hidden">
+          <div className="mx-3.5 h-px bg-gradient-to-r from-transparent via-[#D8B26E]/40 to-transparent" aria-hidden />
+          <ul className="space-y-3 px-3.5 py-3.5">
+            {PERKS.map((p, i) => (
+              <li key={p.title} className="flex gap-2.5">
+                <span className="mt-0.5 shrink-0 text-[10px] font-bold tabular-nums tracking-widest text-[#B08D4C]/80">
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <div className="min-w-0">
+                  <div className="text-[12px] font-bold text-[#4a3d21]">{p.title}</div>
+                  <div className="mt-0.5 text-[11px] leading-relaxed text-[#7d6c4a]">{p.desc}</div>
+                </div>
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
     </div>
