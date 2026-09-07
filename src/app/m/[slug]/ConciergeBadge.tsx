@@ -6,8 +6,8 @@ import { createPortal } from "react-dom";
 /**
  * 공식 컨시어지 인증 마크 + 인증서.
  *
- * 인스타 블루체크처럼 프로필 사진 오른쪽 아래에 마크로만 붙는다.
- * 은은하게 커졌다 작아지는 펄스로 시선을 끌고, 누르면 인증서가 뜬다.
+ * 화면 오른쪽 상단에 VÉ 모노그램과 「인증 컨시어지」 글자로만 조용히 붙는다.
+ * 누르면 인증서가 뜬다.
  */
 const GOLD = "#D8B26E";
 
@@ -22,23 +22,15 @@ export default function ConciergeBadge({ no, name }: { no: string; name?: string
 
   return (
     <>
-      <style>{`
-        @keyframes vebadge-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.14); } }
-        @media (prefers-reduced-motion: reduce) { .vebadge-pulse { animation: none !important; } }
-      `}</style>
       <button
         onClick={() => setOpen(true)}
-        aria-label="공식 인증 컨시어지"
+        aria-label="인증 컨시어지"
         aria-haspopup="dialog"
-        className="vebadge-pulse absolute -bottom-0.5 -right-0.5 flex h-7 w-7 items-center justify-center rounded-full ring-2 ring-white shadow-[0_2px_8px_rgba(0,0,0,.35)]"
-        style={{
-          background: "linear-gradient(135deg,#F3DFAE 0%,#D8B26E 55%,#C39B55 100%)",
-          animation: "vebadge-pulse 2.4s ease-in-out infinite",
-        }}
+        className="absolute right-3 top-3 z-10 flex items-center gap-1.5 rounded-full bg-white/90 py-1 pl-2 pr-2.5 shadow-sm backdrop-blur transition active:scale-95"
       >
-        <svg viewBox="0 0 14 14" className="h-3.5 w-3.5 fill-[#2b2410]" aria-hidden>
-          <path d="M7 .8l4.6 1.9v4c0 3-2 5.4-4.6 6.5C4.4 12.1 2.4 9.7 2.4 6.7v-4L7 .8zm2.5 4.4L6.3 8.4 4.6 6.7l-.9.9 2.6 2.6 4.1-4.1-.9-.9z" />
-        </svg>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/ve-mark.png" alt="" className="h-3.5 w-auto" />
+        <span className="text-[10px] font-bold tracking-tight text-gray-800">인증 컨시어지</span>
       </button>
 
       {/* 헤더 스태킹 컨텍스트에 갇히지 않게 body로 포털 — 아래 요소에 가려지는 문제 방지 */}
