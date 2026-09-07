@@ -49,10 +49,11 @@ export default function ProductGallery({
         }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
+        {/* contain: 원본 비율이 어긋나는 상품도 잘리지 않고 통째로 보이게 */}
         <img
           src={visible[cur]}
           alt={alt}
-          className="absolute inset-0 h-full w-full object-cover"
+          className="absolute inset-0 h-full w-full object-contain"
           onError={() => markBroken(visible[cur])}
         />
 
