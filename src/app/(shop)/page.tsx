@@ -72,10 +72,12 @@ export default async function HomePage() {
 
       {/* 카테고리 칩 (어드민 커스텀) */}
       <section className="px-4 py-6">
-        <div className="no-scrollbar flex gap-4 overflow-x-auto">
+        {/* 중앙정렬 + 둥근 네모 타일 + 그림자. 넘치면 가로 스크롤(안쪽 mx-auto라 왼쪽 안 잘림) */}
+        <div className="no-scrollbar flex overflow-x-auto">
+          <div className="mx-auto flex gap-4">
           {categories.map((c, i) => (
             <Link key={i} href={c.linkUrl || "/category"} className="flex shrink-0 flex-col items-center gap-1.5">
-              <span className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-full bg-brandsoft text-lg font-black text-brand">
+              <span className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl bg-brandsoft text-lg font-black text-brand shadow-[0_3px_10px_rgba(20,30,80,.12)]">
                 {c.imageUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={c.imageUrl} alt="" className="h-full w-full object-cover" />
@@ -83,9 +85,10 @@ export default async function HomePage() {
                   c.emoji || c.label[0]
                 )}
               </span>
-              <span className="text-xs text-ink/70">{c.label}</span>
+              <span className="text-xs font-bold text-ink/80">{c.label}</span>
             </Link>
           ))}
+          </div>
         </div>
       </section>
 
