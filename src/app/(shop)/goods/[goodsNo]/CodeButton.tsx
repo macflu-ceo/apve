@@ -1,11 +1,22 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { issueLink } from "./actions";
+import { addMultiLinkItem } from "@/app/(shop)/me/multilink/actions";
 import { useAuthModal } from "@/components/auth/AuthModalProvider";
 import { trackEvent, trackAppCta, resolveStoreUrl } from "@/lib/track-client";
 
-export default function CodeButton({ goodsNo }: { goodsNo: string }) {
+export default function CodeButton({
+  goodsNo,
+  productId,
+  isConcierge = false,
+}: {
+  goodsNo: string;
+  productId: string;
+  /** 컨시어지만 셀렉션에 담을 수 있다 */
+  isConcierge?: boolean;
+}) {
   const { open } = useAuthModal();
   const [url, setUrl] = useState<string | null>(null);
   const [code, setCode] = useState<string | null>(null);
@@ -13,6 +24,17 @@ export default function CodeButton({ goodsNo }: { goodsNo: string }) {
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [appUpsell, setAppUpsell] = useState<{ msg: string; ios: string | null; android: string | null; landing: string | null } | null>(null);
+  // 담은 직후 잠깐 뜨는 안내. 링크를 눌러 넘어갈 수 있어야 하므로 너무 짧으면 안 된다.
+  const [added, setAdded] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
+
+  async function addToSelection() {
+    setAdding(true);
+    const r = await addMultiLinkItem(productId);
+    setAdding(false);
+    setAdded(r.ok ? "추가되었습니다." : (r.message ?? "담지 못했습니다."));
+    setTimeout(() => setAdded(null), 4000);
+  }
 
   async function make() {
     setLoading(true);
@@ -78,6 +100,22 @@ export default function CodeButton({ goodsNo }: { goodsNo: string }) {
           <button className="btn-line mt-2 w-full" onClick={copy}>
             {copied ? "복사됨 ✓" : "링크 복사"}
           </button>
+
+          {/* 코드를 만든 김에 셀렉션까지 — 멀티링크로 건너가 다시 찾을 필요가 없다 */}
+          {isConcierge && (
+            <button className="btn-line mt-2 w-full" onClick={addToSelection} disabled={adding}>
+              {adding ? "담는 중…" : "＋ 내 셀렉션에 바로담기"}
+            </button>
+          )}
+        </div>
+      )}
+
+      {added && (
+        <div className="mt-2 flex items-center justify-between gap-3 rounded-xl2 bg-ink px-4 py-3 text-sm text-white">
+          <span>{added}</span>
+          <Link href="/me/multilink" className="shrink-0 font-bold text-[#A9B8FF]">
+            멀티링크 보러가기 ›
+          </Link>
         </div>
       )}
     </div>

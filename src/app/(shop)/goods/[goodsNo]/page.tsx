@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { getConciergeViewer } from "@/lib/concierge-access";
 import { won, parseList } from "@/lib/format";
 import { getSiteSetting } from "@/lib/settings";
 import { getViewerRate } from "@/lib/grade";
@@ -55,6 +56,9 @@ export async function generateMetadata({ params }: { params: { goodsNo: string }
 export default async function GoodsPage({ params }: { params: { goodsNo: string } }) {
   const product = await prisma.product.findUnique({ where: { goodsNo: params.goodsNo } });
   if (!product) notFound();
+
+  // 컨시어지만 셀렉션에 담을 수 있다
+  const concierge = await getConciergeViewer();
 
   // 상품 조회는 클라이언트 <Tracker>가 Visit(kind=product)로 기록한다(봇 필터 적용).
   // 서버 렌더마다 무조건 기록하던 방식(logProductView)은 봇 오염으로 폐기.
@@ -289,7 +293,7 @@ export default async function GoodsPage({ params }: { params: { goodsNo: string 
         </dl>
 
         {/* 내 코드 만들기 */}
-        <CodeButton goodsNo={product.goodsNo} />
+        <CodeButton goodsNo={product.goodsNo} productId={product.id} isConcierge={Boolean(concierge)} />
 
         {/* 20% 보상 바우처 적용 */}
         {voucher && (
