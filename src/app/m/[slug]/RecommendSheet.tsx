@@ -2,9 +2,11 @@
 
 // 취향 등록 바텀시트 — 카테고리별 사이즈 동적 입력 + 고도몰 브랜드 검색
 import { useEffect, useState, useTransition } from "react";
+import { brandLabel, brandMatches } from "@/lib/brand-ko";
 import { submitRecommendLead } from "./actions";
 
-const FAMOUS_BRANDS = ["구찌", "디올", "프라다", "미우미우", "보테가", "발렌시아가", "셀린느", "로에베"];
+// brandLabel() 이 내놓는 표기와 정확히 같아야 목록 맨 앞으로 끌어올려진다.
+const FAMOUS_BRANDS = ["구찌", "디올", "프라다", "미우미우", "보테가베네타", "발렌시아가", "셀린느", "로에베"];
 const CATEGORIES = ["가방", "지갑·소품", "신발", "아우터", "상의", "바지·스커트", "시계·주얼리"];
 // 카테고리 → 사이즈 필드 키 (아우터·상의는 같은 사이즈 체계라 통합)
 const SIZE_KEY: Record<string, string> = { 신발: "신발", 아우터: "의류", 상의: "의류", "바지·스커트": "하의" };
@@ -58,27 +60,41 @@ export default function RecommendSheet({ slug, conciergeName }: { slug: string; 
   const [budget, setBudget] = useState("");
   const [memo, setMemo] = useState("");
 
-  // 브랜드 검색 (기타)
-  const [brandSearchOpen, setBrandSearchOpen] = useState(false);
+  // 관심 브랜드 — 취급하는 브랜드를 전부 펼쳐 보여준다.
+  // 예전엔 유명 8개만 칩으로 두고 나머지는 검색을 열어야 나왔는데,
+  // 어떤 브랜드를 취급하는지 모르는 사람은 검색어부터 떠올릴 수 없다.
   const [brandQuery, setBrandQuery] = useState("");
   const [allBrands, setAllBrands] = useState<string[] | null>(null);
 
   useEffect(() => {
-    if (brandSearchOpen && allBrands === null) {
+    if (open && allBrands === null) {
       fetch("/api/m/brands")
         .then((r) => r.json())
         .then((d) => setAllBrands(Array.isArray(d.brands) ? d.brands : []))
         .catch(() => setAllBrands([]));
     }
-  }, [brandSearchOpen, allBrands]);
+  }, [open, allBrands]);
 
   const toggle = (list: string[], set: (v: string[]) => void, v: string) =>
     set(list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
 
-  const brandResults = (allBrands ?? [])
-    .filter((b) => !brands.includes(b))
-    .filter((b) => brandQuery.trim() === "" || b.toLowerCase().includes(brandQuery.trim().toLowerCase()))
-    .slice(0, 30);
+  // 유명 브랜드를 앞에, 나머지는 가나다순. 한글 표기가 있으면 한글로 보여준다.
+  const brandList = (() => {
+    const labels = new Map<string, string>(); // 표시명 → 원문(중복 제거용)
+    for (const b of allBrands ?? []) {
+      const l = brandLabel(b);
+      if (!labels.has(l)) labels.set(l, b);
+    }
+    const all = [...labels.keys()];
+    const famous = FAMOUS_BRANDS.filter((f) => all.includes(f));
+    const rest = all.filter((b) => !famous.includes(b)).sort((a, b) => a.localeCompare(b, "ko"));
+    return [...famous, ...rest];
+  })();
+
+  // 검색어는 한글·영문 아무거나 — "구찌" 로도 Gucci 가 걸린다.
+  const brandShown = brandQuery.trim()
+    ? brandList.filter((b) => brandMatches(b, brandQuery) || (allBrands ?? []).some((o) => brandLabel(o) === b && brandMatches(o, brandQuery)))
+    : brandList;
 
   const sizeKeys = Array.from(new Set(cats.map((c) => SIZE_KEY[c]).filter((k): k is string => !!k)));
 
@@ -145,39 +161,33 @@ export default function RecommendSheet({ slug, conciergeName }: { slug: string; 
                       className="flex-1 rounded-xl border border-gray-200 px-3.5 py-3 text-sm outline-none focus:border-[#4A60FF]" />
                   </div>
 
-                  {/* 관심 브랜드 + 검색 */}
+                  {/* 관심 브랜드 — 전체 노출 + 한글/영문 검색 */}
                   <div>
-                    <div className="mb-2 text-[13px] font-bold text-gray-700">관심 브랜드 <span className="font-normal text-gray-400">(복수 선택)</span></div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {FAMOUS_BRANDS.map((b) => (
-                        <button key={b} onClick={() => toggle(brands, setBrands, b)} className={chip(brands.includes(b))}>{b}</button>
-                      ))}
-                      {brands.filter((b) => !FAMOUS_BRANDS.includes(b)).map((b) => (
-                        <button key={b} onClick={() => toggle(brands, setBrands, b)} className={chip(true)}>{b} ✕</button>
-                      ))}
-                      <button onClick={() => setBrandSearchOpen(!brandSearchOpen)} className="rounded-full border border-dashed border-gray-300 bg-gray-50 px-3 py-1.5 text-[12.5px] font-semibold text-gray-500">
-                        {brandSearchOpen ? "닫기" : "🔍 다른 브랜드 찾기"}
-                      </button>
+                    <div className="mb-2 flex items-baseline justify-between">
+                      <div className="text-[13px] font-bold text-gray-700">관심 브랜드 <span className="font-normal text-gray-400">(복수 선택)</span></div>
+                      {brands.length > 0 && <div className="text-[12px] font-bold text-[#4A60FF]">{brands.length}개 선택</div>}
                     </div>
-                    {brandSearchOpen && (
-                      <div className="mt-2 rounded-xl border border-gray-200 p-2.5">
-                        <input
-                          value={brandQuery}
-                          onChange={(e) => setBrandQuery(e.target.value)}
-                          placeholder="브랜드 검색 (예: celine, row…)"
-                          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-[#4A60FF]"
-                          autoFocus
-                        />
-                        <div className="mt-2 flex max-h-32 flex-wrap gap-1.5 overflow-y-auto">
-                          {allBrands === null && <span className="text-[12px] text-gray-400">브랜드 불러오는 중…</span>}
-                          {allBrands !== null && brandResults.length === 0 && <span className="text-[12px] text-gray-400">검색 결과가 없어요</span>}
-                          {brandResults.map((b) => (
-                            <button key={b} onClick={() => { toggle(brands, setBrands, b); setBrandQuery(""); }}
-                              className="rounded-full bg-gray-100 px-2.5 py-1 text-[12px] font-semibold text-gray-600">
-                              + {b}
-                            </button>
-                          ))}
-                        </div>
+                    <input
+                      value={brandQuery}
+                      onChange={(e) => setBrandQuery(e.target.value)}
+                      placeholder="브랜드 검색 (구찌, gucci …)"
+                      className="mb-2 w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm outline-none focus:border-[#4A60FF]"
+                    />
+                    <div className="max-h-64 overflow-y-auto rounded-xl border border-gray-200 p-2.5">
+                      <div className="flex flex-wrap gap-1.5">
+                        {allBrands === null && <span className="text-[12px] text-gray-400">브랜드 불러오는 중…</span>}
+                        {allBrands !== null && brandShown.length === 0 && <span className="text-[12px] text-gray-400">검색 결과가 없어요</span>}
+                        {brandShown.map((b) => (
+                          <button key={b} onClick={() => toggle(brands, setBrands, b)} className={chip(brands.includes(b))}>{b}</button>
+                        ))}
+                      </div>
+                    </div>
+                    {/* 목록에 없는 브랜드(직접 적어 넣은 것)도 선택 상태로 남는다 */}
+                    {brands.filter((b) => !brandList.includes(b)).length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {brands.filter((b) => !brandList.includes(b)).map((b) => (
+                          <button key={b} onClick={() => toggle(brands, setBrands, b)} className={chip(true)}>{b} ✕</button>
+                        ))}
                       </div>
                     )}
                   </div>

@@ -36,11 +36,15 @@ export function ProductCard({ item }: { item: ShopItem }) {
       <div className="flex flex-1 flex-col p-2">
         {item.brand && <div className="truncate text-[10px] font-semibold text-gray-400">{item.brand}</div>}
         <div className="mt-0.5 line-clamp-2 text-[11px] font-bold leading-snug text-gray-900">{item.name}</div>
-        <div className="mt-auto pt-1 text-[10px] text-gray-300 line-through">
-          {item.listPrice != null && item.discount != null ? won(item.listPrice) : "\u00a0"}
+        {/* 3열이라 폭이 좁다. 할인율은 윗줄로 올려 판매가가 한 줄에 들어오게 한다.
+            한글은 「…430 / 원」 처럼 중간에서 끊기므로 줄바꿈도 막는다. */}
+        <div className="mt-auto flex items-baseline gap-1 whitespace-nowrap pt-1 text-[10px]">
+          {item.discount != null && <span className="font-bold text-[#13b6a6]">{item.discount}%</span>}
+          <span className="text-gray-300 line-through">
+            {item.listPrice != null && item.discount != null ? won(item.listPrice) : "\u00a0"}
+          </span>
         </div>
-        <div className="text-[12px] font-extrabold text-gray-900">
-          {item.discount != null && <span className="mr-0.5 text-[#13b6a6]">{item.discount}%</span>}
+        <div className="whitespace-nowrap text-[12px] font-extrabold tracking-tight text-gray-900">
           {item.salePrice != null && won(item.salePrice)}
         </div>
       </div>
