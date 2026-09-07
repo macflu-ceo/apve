@@ -26,7 +26,7 @@ export default function ConciergeBadge({ no, name }: { no: string; name?: string
         onClick={() => setOpen(true)}
         aria-label="인증 컨시어지"
         aria-haspopup="dialog"
-        className="absolute right-3 top-3 z-10 flex items-center gap-1.5 rounded-full bg-white/90 py-1 pl-2 pr-2.5 shadow-sm backdrop-blur transition active:scale-95"
+        className="absolute right-1 top-1 z-10 flex items-center gap-1.5 rounded-full bg-white/90 py-1 pl-2 pr-2.5 shadow-sm backdrop-blur transition active:scale-95"
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/ve-mark.png" alt="" className="h-3.5 w-auto" />
