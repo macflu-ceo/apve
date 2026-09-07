@@ -45,7 +45,7 @@ export default function ProductCard({
       <div className="relative aspect-[3/4] w-full overflow-hidden rounded-xl bg-[#f5f4f2]">
         {img ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={img} alt={product.name} className="prod-img" />
+          <img src={img} alt={product.name} className="prod-img absolute inset-0" />
         ) : (
           <div className="flex h-full items-center justify-center text-sub">No Image</div>
         )}

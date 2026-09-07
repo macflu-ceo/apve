@@ -29,8 +29,9 @@ export function ProductCard({ item }: { item: ShopItem }) {
       rel="noopener"
       className="flex h-full flex-col overflow-hidden rounded-2xl bg-white shadow-[0_2px_14px_rgba(20,30,80,.07)] transition active:scale-[0.98]"
     >
-      <div className="aspect-square shrink-0 bg-[#FAFAFC]">
-        {item.image && <img src={item.image} alt={item.name} className="h-full w-full object-contain" loading="lazy" />}
+      {/* 이미지 absolute: 원본 비율이 aspect-square 박스를 세로로 늘리지 못하게 고정 */}
+      <div className="relative aspect-square w-full shrink-0 bg-[#FAFAFC]">
+        {item.image && <img src={item.image} alt={item.name} className="absolute inset-0 h-full w-full object-contain" loading="lazy" />}
       </div>
       {/* 이름이 한 줄인 카드와 두 줄인 카드가 섞이면 가격 줄이 들쭉날쭉해진다. 가격은 카드 바닥 기준. */}
       <div className="flex flex-1 flex-col p-2">
