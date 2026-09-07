@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { shopTitle } from "@/lib/shop-title";
+import { conciergeCode } from "@/lib/concierge-access";
+import ConciergeBadge from "./ConciergeBadge";
 import { prisma } from "@/lib/db";
 import { partnerLink } from "@/lib/godomall/link";
 import RecommendSheet from "./RecommendSheet";
@@ -24,7 +27,7 @@ async function getData(slug: string) {
   return prisma.multiLink.findUnique({
     where: { slug },
     include: {
-      partner: { select: { code: true, name: true } },
+      partner: { select: { code: true, name: true, conciergeNo: true } },
       sections: { orderBy: [{ sort: "asc" }, { createdAt: "asc" }] },
       banners: { orderBy: [{ sort: "asc" }, { createdAt: "asc" }] },
       items: {
@@ -40,10 +43,10 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   if (!ml || !ml.active) return { title: { absolute: "VIA ÉLITE" } };
   const desc = ml.bio ?? "이탈리아 부티크 직계약 100% 정품, 특별한 가격으로 추천해드려요.";
   return {
-    title: { absolute: `${ml.displayName}의 명품샵 | VIA ÉLITE` },
+    title: { absolute: `${shopTitle(ml)} | VIA ÉLITE` },
     description: desc,
     openGraph: {
-      title: `${ml.displayName}의 명품샵`,
+      title: shopTitle(ml),
       description: desc,
       url: `https://veca.sh/${ml.slug}`,
       siteName: "VIA ÉLITE",
@@ -101,9 +104,10 @@ export default async function MultiLinkPage({ params }: { params: { slug: string
             <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border-[3px] border-white/80 bg-white text-3xl shadow-lg">🛍️</div>
           )}
           <div className="mt-3 text-[10px] font-bold tracking-[0.28em] text-white/70">VIA ÉLITE · ITALY DIRECT</div>
-          <h1 className="mt-1 text-[21px] font-extrabold tracking-tight">{ml.displayName}의 명품샵</h1>
+          <h1 className="mt-1 text-[21px] font-extrabold tracking-tight">{shopTitle(ml)}</h1>
           {ml.bio && <p className="mx-auto mt-1.5 max-w-[300px] text-[13px] leading-relaxed text-white/85">{ml.bio}</p>}
-          <div className="mt-3.5 flex justify-center gap-1.5">
+          <div className="mt-3.5 flex flex-wrap justify-center gap-1.5">
+            {ml.partner?.conciergeNo != null && <ConciergeBadge no={conciergeCode(ml.partner.conciergeNo)} />}
             <span className="rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold backdrop-blur">🛡️ 100% 정품 보증</span>
             <span className="rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold backdrop-blur">✈️ 이탈리아 부티크 직계약</span>
           </div>

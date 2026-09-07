@@ -70,6 +70,7 @@ export default async function MultiLinkAdminPage() {
       ml={{
         slug: ml.slug,
         displayName: ml.displayName,
+        shopTitle: ml.shopTitle ?? "",
         bio: ml.bio ?? "",
         avatarUrl: ml.avatarUrl ?? "",
         coverUrl: ml.coverUrl ?? "",

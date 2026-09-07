@@ -1,5 +1,6 @@
 import { ImageResponse } from "next/og";
 import { prisma } from "@/lib/db";
+import { shopTitle } from "@/lib/shop-title";
 
 // 멀티링크 공유 미리보기(OG) 이미지 — 컨시어지별 자동 생성
 export const size = { width: 1200, height: 630 };
@@ -25,7 +26,7 @@ export default async function Image({ params }: { params: { slug: string } }) {
     },
   });
 
-  const name = ml?.displayName ?? "VIA ÉLITE";
+  const title = ml ? shopTitle(ml) : "VIA ÉLITE의 명품샵";
   const bio = ml?.bio ?? "이탈리아 부티크 직계약 100% 정품";
   const avatar = ml?.avatarUrl ?? null;
   const productImgs = (ml?.items ?? [])
@@ -87,7 +88,7 @@ export default async function Image({ params }: { params: { slug: string } }) {
               </div>
             )}
             <div style={{ display: "flex", flexDirection: "column", marginLeft: 28 }}>
-              <div style={{ display: "flex", fontSize: 58, fontWeight: 700, lineHeight: 1.15 }}>{name}의 명품샵</div>
+              <div style={{ display: "flex", fontSize: 58, fontWeight: 700, lineHeight: 1.15 }}>{title}</div>
             </div>
           </div>
           <div

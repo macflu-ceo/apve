@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { shopTitle } from "@/lib/shop-title";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { partnerLink } from "@/lib/godomall/link";
@@ -34,7 +35,7 @@ export async function generateMetadata({ params }: { params: { slug: string; ban
   const b = await getData(params.slug, params.bannerId);
   if (!b) return { title: { absolute: "VIA ÉLITE" } };
   return {
-    title: { absolute: `${b.title ?? b.section?.title ?? "기획전"} | ${b.multiLink.displayName}의 명품샵` },
+    title: { absolute: `${b.title ?? b.section?.title ?? "기획전"} | ${shopTitle(b.multiLink)}` },
     openGraph: { images: [b.imageUrl] },
   };
 }
@@ -65,7 +66,7 @@ export default async function BannerCollectionPage({ params }: { params: { slug:
         {/* 상단 바 */}
         <div className="sticky top-0 z-40 flex items-center gap-2 bg-white/90 px-3 py-3 backdrop-blur">
           <Link href={`/m/${params.slug}`} className="flex h-8 w-8 items-center justify-center rounded-full text-lg text-gray-600">←</Link>
-          <span className="text-[15px] font-extrabold text-gray-900">{banner.multiLink.displayName}의 명품샵</span>
+          <span className="text-[15px] font-extrabold text-gray-900">{shopTitle(banner.multiLink)}</span>
         </div>
 
         {/* 배너 히어로 */}

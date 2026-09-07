@@ -45,7 +45,7 @@ const won = (n: number) => n.toLocaleString() + "원";
 export default function Manager({
   ml, percent, sections, banners, items, candidates, leads,
 }: {
-  ml: { slug: string; displayName: string; bio: string; avatarUrl: string; coverUrl: string; views: number };
+  ml: { slug: string; displayName: string; shopTitle: string; bio: string; avatarUrl: string; coverUrl: string; views: number };
   percent: number;
   sections: Section[];
   banners: Banner[];
@@ -62,7 +62,7 @@ export default function Manager({
   useEffect(() => setLocalItems(items), [items]);
   useEffect(() => setLocalCands(candidates), [candidates]);
   useEffect(() => setLocalLeads(leads), [leads]);
-  const [profile, setProfile] = useState({ displayName: ml.displayName, bio: ml.bio, avatarUrl: ml.avatarUrl, coverUrl: ml.coverUrl });
+  const [profile, setProfile] = useState({ displayName: ml.displayName, shopTitle: ml.shopTitle, bio: ml.bio, avatarUrl: ml.avatarUrl, coverUrl: ml.coverUrl });
   const [msg, setMsg] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [view, setView] = useState<"list" | "card">("list");
@@ -231,6 +231,13 @@ export default function Manager({
           </label>
           <div className="flex-1 space-y-2">
             <input value={profile.displayName} onChange={(e) => setProfile({ ...profile, displayName: e.target.value })} placeholder="표시 이름" className="field w-full" />
+            {/* 「의 명품샵」이 고정이라 자기 이름을 걸 수 없었다. 비우면 예전 형태 그대로. */}
+            <input
+              value={profile.shopTitle}
+              onChange={(e) => setProfile({ ...profile, shopTitle: e.target.value })}
+              placeholder={`샵 이름 (비우면 "${profile.displayName || "이름"}의 명품샵")`}
+              className="field w-full"
+            />
             <input value={profile.bio} onChange={(e) => setProfile({ ...profile, bio: e.target.value })} placeholder="소개 문구 (예: 명품, 아는 사람 가격으로 추천해드려요)" className="field w-full" />
           </div>
         </div>

@@ -42,6 +42,8 @@ function refresh(slug: string) {
 
 export async function updateMultiLinkProfile(input: {
   displayName: string;
+  /** 샵 이름 전체. 비우면 "{이름}의 명품샵" 으로 자동 생성 */
+  shopTitle?: string;
   bio: string;
   avatarUrl: string;
   coverUrl?: string;
@@ -55,6 +57,7 @@ export async function updateMultiLinkProfile(input: {
     where: { id: r.ml.id },
     data: {
       displayName,
+      shopTitle: (input.shopTitle ?? "").trim().slice(0, 30) || null,
       bio: input.bio.trim().slice(0, 120) || null,
       avatarUrl: input.avatarUrl.trim() || null,
       coverUrl: (input.coverUrl ?? "").trim() || null,

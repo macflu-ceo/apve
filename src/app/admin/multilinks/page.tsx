@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { shopTitle } from "@/lib/shop-title";
 
 export const dynamic = "force-dynamic";
 
@@ -50,7 +51,7 @@ export default async function MultiLinksAdmin() {
                 </td>
                 <td className="whitespace-nowrap px-3 py-2.5">
                   {l.avatarUrl && <img src={l.avatarUrl} className="mr-1.5 inline-block h-6 w-6 rounded-full object-cover align-middle" alt="" />}
-                  {l.displayName}의 명품샵
+                  {shopTitle(l)}
                   {!l.active && <span className="ml-1.5 rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-bold text-red-600">비활성</span>}
                 </td>
                 <td className="whitespace-nowrap px-3 py-2.5">

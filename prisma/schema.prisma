@@ -471,6 +471,9 @@ model MultiLink {
   /// 짧은 주소 (기본: 파트너 코드)
   slug          String   @unique
   displayName   String
+  /// 샵 이름 전체. 비우면 "{displayName}의 명품샵" 으로 자동으로 만든다.
+  /// 「의 명품샵」이 고정이라 자기 이름을 붙일 수 없다는 요청이 있었다.
+  shopTitle     String?
   bio           String?
   avatarUrl     String?
   /// 헤더 배경(커버) 이미지
