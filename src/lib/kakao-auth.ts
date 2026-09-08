@@ -48,8 +48,13 @@ export async function exchangeAndFetchProfile(code: string): Promise<KakaoProfil
     throw new Error(`카카오 토큰 발급 실패: ${token.error_description ?? token.error ?? tokenRes.status}`);
   }
 
+  return fetchProfileWithToken(token.access_token);
+}
+
+/** 액세스 토큰으로 프로필 조회 — 네이티브 SDK(카카오톡 앱 로그인)가 준 토큰도 동일 경로 */
+export async function fetchProfileWithToken(accessToken: string): Promise<KakaoProfile> {
   const meRes = await fetch(ME_URL, {
-    headers: { Authorization: `Bearer ${token.access_token}` },
+    headers: { Authorization: `Bearer ${accessToken}` },
     cache: "no-store",
   });
   const me = await meRes.json();

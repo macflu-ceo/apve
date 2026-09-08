@@ -4,6 +4,7 @@
 // 연동 키(NEXT_PUBLIC_KAKAO_READY)가 켜지기 전에는 준비 안내를 띄운다.
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { startKakao } from "@/lib/kakao-client";
 
 const ITEMS = [
   { key: "tos", label: "[필수] 서비스 이용약관 동의", href: "/terms?doc=service", required: true },
@@ -34,7 +35,7 @@ export default function SignupKakao() {
 
   const start = () => {
     if (!allRequired) return;
-    window.location.href = "/auth/kakao/start";
+    void startKakao(); // 앱이면 카카오톡 앱으로, 웹이면 OAuth 페이지로
   };
 
   return (

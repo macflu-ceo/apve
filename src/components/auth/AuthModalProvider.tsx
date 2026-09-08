@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { login, signup, requestIdentity, confirmIdentity, getIdentitySummary, checkUsernameAvailable, discardIdentityTicket } from "@/lib/auth-actions";
+import { startKakao } from "@/lib/kakao-client";
 import Logo from "@/components/Logo";
 
 // 본인인증 방식: raon(라온 OmniOne CX, 실서비스) | portone | mock(개발). 환경변수로 전환.
@@ -240,6 +241,7 @@ function AuthModal({ mode, setMode, close }: { mode: Mode; setMode: (m: Mode) =>
         <div className="space-y-3">
           <a
             href="/auth/kakao/start"
+            onClick={(e) => { e.preventDefault(); void startKakao(); }}
             className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#FEE500] py-4 text-[15px] font-extrabold text-[#191919] transition active:scale-[0.99]"
           >
             <svg viewBox="0 0 24 24" className="h-5 w-5 fill-[#191919]" aria-hidden>
