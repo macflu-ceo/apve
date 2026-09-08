@@ -80,12 +80,15 @@ export default function ProductCard({
         <div className="truncate text-[11px] font-bold">{product.brand ?? "명품"}</div>
         <div className="mt-0.5 line-clamp-2 text-[11px] leading-snug text-ink/60">{product.name}</div>
 
-        <div className="mt-auto pt-1 text-[10px] text-sub line-through">
-          {product.listPrice && discount > 0 ? won(product.listPrice) : "\u00a0"}
+        {/* \uace0\uac00 \uc0c1\ud488\uc740 \u300c%+\uac00\uaca9\u300d \ud55c \uc904\uc774 \uce74\ub4dc \ud3ed\uc744 \ub118\ub294\ub2e4 \u2014 \ud560\uc778\uc728\uc744 \ucde8\uc18c\uc120 \uc904\ub85c \uc62c\ub9ac\uace0 \ud310\ub9e4\uac00\ub294 \ub2e8\ub3c5 \uc904 */}
+        <div className="mt-auto flex items-baseline gap-1 overflow-hidden whitespace-nowrap pt-1 text-[10px]">
+          {discount > 0 && <span className="font-bold text-deal">{discount}%</span>}
+          <span className="text-sub line-through">
+            {product.listPrice && discount > 0 ? won(product.listPrice) : "\u00a0"}
+          </span>
         </div>
-        <div className="mt-0.5 flex items-center gap-1 whitespace-nowrap">
-          {discount > 0 && <span className="text-[13.5px] font-extrabold text-deal">{discount}%</span>}
-          <span className="text-[13.5px] font-extrabold tracking-tight">{won(product.salePrice)}</span>
+        <div className="mt-0.5 overflow-hidden whitespace-nowrap text-[13.5px] font-extrabold tracking-tight">
+          {won(product.salePrice)}
         </div>
         {boosted > 0 ? (
           <div className="mt-1 flex flex-wrap items-center gap-1">
