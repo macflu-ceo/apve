@@ -62,6 +62,7 @@ function AuthModal({ mode, setMode, close }: { mode: Mode; setMode: (m: Mode) =>
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   // 로그인
+  const [showLegacy, setShowLegacy] = useState(false); // 기존 아이디 로그인 접기
   const [lid, setLid] = useState("");
   const [lpw, setLpw] = useState("");
 
@@ -235,53 +236,43 @@ function AuthModal({ mode, setMode, close }: { mode: Mode; setMode: (m: Mode) =>
           </button>
         </div>
 
-        {/* 탭 */}
-        <div className="mb-5 flex gap-2 text-sm font-bold">
-          {(["login", "signup"] as Mode[]).map((m) => (
-            <button
-              key={m}
-              onClick={() => { setMode(m); setMsg(null); }}
-              className={`flex-1 rounded-lg py-2 ${mode === m ? "bg-ink text-white" : "bg-line text-sub"}`}
-            >
-              {m === "login" ? "로그인" : "회원가입"}
-            </button>
-          ))}
-        </div>
+        {/* 로그인·회원가입 통합 — 콜백이 있으면 로그인, 없으면 가입 처리하므로 버튼 하나로 충분 */}
+        <div className="space-y-3">
+          <a
+            href="/auth/kakao/start"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#FEE500] py-4 text-[15px] font-extrabold text-[#191919] transition active:scale-[0.99]"
+          >
+            <svg viewBox="0 0 24 24" className="h-5 w-5 fill-[#191919]" aria-hidden>
+              <path d="M12 3C6.48 3 2 6.42 2 10.64c0 2.7 1.8 5.07 4.5 6.42l-1.15 4.2c-.1.37.32.66.64.45l5.04-3.33c.32.03.64.05.97.05 5.52 0 10-3.42 10-7.64S17.52 3 12 3z" />
+            </svg>
+            카카오로 시작하기
+          </a>
+          <p className="text-center text-xs leading-relaxed text-sub">
+            로그인·회원가입이 한 번에 진행돼요.
+            <br />
+            처음이시면 가입 즉시 판매 코드가 자동 발급됩니다.
+          </p>
 
-        {mode === "login" ? (
-          <div className="space-y-3">
-            <input className="field" autoComplete="username" placeholder="아이디" value={lid} onChange={(e) => setLid(e.target.value)} />
-            <input className="field" type="password" autoComplete="current-password" placeholder="비밀번호" value={lpw} onChange={(e) => setLpw(e.target.value)} />
-            <button className="btn-brand w-full" onClick={doLogin} disabled={pending}>
-              {pending ? "처리 중…" : "로그인"}
-            </button>
-            <a
-              href="/auth/kakao/start"
-              className="block w-full rounded-xl bg-[#FEE500] py-3.5 text-center text-sm font-extrabold text-[#191919] transition active:scale-[0.99]"
-            >
-              카카오로 로그인
-            </a>
-            <a href="/account/recover" className="block text-center text-xs text-sub underline">
-              아이디·비밀번호 찾기
-            </a>
-          </div>
-        ) : (
-          /* ── 회원가입: 카카오 단일 경로 — 본인인증 가입은 제거(카카오 동의항목 심사 기준) ── */
-          <div className="space-y-3">
-            <p className="text-sm leading-relaxed text-ink/70">
-              회원가입은 <b>카카오계정</b>으로 진행돼요.
-              <br />
-              <span className="text-xs text-sub">약관 동의 후 3초면 가입이 끝납니다.</span>
-            </p>
-            <a
-              href="/signup"
-              className="block w-full rounded-xl bg-[#FEE500] py-3.5 text-center text-sm font-extrabold text-[#191919] transition active:scale-[0.99]"
-            >
-              카카오로 회원가입
-            </a>
-            <p className="text-center text-xs text-sub">가입 즉시 판매 코드가 자동 발급돼요.</p>
-          </div>
-        )}
+          <button
+            type="button"
+            onClick={() => { setShowLegacy((v) => !v); setMsg(null); }}
+            className="w-full pt-1 text-center text-xs text-sub underline"
+          >
+            기존 아이디·비밀번호로 로그인
+          </button>
+          {showLegacy && (
+            <div className="space-y-3 border-t border-line pt-4">
+              <input className="field" autoComplete="username" placeholder="아이디" value={lid} onChange={(e) => setLid(e.target.value)} />
+              <input className="field" type="password" autoComplete="current-password" placeholder="비밀번호" value={lpw} onChange={(e) => setLpw(e.target.value)} />
+              <button className="btn-brand w-full" onClick={doLogin} disabled={pending}>
+                {pending ? "처리 중…" : "로그인"}
+              </button>
+              <a href="/account/recover" className="block text-center text-xs text-sub underline">
+                아이디·비밀번호 찾기
+              </a>
+            </div>
+          )}
+        </div>
 
         {false && (
           <div className="space-y-3">
