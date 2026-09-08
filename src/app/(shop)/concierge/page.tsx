@@ -99,7 +99,7 @@ export default async function ConciergePage() {
   return (
     <div className="mx-auto max-w-2xl pb-10">
       {/* ── 히어로 ── */}
-      <div className="relative overflow-hidden bg-gradient-to-b from-[#4A60FF] to-[#6E82FF] px-5 pb-12 pt-10 text-center text-white">
+      <div className="relative overflow-hidden rounded-b-3xl bg-gradient-to-b from-[#4A60FF] to-[#6E82FF] px-5 pb-11 pt-10 text-center text-white">
         <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10" aria-hidden />
         <div className="pointer-events-none absolute -left-12 bottom-0 h-32 w-32 rounded-full bg-white/10" aria-hidden />
         <div className="text-[10px] font-bold tracking-[0.3em] text-white/70">VIA ÉLITE OFFICIAL CONCIERGE</div>
@@ -124,7 +124,7 @@ export default async function ConciergePage() {
 
       <div className="px-4">
         {/* ── 무엇이 열리는지 ── */}
-        <div className="-mt-6 space-y-3">
+        <div className="mt-5 space-y-3">
           {PERKS.map((t, i) => (
             <div key={t.title} className="rounded-2xl bg-white p-5 shadow-[0_4px_18px_rgba(20,30,80,.08)] ring-1 ring-line/60">
               <div className="flex items-start gap-3.5">
