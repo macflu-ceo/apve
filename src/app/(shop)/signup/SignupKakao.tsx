@@ -13,10 +13,15 @@ const ITEMS = [
 
 export default function SignupKakao() {
   const [checked, setChecked] = useState<Record<string, boolean>>({});
-  const [preparing, setPreparing] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
   useEffect(() => {
     try {
-      if (new URLSearchParams(window.location.search).get("kakao") === "preparing") setPreparing(true);
+      const k = new URLSearchParams(window.location.search).get("kakao");
+      if (k === "preparing") setNotice("카카오 로그인 연동 준비 중입니다. 잠시 후 다시 시도해 주세요.");
+      else if (k === "cancelled") setNotice("카카오 로그인이 취소되었습니다. 다시 시도해 주세요.");
+      else if (k === "age") setNotice("만 14세 미만은 가입할 수 없습니다.");
+      else if (k === "blocked") setNotice("이용이 제한된 계정입니다. 고객센터로 문의해 주세요.");
+      else if (k === "error") setNotice("일시적인 오류로 가입에 실패했습니다. 잠시 후 다시 시도해 주세요.");
     } catch { /* noop */ }
   }, []);
   const allRequired = ITEMS.filter((i) => i.required).every((i) => checked[i.key]);
@@ -78,10 +83,8 @@ export default function SignupKakao() {
         카카오계정으로 회원가입
       </button>
       <p className="mt-2 text-center text-xs text-sub">필수 약관에 동의해야 회원가입을 진행할 수 있습니다.</p>
-      {preparing && (
-        <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-center text-xs font-medium text-amber-800">
-          카카오 로그인 연동 준비 중입니다. 잠시 후 다시 시도해 주세요.
-        </p>
+      {notice && (
+        <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-center text-xs font-medium text-amber-800">{notice}</p>
       )}
     </div>
   );

@@ -43,3 +43,5 @@ scripts/bulk_2000.ts
 scripts/fill_sections_100.ts
 scripts/gen_ad5_more.ts
 scripts/gen_adassets.ts
+.vercel
+.env*

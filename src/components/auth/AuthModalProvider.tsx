@@ -255,6 +255,12 @@ function AuthModal({ mode, setMode, close }: { mode: Mode; setMode: (m: Mode) =>
             <button className="btn-brand w-full" onClick={doLogin} disabled={pending}>
               {pending ? "처리 중…" : "로그인"}
             </button>
+            <a
+              href="/auth/kakao/start"
+              className="block w-full rounded-xl bg-[#FEE500] py-3.5 text-center text-sm font-extrabold text-[#191919] transition active:scale-[0.99]"
+            >
+              카카오로 로그인
+            </a>
             <a href="/account/recover" className="block text-center text-xs text-sub underline">
               아이디·비밀번호 찾기
             </a>

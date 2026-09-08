@@ -59,6 +59,8 @@ type Row = {
   id: string;
   name: string;
   username: string;
+  /// 카카오 간편가입 회원 여부 (이름·전화는 카카오 동의항목에서 수신)
+  kakao: boolean;
   phone: string | null;
   code: string | null;
   status: string;
@@ -228,6 +230,7 @@ export default async function AdminPartners({ searchParams }: { searchParams: SP
       id: p.id,
       name: p.name,
       username: p.username,
+      kakao: !!p.kakaoId,
       phone: p.phone,
       code: p.code,
       status: p.status,
@@ -474,6 +477,9 @@ export default async function AdminPartners({ searchParams }: { searchParams: SP
                   <td className="whitespace-nowrap py-2 font-medium">
                     <div className="flex items-center gap-1">
                       {p.name}
+                      {p.kakao && (
+                        <span className="rounded bg-[#FEE500] px-1 text-[10px] font-bold text-[#191919]" title="카카오 간편가입">K</span>
+                      )}
                       {p.status !== "approved" && (
                         <span className="rounded bg-line px-1 text-[10px] text-sub">
                           {p.status === "pending" ? "대기" : "반려"}
