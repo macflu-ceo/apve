@@ -328,8 +328,8 @@ function AuthModal({ mode, setMode, close }: { mode: Mode; setMode: (m: Mode) =>
                   </button>
                 </div>
                 {idCheck && (
-                  <p className={`text-xs ${idCheck.available ? "text-green-600" : "text-red-500"}`}>
-                    {idCheck.available ? "✓ " : ""}{idCheck.text}
+                  <p className={`text-xs ${idCheck?.available ? "text-green-600" : "text-red-500"}`}>
+                    {idCheck?.available ? "✓ " : ""}{idCheck?.text}
                   </p>
                 )}
 
