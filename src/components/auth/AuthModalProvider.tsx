@@ -260,9 +260,27 @@ function AuthModal({ mode, setMode, close }: { mode: Mode; setMode: (m: Mode) =>
             </a>
           </div>
         ) : (
+          /* ── 회원가입: 카카오 단일 경로 — 본인인증 가입은 제거(카카오 동의항목 심사 기준) ── */
+          <div className="space-y-3">
+            <p className="text-sm leading-relaxed text-ink/70">
+              회원가입은 <b>카카오계정</b>으로 진행돼요.
+              <br />
+              <span className="text-xs text-sub">약관 동의 후 3초면 가입이 끝납니다.</span>
+            </p>
+            <a
+              href="/signup"
+              className="block w-full rounded-xl bg-[#FEE500] py-3.5 text-center text-sm font-extrabold text-[#191919] transition active:scale-[0.99]"
+            >
+              카카오로 회원가입
+            </a>
+            <p className="text-center text-xs text-sub">가입 즉시 판매 코드가 자동 발급돼요.</p>
+          </div>
+        )}
+
+        {false && (
           <div className="space-y-3">
             {!ci ? (
-              /* ── 1단계: 본인인증만 (실명·연락처는 인증 결과에서 자동 수신) ── */
+              /* ── (구) 본인인증 가입 — 카카오 전환으로 미사용, 롤백 대비 보존 ── */
               <>
                 <p className="text-sm leading-relaxed text-ink/70">
                   휴대폰 본인인증으로 간편하게 가입해요.

@@ -2,7 +2,7 @@
 
 // 카카오 회원가입 화면 — 약관 동의 후 카카오 로그인으로 진행.
 // 연동 키(NEXT_PUBLIC_KAKAO_READY)가 켜지기 전에는 준비 안내를 띄운다.
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 
 const ITEMS = [
@@ -13,6 +13,12 @@ const ITEMS = [
 
 export default function SignupKakao() {
   const [checked, setChecked] = useState<Record<string, boolean>>({});
+  const [preparing, setPreparing] = useState(false);
+  useEffect(() => {
+    try {
+      if (new URLSearchParams(window.location.search).get("kakao") === "preparing") setPreparing(true);
+    } catch { /* noop */ }
+  }, []);
   const allRequired = ITEMS.filter((i) => i.required).every((i) => checked[i.key]);
   const allChecked = ITEMS.every((i) => checked[i.key]);
 
@@ -72,6 +78,11 @@ export default function SignupKakao() {
         카카오계정으로 회원가입
       </button>
       <p className="mt-2 text-center text-xs text-sub">필수 약관에 동의해야 회원가입을 진행할 수 있습니다.</p>
+      {preparing && (
+        <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-center text-xs font-medium text-amber-800">
+          카카오 로그인 연동 준비 중입니다. 잠시 후 다시 시도해 주세요.
+        </p>
+      )}
     </div>
   );
 }
