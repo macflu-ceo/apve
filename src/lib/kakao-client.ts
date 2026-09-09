@@ -51,6 +51,16 @@ export async function startKakao(): Promise<void> {
     return;
   }
   try {
+    // 진단 플러그인(테스트 빌드에만 존재)이 있으면 카카오톡 감지 결과를 먼저 보여준다
+    const diag = (window as unknown as { Capacitor?: { Plugins?: { KakaoDiag?: { check(): Promise<unknown> } } } }).Capacitor?.Plugins?.KakaoDiag;
+    if (diag) {
+      try {
+        const d = await diag.check();
+        hideLoading();
+        alert("카카오톡 진단: " + JSON.stringify(d));
+        showLoading();
+      } catch { /* noop */ }
+    }
     const r = await plugin.goLogin();
     const res = await fetch("/api/auth/kakao/token", {
       method: "POST",
