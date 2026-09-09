@@ -39,8 +39,15 @@ export async function startKakao(): Promise<void> {
     } else {
       window.location.href = `/signup?kakao=${j.reason ?? "error"}`;
     }
-  } catch {
-    // 카카오톡 미설치·취소 등 → 웹 OAuth 폴백
+  } catch (e) {
+    // 카카오톡 미설치·취소 등 → 웹 OAuth 폴백.
+    // 실기기 원인 추적을 위해 에러 내용을 잠시 보여준다 (사용자 취소는 제외)
+    const msg = e instanceof Error ? e.message : String(e);
+    if (/cancel|취소/i.test(msg)) {
+      window.location.href = "/auth/kakao/start";
+      return;
+    }
+    alert("카카오톡 로그인 오류: " + msg.slice(0, 300));
     window.location.href = "/auth/kakao/start";
   }
 }
