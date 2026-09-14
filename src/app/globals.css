@@ -29,9 +29,15 @@ body {
   @apply inline-flex items-center justify-center gap-2 rounded-xl border border-ink/20 px-4 py-3.5 text-sm font-bold text-ink transition hover:border-ink;
 }
 
-/* 입력 */
+/* 입력 — 글자색을 명시해 다크모드 기기(웹뷰 강제 다크 포함)에서 흰 글자로 뒤집히지 않게 */
 .field {
-  @apply w-full rounded-xl border border-line bg-[#f7f7f7] px-4 py-3 text-sm outline-none focus:border-brand focus:bg-white;
+  @apply w-full rounded-xl border border-line bg-[#f7f7f7] px-4 py-3 text-sm text-ink outline-none focus:border-brand focus:bg-white;
+  caret-color: #191f28;
+  -webkit-text-fill-color: #191f28;
+}
+.field::placeholder {
+  color: #8b95a1;
+  -webkit-text-fill-color: #8b95a1;
 }
 
 /* 카드 */
