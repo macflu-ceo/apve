@@ -4,6 +4,101 @@ import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { submitSettlement } from "./actions";
 
+// ── 다음(카카오) 우편번호 검색 ──────────────────────────────
+// 키 없이 쓰는 공개 스크립트. 검색으로 우편번호·도로명 주소를 받아오고
+// 사용자는 상세주소만 입력한다. 최종 주소는 "(우편번호) 도로명, 상세" 한 줄로 합친다.
+type DaumPostcodeData = { zonecode: string; roadAddress: string; jibunAddress: string; buildingName?: string };
+declare global {
+  interface Window {
+    daum?: { Postcode: new (opts: { oncomplete: (d: DaumPostcodeData) => void; width?: string; height?: string }) => { embed: (el: HTMLElement) => void } };
+  }
+}
+function loadPostcodeScript(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (window.daum?.Postcode) return resolve();
+    const s = document.createElement("script");
+    s.src = "https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js";
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error("주소 검색을 불러오지 못했습니다"));
+    document.head.appendChild(s);
+  });
+}
+
+function AddressField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [zip, setZip] = useState("");
+  const [base, setBase] = useState("");
+  const [detail, setDetail] = useState("");
+  const [open, setOpen] = useState(false);
+  const boxRef = useRef<HTMLDivElement>(null);
+
+  const compose = (z: string, b: string, d: string) =>
+    onChange([z && `(${z})`, b, d.trim()].filter(Boolean).join(" ").replace(/\s+/g, " ").trim());
+
+  async function search() {
+    try {
+      await loadPostcodeScript();
+      setOpen(true);
+      requestAnimationFrame(() => {
+        if (!boxRef.current || !window.daum) return;
+        boxRef.current.innerHTML = "";
+        new window.daum.Postcode({
+          oncomplete: (d) => {
+            const road = d.roadAddress || d.jibunAddress;
+            const b = d.buildingName ? `${road} (${d.buildingName})` : road;
+            setZip(d.zonecode);
+            setBase(b);
+            compose(d.zonecode, b, detail);
+            setOpen(false);
+          },
+          width: "100%",
+          height: "100%",
+        }).embed(boxRef.current);
+      });
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "주소 검색 오류");
+    }
+  }
+
+  return (
+    <div>
+      <label className="text-xs text-sub">주소 *</label>
+      <div className="mt-1 flex gap-2">
+        <input
+          className="field flex-1"
+          readOnly
+          placeholder="우편번호 찾기를 눌러주세요"
+          value={base ? `(${zip}) ${base}` : value}
+          onClick={search}
+        />
+        <button type="button" onClick={search} className="shrink-0 rounded-xl bg-ink px-4 text-sm font-bold text-white">
+          우편번호 찾기
+        </button>
+      </div>
+      <input
+        className="field mt-2"
+        placeholder="상세주소 (동·호수 등)"
+        value={detail}
+        onChange={(e) => {
+          setDetail(e.target.value);
+          if (base) compose(zip, base, e.target.value);
+        }}
+      />
+
+      {open && (
+        <div className="fixed inset-0 z-[80] flex flex-col bg-white">
+          <div className="flex items-center justify-between border-b border-line px-4 py-3">
+            <b className="text-sm">주소 검색</b>
+            <button type="button" onClick={() => setOpen(false)} className="text-xl leading-none text-sub" aria-label="닫기">
+              ✕
+            </button>
+          </div>
+          <div ref={boxRef} className="flex-1" />
+        </div>
+      )}
+    </div>
+  );
+}
+
 function DocUpload({
   kind,
   label,
@@ -127,10 +222,7 @@ export default function SettlementForm({
               onChange={(e) => set("residentNo", e.target.value)}
             />
           </div>
-          <div>
-            <label className="text-xs text-sub">주소 *</label>
-            <input className="field mt-1" value={f.address} onChange={(e) => set("address", e.target.value)} />
-          </div>
+          <AddressField value={f.address} onChange={(v) => set("address", v)} />
           <div className="grid gap-3">
             <div>
               <label className="text-xs text-sub">은행명 *</label>
