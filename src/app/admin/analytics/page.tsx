@@ -11,6 +11,7 @@ import {
   getAcquisition,
   getAppCtaPerformance,
   getAppConversionFunnel,
+  getAppSignupFunnel,
 } from "@/lib/analytics";
 import type { RetentionSummary } from "@/lib/analytics";
 import DateRange from "./DateRange";
@@ -33,7 +34,7 @@ export default async function AdminAnalytics({
   const to = searchParams.to ?? daysAgo(0);
   const pf = searchParams.platform === "app" ? "app" : searchParams.platform === "web" ? "web" : undefined;
 
-  const [funnel, top, series, retention, webSum, appSum, active, cohorts, vFunnel, acq, appCta, appFunnel] = await Promise.all([
+  const [funnel, top, series, retention, webSum, appSum, active, cohorts, vFunnel, acq, appCta, appFunnel, signupFunnel] = await Promise.all([
     getFunnel(from, to),
     getTopProducts(from, to, 10),
     getDailySeries(from, to, pf),
@@ -46,6 +47,7 @@ export default async function AdminAnalytics({
     getAcquisition(from, to, pf),
     getAppCtaPerformance(from, to),
     getAppConversionFunnel(from, to),
+    getAppSignupFunnel(from, to),
   ]);
 
   // 전환율(코드생성/조회, 판매/코드생성)
@@ -67,6 +69,63 @@ export default async function AdminAnalytics({
       </p>
 
       <DateRange from={from} to={to} />
+
+      {/* ── 하이라이트: 앱 가입 이탈 ── */}
+      {(() => {
+        const f = signupFunnel;
+        const lost = Math.max(0, f.newDevices - f.converted);
+        const lostRate = f.newDevices > 0 ? (lost / f.newDevices) * 100 : 0;
+        const pct = (n: number) => (f.newDevices > 0 ? `${((n / f.newDevices) * 100).toFixed(0)}%` : "-");
+        const steps = [
+          { label: "앱 첫 실행 (신규 기기)", n: f.newDevices, sub: "비로그인으로 시작" },
+          { label: "가입 화면 확인", n: f.gateViews, sub: pct(f.gateViews) },
+          { label: "카카오 버튼 클릭", n: f.started, sub: pct(f.started) },
+          { label: "가입 완료", n: f.converted, sub: pct(f.converted), good: true },
+        ];
+        const maxDay = Math.max(1, ...f.byDay.map((d) => d.newDevices));
+        return (
+          <div className="mb-6 rounded-xl2 border-2 border-red-300 bg-red-50/60 p-5">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <div>
+                <div className="text-base font-bold">🚨 앱 가입 이탈 <span className="ml-1 rounded bg-red-600 px-1.5 py-0.5 text-[11px] font-bold text-white">하이라이트</span></div>
+                <p className="mt-0.5 text-xs text-sub">앱을 처음 켠 기기가 가입까지 오는지 — 설치는 되는데 가입이 적은 구간을 찾습니다.</p>
+              </div>
+              <div className="text-right">
+                <div className="text-2xl font-black text-red-600">{lost.toLocaleString()}대 이탈</div>
+                <div className="text-xs font-bold text-red-500">이탈률 {lostRate.toFixed(1)}% · 둘러보기 선택 {f.skipped.toLocaleString()}대</div>
+              </div>
+            </div>
+
+            <div className="mt-4 grid grid-cols-4 gap-2">
+              {steps.map((s) => (
+                <div key={s.label} className={`rounded-lg border p-3 ${s.good ? "border-green-300 bg-green-50" : "border-red-200 bg-white"}`}>
+                  <div className="text-[11px] text-sub">{s.label}</div>
+                  <div className={`mt-1 text-xl font-black ${s.good ? "text-green-700" : ""}`}>{s.n.toLocaleString()}</div>
+                  <div className="text-[11px] font-semibold text-sub">{s.sub}</div>
+                </div>
+              ))}
+            </div>
+
+            {f.byDay.length > 1 && (
+              <div className="mt-4">
+                <div className="mb-1 text-[11px] text-sub">일자별 — <span className="text-red-500">■ 신규 기기</span> 중 <span className="text-green-600">■ 가입 완료</span></div>
+                <div className="flex h-16 items-end gap-[3px]">
+                  {f.byDay.slice(-30).map((d) => (
+                    <div key={d.day} className="group relative flex flex-1 flex-col items-center justify-end" title={`${d.day} · 신규 ${d.newDevices} / 가입 ${d.converted}`}>
+                      <div className="w-full rounded-t bg-red-300" style={{ height: `${(d.newDevices / maxDay) * 100}%`, minHeight: d.newDevices > 0 ? 3 : 0 }} />
+                      <div className="absolute bottom-0 w-full rounded-t bg-green-500" style={{ height: `${(d.converted / maxDay) * 100}%`, minHeight: d.converted > 0 ? 3 : 0 }} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            <p className="mt-3 text-[11px] leading-relaxed text-sub">
+              집계 기준: 기간 내 <b>처음</b> 앱을 켠 기기(고정 기기ID) 중 비로그인 시작만 셉니다. 가입 완료는 가입 이벤트 또는 계정 연결이 확인된 기기.
+              가입 화면·버튼 클릭 지표는 오늘 배포분부터 쌓입니다.
+            </p>
+          </div>
+        );
+      })()}
 
       {/* 웹 vs 앱 비교 */}
       <div className="mb-4 grid grid-cols-2 gap-4">

@@ -3,6 +3,8 @@
 // 심사 통과 후 로그인부터는 받은 값으로 빈칸을 채운다.
 import { prisma } from "@/lib/db";
 import { setSession } from "@/lib/auth";
+import { getOrSetVisitorId, kstDay } from "@/lib/visitor";
+import { getPlatform } from "@/lib/platform";
 import { createGodoAgent } from "@/lib/godomall/agent";
 import { alertSignup } from "@/lib/report/alerts";
 import { TERMS_VERSION } from "@/lib/terms";
@@ -138,5 +140,20 @@ export async function kakaoSignInOrUp(p: KakaoProfile): Promise<{ ok: true; crea
   if (created.code) await createGodoAgent(created.code, name, "").catch(() => {});
   await alertSignup({ name, username, code: created.code }).catch(() => {});
   setSession(created.id);
+  // 가입 퍼널 추적: 가입 완료를 방문 로그에 남긴다 (기기 vid ↔ 파트너 연결)
+  try {
+    const { visitorId } = getOrSetVisitorId();
+    await prisma.visit.create({
+      data: {
+        visitorId,
+        partnerId: created.id,
+        path: "/signup",
+        kind: "click",
+        label: "signup_done",
+        platform: getPlatform(),
+        day: kstDay(),
+      },
+    });
+  } catch { /* 집계 실패는 가입을 막지 않는다 */ }
   return { ok: true, created: true };
 }

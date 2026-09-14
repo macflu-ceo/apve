@@ -44,6 +44,11 @@ function hideLoading() {
 
 /** 카카오 로그인/가입 시작. 네이티브가 가능하면 카카오톡 앱으로, 아니면 웹 OAuth로 이동 */
 export async function startKakao(): Promise<void> {
+  // 가입 퍼널 추적: 카카오 버튼을 누른 시점 (기기 기준 유니크 집계)
+  try {
+    const { trackEvent } = await import("@/lib/track-client");
+    trackEvent("click", { label: "signup_start" });
+  } catch { /* noop */ }
   showLoading();
   const plugin = nativePlugin();
   if (!plugin) {

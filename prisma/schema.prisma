@@ -398,6 +398,8 @@ model Visit {
   @@index([day])
   @@index([kind, day])
   @@index([platform, day])
+  @@index([visitorId])
+  @@index([label, day])
   @@index([visitorId, day])
   @@index([partnerId, day])
   @@index([utmSource, day])

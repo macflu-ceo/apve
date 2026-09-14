@@ -22,6 +22,7 @@ import OnboardingOverlay from "@/components/OnboardingOverlay";
 import AppConsent from "@/components/AppConsent";
 import PullToRefresh from "@/components/PullToRefresh";
 import AppAutoRefresh from "@/components/AppAutoRefresh";
+import AppSignupGate from "@/components/AppSignupGate";
 import AppPushSync from "@/components/AppPushSync";
 import BottomNav from "@/components/BottomNav";
 import { getPlatform } from "@/lib/platform";
@@ -82,6 +83,7 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
       {/* 앱 스플래시는 네이티브 런치 화면으로 통일(둘째 웹 오버레이 제거) */}
       {platform === "app" && <PullToRefresh />}
       {platform === "app" && <AppAutoRefresh />}
+      {platform === "app" && <AppSignupGate loggedIn={!!partner} />}
       {platform === "app" && <AppPushSync />}
       {platform === "app" && <AppConsent />}
       <OnboardingOverlay />

@@ -471,3 +471,79 @@ export async function getAppConversionFunnel(from: string, to: string): Promise<
     installs,
   };
 }
+
+// ── 앱 가입 이탈 퍼널 ───────────────────────────────────────────
+// 「앱을 처음 켠 기기」가 가입까지 오는지 추적한다.
+// 신규 기기 = 첫 앱 방문이 기간 안이고, 그 첫 방문이 비로그인이었던 기기.
+// (기존 회원이 재설치해 바로 로그인된 기기는 신규에서 제외 → 과대집계 방지)
+export type AppSignupFunnel = {
+  /// 기간 내 처음 앱을 켠 기기 수 (비로그인 시작)
+  newDevices: number;
+  /// 그중 가입 게이트(첫 화면)를 본 기기
+  gateViews: number;
+  /// 그중 카카오 버튼을 누른 기기 (signup_start)
+  started: number;
+  /// 그중 가입 완료(signup_done) 또는 계정이 연결된 기기
+  converted: number;
+  /// 그중 「그냥 둘러보기」를 누른 기기
+  skipped: number;
+  /// 일자별 신규 기기 vs 전환 (이탈 추이)
+  byDay: { day: string; newDevices: number; converted: number }[];
+};
+
+export async function getAppSignupFunnel(from: string, to: string): Promise<AppSignupFunnel> {
+  const rows = await prisma.$queryRaw<
+    { new_devices: bigint; gate_views: bigint; started: bigint; converted: bigint; skipped: bigint }[]
+  >`
+    WITH firstv AS (
+      SELECT DISTINCT ON ("visitorId") "visitorId", day AS first_day, "partnerId" AS first_pid
+      FROM "Visit" WHERE platform = 'app'
+      ORDER BY "visitorId", "createdAt" ASC
+    ), nd AS (
+      SELECT "visitorId" FROM firstv
+      WHERE first_day >= ${from} AND first_day <= ${to} AND first_pid IS NULL
+    )
+    SELECT
+      COUNT(*) AS new_devices,
+      COUNT(*) FILTER (WHERE EXISTS (
+        SELECT 1 FROM "Visit" v WHERE v."visitorId" = nd."visitorId" AND v.label = 'signup_gate'
+      )) AS gate_views,
+      COUNT(*) FILTER (WHERE EXISTS (
+        SELECT 1 FROM "Visit" v WHERE v."visitorId" = nd."visitorId" AND v.label = 'signup_start'
+      )) AS started,
+      COUNT(*) FILTER (WHERE EXISTS (
+        SELECT 1 FROM "Visit" v WHERE v."visitorId" = nd."visitorId"
+          AND (v.label = 'signup_done' OR v."partnerId" IS NOT NULL)
+      )) AS converted,
+      COUNT(*) FILTER (WHERE EXISTS (
+        SELECT 1 FROM "Visit" v WHERE v."visitorId" = nd."visitorId" AND v.label = 'signup_gate_skip'
+      )) AS skipped
+    FROM nd`;
+
+  const byDayRows = await prisma.$queryRaw<{ day: string; nd: bigint; cv: bigint }[]>`
+    WITH firstv AS (
+      SELECT DISTINCT ON ("visitorId") "visitorId", day AS first_day, "partnerId" AS first_pid
+      FROM "Visit" WHERE platform = 'app'
+      ORDER BY "visitorId", "createdAt" ASC
+    ), nd AS (
+      SELECT "visitorId", first_day FROM firstv
+      WHERE first_day >= ${from} AND first_day <= ${to} AND first_pid IS NULL
+    )
+    SELECT first_day AS day,
+      COUNT(*) AS nd,
+      COUNT(*) FILTER (WHERE EXISTS (
+        SELECT 1 FROM "Visit" v WHERE v."visitorId" = nd."visitorId"
+          AND (v.label = 'signup_done' OR v."partnerId" IS NOT NULL)
+      )) AS cv
+    FROM nd GROUP BY first_day ORDER BY first_day`;
+
+  const r = rows[0] ?? { new_devices: 0n, gate_views: 0n, started: 0n, converted: 0n, skipped: 0n };
+  return {
+    newDevices: num(r.new_devices),
+    gateViews: num(r.gate_views),
+    started: num(r.started),
+    converted: num(r.converted),
+    skipped: num(r.skipped),
+    byDay: byDayRows.map((d) => ({ day: d.day, newDevices: num(d.nd), converted: num(d.cv) })),
+  };
+}
