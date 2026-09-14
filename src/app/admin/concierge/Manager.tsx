@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
-  setApplicationStatus, setApplicationMemo, deleteApplication,
+  setApplicationStatus, setApplicationMemo, deleteApplication, approveApplication,
   addQuestion, updateQuestion, deleteQuestion,
 } from "./actions";
 
@@ -48,6 +48,22 @@ export function ApplicationRow({ a }: { a: App }) {
             <option key={s.v} value={s.v}>{s.label}</option>
           ))}
         </select>
+        {a.status !== "done" && a.status !== "rejected" && (
+          <button
+            disabled={pending}
+            onClick={() => {
+              if (!confirm(`${a.name}님을 컨시어지로 전환할까요?\n번호가 부여되고 오늘부터 3개월 자격 구간이 시작됩니다.`)) return;
+              start(async () => {
+                const r = await approveApplication(a.id);
+                alert(r.message);
+                router.refresh();
+              });
+            }}
+            className="rounded-md bg-brand px-2.5 py-1 text-xs font-bold text-white disabled:opacity-50"
+          >
+            승인 → 컨시어지 전환
+          </button>
+        )}
         <button onClick={() => setOpen(!open)} className="text-xs text-brand underline">
           {open ? "접기" : "상세"}
         </button>

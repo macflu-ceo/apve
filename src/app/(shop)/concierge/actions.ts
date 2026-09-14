@@ -14,8 +14,11 @@ export async function submitConciergeApplication(input: {
   if (!input.name.trim() || !input.phone.trim()) {
     return { ok: false, message: "이름과 전화번호는 필수입니다." };
   }
+  const { getSessionPartner } = await import("@/lib/auth");
+  const viewer = await getSessionPartner().catch(() => null);
   await prisma.conciergeApplication.create({
     data: {
+      partnerId: viewer?.id ?? null, // 로그인 신청이면 계정 연결 → 어드민 승인 시 바로 전환
       name: input.name.trim(),
       phone: input.phone.trim(),
       job: input.job.trim() || null,

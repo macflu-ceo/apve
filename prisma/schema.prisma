@@ -773,6 +773,8 @@ model ConciergeQuestion {
 /// 컨시어지 가입 신청 접수
 model ConciergeApplication {
   id          String   @id @default(cuid())
+  /// 신청 당시 로그인 회원 — 어드민 승인 시 이 계정을 컨시어지로 전환
+  partnerId   String?
   name        String
   phone       String
   job         String?
