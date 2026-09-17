@@ -56,6 +56,26 @@ export default async function MultiLinkAdminPage() {
   const percent = grade?.percent ?? 0;
   const inPage = new Set(items.map((i) => i.productId));
 
+  // 내 샵 애널리틱스 — 방문자(고유)·조회수·상품 클릭. /m/슬러그 방문 로그 기준
+  const kstDay = (offset = 0) => new Date(Date.now() + 9 * 3600_000 - offset * 86400_000).toISOString().slice(0, 10);
+  const mlPath = `/m/${ml.slug}`;
+  const statRows = await prisma.$queryRaw<
+    { period: string; visitors: bigint; views: bigint; clicks: bigint }[]
+  >`
+    SELECT p.period,
+      COUNT(DISTINCT v."visitorId") FILTER (WHERE v.kind = 'page') AS visitors,
+      COUNT(*) FILTER (WHERE v.kind = 'page') AS views,
+      COUNT(*) FILTER (WHERE v.kind = 'click' AND v.label = 'ml_item') AS clicks
+    FROM (VALUES ('today', ${kstDay(0)}), ('week', ${kstDay(6)}), ('all', '2000-01-01')) AS p(period, from_day)
+    LEFT JOIN "Visit" v
+      ON (v.path = ${mlPath} OR v.path LIKE ${mlPath + "/%"}) AND v.day >= p.from_day
+    GROUP BY p.period`;
+  const stat = (period: string) => {
+    const r = statRows.find((x) => x.period === period);
+    return { visitors: Number(r?.visitors ?? 0), views: Number(r?.views ?? 0), clicks: Number(r?.clicks ?? 0) };
+  };
+  const shopStats = { today: stat("today"), week: stat("week"), all: stat("all") };
+
   const toItem = (p: (typeof items)[number]["product"]) => ({
     productId: p.id,
     name: p.name.replace(/^\[[^\]]*\]\s*/, ""),
@@ -77,6 +97,7 @@ export default async function MultiLinkAdminPage() {
         views: ml.views,
       }}
       percent={percent}
+      stats={shopStats}
       sections={sections.map((s) => ({ id: s.id, title: s.title }))}
       banners={banners.map((b) => ({ id: b.id, imageUrl: b.imageUrl, title: b.title ?? "", sectionId: b.sectionId }))}
       items={items.map((i) => ({ id: i.id, sectionId: i.sectionId, ...toItem(i.product) }))}

@@ -3,6 +3,10 @@
 // 멀티링크 샵 본문 — 배너(기획전)·카테고리 필터·진열 섹션
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { trackEvent } from "@/lib/track-client";
+
+/** 컨시어지 샵 통계용 — 상품 클릭 기록 (이탈 직전에도 전송 보장: keepalive) */
+const trackItemClick = () => trackEvent("click", { label: "ml_item" });
 
 export type ShopItem = {
   id: string;
@@ -27,6 +31,7 @@ export function ProductCard({ item }: { item: ShopItem }) {
       href={item.url}
       target="_blank"
       rel="noopener"
+      onClick={trackItemClick}
       className="flex h-full flex-col overflow-hidden rounded-2xl bg-white shadow-[0_2px_14px_rgba(20,30,80,.07)] transition active:scale-[0.98]"
     >
       {/* 이미지 absolute: 원본 비율이 aspect-square 박스를 세로로 늘리지 못하게 고정 */}
@@ -59,6 +64,7 @@ export function ProductRow({ item }: { item: ShopItem }) {
       href={item.url}
       target="_blank"
       rel="noopener"
+      onClick={trackItemClick}
       className="flex items-center gap-3 rounded-xl bg-white p-2.5 shadow-[0_1px_8px_rgba(20,30,80,.06)] transition active:scale-[0.99]"
     >
       <div className="h-16 w-16 shrink-0 rounded-lg bg-[#FAFAFC]">

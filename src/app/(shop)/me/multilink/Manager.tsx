@@ -42,11 +42,14 @@ type Lead = {
 
 const won = (n: number) => n.toLocaleString() + "원";
 
+type ShopStat = { visitors: number; views: number; clicks: number };
+
 export default function Manager({
-  ml, percent, sections, banners, items, candidates, leads,
+  ml, percent, stats, sections, banners, items, candidates, leads,
 }: {
   ml: { slug: string; displayName: string; shopTitle: string; bio: string; avatarUrl: string; coverUrl: string; views: number };
   percent: number;
+  stats: { today: ShopStat; week: ShopStat; all: ShopStat };
   sections: Section[];
   banners: Banner[];
   items: Item[];
@@ -215,6 +218,37 @@ export default function Manager({
         <a href={`/m/${ml.slug}`} target="_blank" className="btn-line px-4 py-2 text-sm">미리보기</a>
       </div>
       {msg && <div className="mt-2 text-sm font-semibold text-brand">{msg}</div>}
+
+      {/* 내 샵 애널리틱스 — 방문·상품 클릭 기본 지표 */}
+      <div className="card mt-4 p-4">
+        <div className="flex items-baseline justify-between">
+          <h2 className="text-base font-bold">📊 내 샵 통계</h2>
+          <span className="text-[11px] text-sub">방문자는 기기 기준, 같은 사람 중복 제외</span>
+        </div>
+        <div className="mt-3 overflow-hidden rounded-xl border border-line">
+          <table className="w-full text-center text-sm">
+            <thead>
+              <tr className="bg-brandsoft text-xs text-sub">
+                <th className="py-2 text-left pl-3 font-semibold">기간</th>
+                <th className="py-2 font-semibold">방문자</th>
+                <th className="py-2 font-semibold">조회수</th>
+                <th className="py-2 font-semibold">상품 클릭</th>
+              </tr>
+            </thead>
+            <tbody>
+              {([["오늘", stats.today], ["최근 7일", stats.week], ["전체", stats.all]] as const).map(([label, s]) => (
+                <tr key={label} className="border-t border-line">
+                  <td className="py-2.5 pl-3 text-left text-xs text-sub">{label}</td>
+                  <td className="py-2.5 font-bold">{s.visitors.toLocaleString()}명</td>
+                  <td className="py-2.5">{s.views.toLocaleString()}회</td>
+                  <td className="py-2.5 font-bold text-brand">{s.clicks.toLocaleString()}회</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="mt-2 text-[11px] text-sub">상품 클릭은 오늘부터 집계를 시작해서, 이전 기간에는 0으로 보일 수 있어요.</p>
+      </div>
 
       {/* 프로필 */}
       <div className="card mt-4 p-4">

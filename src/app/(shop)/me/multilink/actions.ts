@@ -71,7 +71,7 @@ export async function addMultiLinkItem(productId: string) {
   const r = await myMultiLink();
   if ("error" in r) return { ok: false, message: r.error };
   const count = await prisma.multiLinkItem.count({ where: { multiLinkId: r.ml.id } });
-  if (count >= 30) return { ok: false, message: "최대 30개까지 담을 수 있어요." };
+  if (count >= 300) return { ok: false, message: "최대 300개까지 담을 수 있어요." };
   const max = await prisma.multiLinkItem.aggregate({ where: { multiLinkId: r.ml.id }, _max: { sort: true } });
   const item = await prisma.multiLinkItem.upsert({
     where: { multiLinkId_productId: { multiLinkId: r.ml.id, productId } },
