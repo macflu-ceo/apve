@@ -9,19 +9,19 @@ const MODEL = process.env.GEMINI_IMAGE_MODEL || "gemini-2.5-flash-image";
 const OUT = "/Users/leegeungjeong/luxury-affiliate-platform/public/chips";
 
 const BASE =
-  "A small mobile category ICON, cute soft matte 3D render. FULL SQUARE, one solid flat pastel background color filling the entire square, NO rounded corners, NO frame, NO shadow outside. ONE single subject, large and centered, simple and iconic, premium luxury mood. Absolutely NO text, NO letters, NO numbers, NO logos, NO watermarks.";
+  "A vivid glossy 3D ICON in the style of modern 3D emoji icons (Apple/Fluent emoji look). ONE single subject, VERY LARGE, filling almost the entire frame, centered. Rich saturated colors, glossy highlights, soft studio lighting, subtle soft drop shadow under the object. Background: clean pure WHITE, nothing else. Premium luxury mood, punchy and eye-catching. Absolutely NO text, NO letters, NO numbers, NO logos, NO watermarks.";
 
 const CHIPS: { file: string; subject: string }[] = [
-  { file: "price20", subject: "a small elegant brown leather wallet with two shiny gold coins beside it, on solid pastel MINT background" },
-  { file: "price30", subject: "a neat small stack of shiny gold coins, on solid pastel YELLOW background" },
-  { file: "price50", subject: "a glossy luxury shopping bag with a silk ribbon bow, on solid pastel PINK background" },
-  { file: "priceUnder100", subject: "a golden gift box with an elegant bow, slightly open with soft glow, on solid pastel LAVENDER background" },
-  { file: "premium", subject: "a brilliant sparkling diamond gemstone, on solid pastel BLUE background" },
-  { file: "popular", subject: "a shiny golden trophy cup with a tiny flame above it, on solid pastel ORANGE background" },
-  { file: "recommend", subject: "a big glossy golden five-point star with small sparkles, on solid pastel SKY-BLUE background" },
-  { file: "new", subject: "a hanging luxury price tag with bright sparkle stars around it (tag is blank, no text), on solid pastel GREEN background" },
-  { file: "sale", subject: "a glossy red discount percent-sign symbol (%) as a 3D object, on solid pastel CORAL background" },
-  { file: "bag", subject: "a plain black quilted luxury handbag with a small gold clasp, no logo, on solid pastel BEIGE background" },
+  { file: "price20", subject: "a small elegant brown leather wallet with two shiny gold coins beside it" },
+  { file: "price30", subject: "a neat small stack of shiny gold coins" },
+  { file: "price50", subject: "a glossy luxury shopping bag with a silk ribbon bow" },
+  { file: "priceUnder100", subject: "a golden gift box with an elegant bow, slightly open with soft glow" },
+  { file: "premium", subject: "a brilliant sparkling diamond gemstone" },
+  { file: "popular", subject: "a shiny golden trophy cup with a tiny flame above it" },
+  { file: "recommend", subject: "a big glossy golden five-point star with small sparkles" },
+  { file: "new", subject: "a hanging luxury price tag with bright sparkle stars around it (tag is blank, no text)" },
+  { file: "sale", subject: "a glossy red discount percent-sign symbol (%) as a 3D object" },
+  { file: "bag", subject: "a plain black quilted luxury handbag with a small gold clasp, no logo" },
 ];
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));

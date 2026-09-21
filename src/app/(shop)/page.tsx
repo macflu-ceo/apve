@@ -72,11 +72,11 @@ export default async function HomePage() {
 
       {/* 카테고리 칩 (어드민 커스텀) */}
       <section className="px-4 py-6">
-        {/* 한 줄 5개 × 2줄 그리드 — 가격대·취향 칩 */}
-        <div className="grid grid-cols-5 gap-x-1.5 gap-y-4">
+        {/* 한 줄 5개 × 2줄 그리드 — 가격대·취향 칩 (타일을 키워 간격 최소화) */}
+        <div className="grid grid-cols-5 gap-y-3">
           {categories.slice(0, 10).map((c, i) => (
-            <Link key={i} href={c.linkUrl || "/category"} className="flex flex-col items-center gap-1.5">
-              <span className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl bg-brandsoft text-lg font-black text-brand shadow-[0_3px_10px_rgba(20,30,80,.12)]">
+            <Link key={i} href={c.linkUrl || "/category"} className="flex flex-col items-center gap-1">
+              <span className="flex h-[60px] w-[60px] items-center justify-center overflow-hidden rounded-[20px] bg-white text-lg font-black text-brand shadow-[0_3px_12px_rgba(20,30,80,.14)] ring-1 ring-line/60">
                 {c.imageUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={c.imageUrl} alt="" className="h-full w-full object-cover" />
