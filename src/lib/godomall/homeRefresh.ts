@@ -8,7 +8,7 @@ import { conciergePrice } from "@/lib/pricing";
 
 const BRANDS: { name: string; tier: number }[] = [
   ...["Gucci","Prada","Celine","Dior","Bottega Veneta","Saint Laurent","Balenciaga","Fendi","Valentino","Givenchy","Burberry","Miu Miu","Loro Piana","Versace","Ferragamo","Moncler","Tom Ford","Alexander McQueen","Max Mara","Chloe","Dolce & Gabbana","Zegna"].map((name) => ({ name, tier: 0 })),
-  ...["Jacquemus","Maison Margiela","The Row","Toteme","Khaite","Thom Browne","Off-White","Ami","Acne Studios","Golden Goose","Christian Louboutin","Jimmy Choo","Amina Muaddi","Tod's","Mulberry","MCM","Coach","Tory Burch","Longchamp","Marni","Isabel Marant","Stone Island"].map((name) => ({ name, tier: 1 })),
+  ...["Jacquemus","Maison Margiela","The Row","Toteme","Khaite","Thom Browne","Off-White","Ami","Acne Studios","Golden Goose","Christian Louboutin","Jimmy Choo","Amina Muaddi","Tod's","Mulberry","MCM","Coach","Tory Burch","Longchamp","Marni","Isabel Marant","Stone Island","C.P. Company","Lemaire"].map((name) => ({ name, tier: 1 })),
 ];
 
 // 홈 섹션 타이틀 → 카테고리 키워드 (상품명 매칭)
@@ -28,6 +28,12 @@ const MIN_DISC_RATE = 10;
 const PER_SECTION = 100;
 const MAX_PER_BRAND = 12;
 const NEW_LIMIT_DEFAULT = 100;
+
+// 인기 브랜드(주요 노출) — 진열 선정 시 최우선. bkey 정규화 부분일치로 매칭(예: "Christian Dior"→dior)
+const POPULAR = ["gucci","celine","prada","coach","moncler","maisonmargiela","balenciaga","bottegaveneta","miumiu","burberry","saintlaurent","fendi","chloe","dior","cpcompany","stoneisland","thombrowne","lemaire"];
+function isPopular(brand: string | null): boolean { const b = bkey(brand ?? ""); return b !== "" && POPULAR.some((k) => b.includes(k)); }
+// 단가 밴드 50만~150만원 (섹션의 절반을 이 밴드로)
+const BAND_LO = 500000, BAND_HI = 1500000;
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const bkey = (s: string) => (s || "").toLowerCase().replace(/[^a-z가-힣]/g, "");
@@ -120,32 +126,49 @@ interface PoolItem { goodsNo: string; goodsNm: string; sellPrice: number; listPr
  */
 export async function refillSections(commit: boolean, seed: number = todaySeed(), log: (s: string) => void = () => {}): Promise<{ title: string; n: number }[]> {
   const active = await prisma.product.findMany({ where: { active: true }, select: { id: true, name: true, brand: true, listPrice: true, salePrice: true, imagesJson: true } });
-  const buckets = new Map<string, { id: string; brand: string; nameKey: string; imgKey: string | null; disc: number }[]>();
+  type Cand = { id: string; brand: string; nameKey: string; imgKey: string | null; sale: number; rate: number; pop: boolean; band: boolean };
+  const buckets = new Map<string, Cand[]>();
   for (const s of SECTION_KW) buckets.set(s.title, []);
   for (const p of active) {
     const t = detectTitle(p.name);
     if (!t) continue;
     const lp = p.listPrice ?? 0, sp = p.salePrice ?? 0;
-    buckets.get(t)!.push({ id: p.id, brand: p.brand ?? "", nameKey: nameKey(p.brand, p.name), imgKey: firstImageUrl(p.imagesJson), disc: lp > 0 && sp > 0 ? lp - sp : 0 });
+    const rate = lp > 0 && sp > 0 ? Math.round((1 - sp / lp) * 100) : 0;
+    buckets.get(t)!.push({
+      id: p.id, brand: p.brand ?? "", nameKey: nameKey(p.brand, p.name), imgKey: firstImageUrl(p.imagesJson),
+      sale: sp, rate, pop: isPopular(p.brand), band: sp >= BAND_LO && sp <= BAND_HI,
+    });
   }
   const rnd = mulberry32(seed >>> 0);
   const seenName = new Set<string>(), seenImg = new Set<string>();
   const out: { title: string; n: number }[] = [];
+  const TOPSLICE = 240;
+  // 인기브랜드 먼저 + 할인율 높은순 정렬 → 상위 슬라이스만 날짜셔플(매일 로테이션)
+  const makePool = (items: Cand[]): Cand[] => {
+    const pop = items.filter((x) => x.pop).sort((a, b) => b.rate - a.rate).slice(0, TOPSLICE);
+    const rest = items.filter((x) => !x.pop).sort((a, b) => b.rate - a.rate).slice(0, TOPSLICE);
+    shuffle(pop, rnd); shuffle(rest, rnd);
+    return [...pop, ...rest]; // 인기브랜드 우선
+  };
+  const BAND_TARGET = Math.floor(PER_SECTION / 2); // 50 — 절반은 50~150만원대
   for (const s of SECTION_KW) {
-    const sorted = buckets.get(s.title)!.sort((a, b) => b.disc - a.disc);
-    const POOL = Math.min(sorted.length, Math.max(PER_SECTION * 4, 400)); // 차액 상위 풀에서 로테이션
-    const pool = sorted.slice(0, POOL);
-    shuffle(pool, rnd); // 매일 시드로 섞어 라인업 신선화
+    const items = buckets.get(s.title)!;
+    const bandPool = makePool(items.filter((x) => x.band));
+    const restPool = makePool(items.filter((x) => !x.band));
     const per = new Map<string, number>();
     const ids: string[] = [];
-    for (const p of pool) {
-      if (seenName.has(p.nameKey)) continue;
-      if (p.imgKey && seenImg.has(p.imgKey)) continue;
+    const take = (p: Cand): boolean => {
+      if (seenName.has(p.nameKey)) return false;
+      if (p.imgKey && seenImg.has(p.imgKey)) return false;
       const k = bkey(p.brand);
-      if ((per.get(k) || 0) >= MAX_PER_BRAND) continue;
+      if ((per.get(k) || 0) >= MAX_PER_BRAND) return false;
       ids.push(p.id); per.set(k, (per.get(k) || 0) + 1); seenName.add(p.nameKey); if (p.imgKey) seenImg.add(p.imgKey);
-      if (ids.length >= PER_SECTION) break;
-    }
+      return true;
+    };
+    for (const p of bandPool) { if (ids.length >= BAND_TARGET) break; take(p); }       // ① 밴드 절반
+    for (const p of restPool) { if (ids.length >= PER_SECTION) break; take(p); }        // ② 나머지로 100까지
+    if (ids.length < PER_SECTION) for (const p of bandPool) { if (ids.length >= PER_SECTION) break; take(p); } // ③ 부족분 보충
+    if (ids.length < PER_SECTION) for (const p of restPool) { if (ids.length >= PER_SECTION) break; take(p); }
     if (commit) {
       const sec = await prisma.section.findFirst({ where: { title: s.title } });
       if (sec) {
