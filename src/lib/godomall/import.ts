@@ -8,6 +8,7 @@ import { fetchStockOne, toSizeStock } from "@/lib/godomall/stock";
 import { extractGoodsNo } from "@/lib/godomall/link";
 import { parseSeason } from "@/lib/season";
 import { conciergePrice } from "@/lib/pricing";
+import { canonicalizeBrand } from "@/lib/brand";
 
 /** goodsNo → 고도몰 상품 상세 URL */
 export function goodsViewUrl(goodsNo: string): string {
@@ -57,6 +58,8 @@ export async function upsertFromUrl(url: string): Promise<{ goodsNo: string; nam
     const m = (s.name ?? "").match(/^\[([^\]]+)\]/);
     brand = m ? m[1].trim() : null;
   }
+  // 기존 DB 표기에 맞춰 통일 (Chloé/CHLOE', Dior/Christian Dior 재분화 방지)
+  brand = await canonicalizeBrand(brand);
   // 이미지가 하나도 없으면 게시하지 않는다 (신규는 비활성 등록, 기존은 비활성 처리)
   const hasImage = s.images.length > 0;
 
