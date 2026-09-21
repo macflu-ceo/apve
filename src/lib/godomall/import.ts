@@ -51,9 +51,18 @@ export async function upsertFromUrl(url: string): Promise<{ goodsNo: string; nam
     // API 미설정/오류 시 HTML 파싱값 유지
   }
 
+  // 브랜드가 비면 상품명 앞 [브랜드] 표기에서 추출 — '명품' 같은 대체 표기가 화면에 남지 않게
+  let brand = s.brand;
+  if (!brand) {
+    const m = (s.name ?? "").match(/^\[([^\]]+)\]/);
+    brand = m ? m[1].trim() : null;
+  }
+  // 이미지가 하나도 없으면 게시하지 않는다 (신규는 비활성 등록, 기존은 비활성 처리)
+  const hasImage = s.images.length > 0;
+
   const common = {
     name: s.name ?? undefined,
-    brand: s.brand,
+    brand,
     category: s.category,
     season: parseSeason(s.name),
     listPrice: s.listPrice,
@@ -71,8 +80,8 @@ export async function upsertFromUrl(url: string): Promise<{ goodsNo: string; nam
   const existing = await prisma.product.findUnique({ where: { goodsNo: s.goodsNo }, select: { id: true } });
   await prisma.product.upsert({
     where: { goodsNo: s.goodsNo },
-    update: common,
-    create: { goodsNo: s.goodsNo, ...common, name: s.name ?? `상품 ${s.goodsNo}` },
+    update: { ...common, ...(hasImage ? {} : { active: false }) },
+    create: { goodsNo: s.goodsNo, ...common, name: s.name ?? `상품 ${s.goodsNo}`, active: hasImage },
   });
   return { goodsNo: s.goodsNo, name: s.name ?? `상품 ${s.goodsNo}`, created: !existing };
 }

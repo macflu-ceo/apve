@@ -77,7 +77,10 @@ export default function ProductCard({
           이름 블록이 남는 자리를 먹고, 가격 아래는 카드 바닥에 붙는다. */}
       {/* 3열 폭에 맞춘 컴팩트 타이포 */}
       <div className="flex flex-1 flex-col pt-1.5">
-        <div className="truncate text-[11px] font-bold">{product.brand ?? "명품"}</div>
+        {/* 브랜드 없으면 상품명 [브랜드] 표기에서 추출 — '명품' 같은 뭉뚱그린 표기는 쓰지 않는다 */}
+        <div className="truncate text-[11px] font-bold">
+          {product.brand ?? product.name.match(/^\[([^\]]+)\]/)?.[1] ?? " "}
+        </div>
         <div className="mt-0.5 line-clamp-2 text-[11px] leading-snug text-ink/60">{product.name}</div>
 
         {/* \uace0\uac00 \uc0c1\ud488\uc740 \u300c%+\uac00\uaca9\u300d \ud55c \uc904\uc774 \uce74\ub4dc \ud3ed\uc744 \ub118\ub294\ub2e4 \u2014 \ud560\uc778\uc728\uc744 \ucde8\uc18c\uc120 \uc904\ub85c \uc62c\ub9ac\uace0 \ud310\ub9e4\uac00\ub294 \ub2e8\ub3c5 \uc904 */}

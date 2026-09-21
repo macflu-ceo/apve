@@ -72,11 +72,10 @@ export default async function HomePage() {
 
       {/* 카테고리 칩 (어드민 커스텀) */}
       <section className="px-4 py-6">
-        {/* 중앙정렬 + 둥근 네모 타일 + 그림자. 넘치면 가로 스크롤(안쪽 mx-auto라 왼쪽 안 잘림) */}
-        <div className="no-scrollbar flex overflow-x-auto">
-          <div className="mx-auto flex gap-4">
-          {categories.map((c, i) => (
-            <Link key={i} href={c.linkUrl || "/category"} className="flex shrink-0 flex-col items-center gap-1.5">
+        {/* 한 줄 5개 × 2줄 그리드 — 가격대·취향 칩 */}
+        <div className="grid grid-cols-5 gap-x-1.5 gap-y-4">
+          {categories.slice(0, 10).map((c, i) => (
+            <Link key={i} href={c.linkUrl || "/category"} className="flex flex-col items-center gap-1.5">
               <span className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl bg-brandsoft text-lg font-black text-brand shadow-[0_3px_10px_rgba(20,30,80,.12)]">
                 {c.imageUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -85,10 +84,9 @@ export default async function HomePage() {
                   c.emoji || c.label[0]
                 )}
               </span>
-              <span className="text-xs font-bold text-ink/80">{c.label}</span>
+              <span className="whitespace-nowrap text-[11px] font-bold text-ink/80">{c.label}</span>
             </Link>
           ))}
-          </div>
         </div>
       </section>
 

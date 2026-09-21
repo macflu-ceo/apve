@@ -76,7 +76,7 @@ export function buildWhere(f: ProductFilter, opts: { activeOnly?: boolean } = {}
   const where: Record<string, unknown> = {};
   if (opts.activeOnly) where.active = true;
   if (f.category) where.category = f.category;
-  if (f.brand) where.brand = f.brand;
+  if (f.brand) where.brand = { equals: f.brand, mode: "insensitive" }; // GUCCI/Gucci 표기 차이 흡수
   if (f.season) where.season = f.season;
 
   if (f.minList != null || f.maxList != null) {
@@ -158,16 +158,25 @@ export async function getFacets(activeOnly = true) {
     where,
     select: { brand: true, category: true, season: true },
   });
-  const brands = new Set<string>();
+  // 브랜드는 대소문자만 다른 중복(GUCCI/Gucci)을 합치고, 표기는 더 많이 쓰인 쪽을 쓴다
+  const brandCount = new Map<string, Map<string, number>>();
   const categories = new Set<string>();
   const seasons = new Set<string>();
   for (const r of rows) {
-    if (r.brand) brands.add(r.brand);
+    if (r.brand) {
+      const key = r.brand.toUpperCase();
+      const m = brandCount.get(key) ?? new Map<string, number>();
+      m.set(r.brand, (m.get(r.brand) ?? 0) + 1);
+      brandCount.set(key, m);
+    }
     if (r.category) categories.add(r.category);
     if (r.season) seasons.add(r.season);
   }
+  const brands = [...brandCount.values()].map(
+    (m) => [...m.entries()].sort((a, b) => b[1] - a[1])[0][0]
+  );
   return {
-    brands: [...brands].sort(),
+    brands: brands.sort((a, b) => a.localeCompare(b)),
     categories: [...categories].sort(),
     seasons: [...seasons].sort((a, b) => seasonRank(b) - seasonRank(a)),
   };

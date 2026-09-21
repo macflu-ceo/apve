@@ -60,11 +60,12 @@ export function keepProductImages(urls: string[]): string[] {
 
 function decode(s: string): string {
   return s
+    .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16))) // &#x27; 등 16진 엔티티
+    .replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(Number(d))) // &#039; 처럼 0 붙은 10진 엔티티 포함
     .replace(/&amp;/g, "&")
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
     .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
     .replace(/&nbsp;/g, " ")
     .trim();
 }
