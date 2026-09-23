@@ -253,7 +253,7 @@ export async function runHomeRefresh(opts: { commit: boolean; injectNew: boolean
   // 예전 코드에서 `풀에 없으면 건너뛰기`로 빠져 등록 당시 가격에 굳어 있었다.
   // 이제 등록된 goodsNo 를 직접 짚어 조회하고, 브랜드풀은 보조로만 쓴다.
   log("② 재고·가격 최신화…");
-  const products = await prisma.product.findMany({ select: { id: true, goodsNo: true, active: true, salePrice: true, listPrice: true, stock: true } });
+  const products = await prisma.product.findMany({ select: { id: true, goodsNo: true, active: true, salePrice: true, listPrice: true, stock: true, imagesJson: true } });
 
   let exact: Map<string, { sellPrice: number; listPrice: number; stock: number; soldOut: boolean; display?: boolean; selling?: boolean }> | null = null;
   try {
@@ -286,7 +286,8 @@ export async function runHomeRefresh(opts: { commit: boolean; injectNew: boolean
 
     // 진열/판매 중지도 노출 대상이 아니다 (지정 조회에서만 내려온다)
     const offShelf = e ? e.display === false || e.selling === false : false;
-    const willActive = !(it.soldOut || it.stock <= 0 || offShelf);
+    // 대표 이미지 없는 상품은 재입고돼도 노출 제외 (연동 제외 정책)
+    const willActive = firstImageUrl(p.imagesJson) != null && !(it.soldOut || it.stock <= 0 || offShelf);
     const newSale = it.sellPrice > 0 ? conciergePrice(it.sellPrice) : p.salePrice;
     const newList = it.listPrice > 0 ? it.listPrice : p.listPrice;
     const changed = p.active !== willActive || p.stock !== it.stock || p.salePrice !== newSale || p.listPrice !== newList;

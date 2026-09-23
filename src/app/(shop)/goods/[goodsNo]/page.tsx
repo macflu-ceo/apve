@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { getConciergeViewer } from "@/lib/concierge-access";
@@ -175,7 +176,17 @@ export default async function GoodsPage({ params }: { params: { goodsNo: string 
 
       {/* 정보 */}
       <div>
-        {product.brand && <div className="text-sm font-bold text-brand">{product.brand}</div>}
+        {product.brand && (
+          <Link
+            href={`/category?brand=${encodeURIComponent(product.brand)}`}
+            className="inline-flex items-center gap-0.5 text-sm font-bold text-brand"
+          >
+            {product.brand}
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </Link>
+        )}
         <h1 className="mt-1 text-2xl font-bold leading-snug">{product.name}</h1>
 
         <div className="mt-4 flex items-baseline gap-2">
@@ -247,7 +258,7 @@ export default async function GoodsPage({ params }: { params: { goodsNo: string 
             <>
               <span className="text-base">✈️</span>
               <span>
-                {product.origin ? `${product.origin} ` : ""}<b>해외배송</b> · 통관 포함 <b>약 2주</b> 소요
+                {product.origin ? `${product.origin} ` : ""}<b>해외배송</b> · 통관 포함 영업일 기준 <b>약 2주</b> 소요 (주말·공휴일 제외)
               </span>
             </>
           )}
@@ -257,7 +268,15 @@ export default async function GoodsPage({ params }: { params: { goodsNo: string 
         <dl className="mt-5 space-y-2 border-t border-line pt-5 text-sm">
           <div className="flex gap-3">
             <dt className="w-20 shrink-0 text-sub">브랜드</dt>
-            <dd>{product.brand ?? "-"}</dd>
+            <dd>
+              {product.brand ? (
+                <Link href={`/category?brand=${encodeURIComponent(product.brand)}`} className="font-bold text-brand underline underline-offset-2">
+                  {product.brand}
+                </Link>
+              ) : (
+                "-"
+              )}
+            </dd>
           </div>
           <div className="flex gap-3">
             <dt className="w-20 shrink-0 text-sub">원산지</dt>
