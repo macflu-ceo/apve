@@ -3,7 +3,8 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { fetchCatalog, fetchCatalogByGoodsNos } from "@/lib/godomall/catalog";
-import { importGoodsNos } from "@/lib/godomall/import";
+import { importGoodsNos, goodsViewUrl } from "@/lib/godomall/import";
+import { scrapeProduct } from "@/lib/godomall/scrape";
 import { conciergePrice } from "@/lib/pricing";
 
 const BRANDS: { name: string; tier: number }[] = [
@@ -203,6 +204,7 @@ export interface HomeRefreshResult {
   newImported: number;
   newErrors: number;
   dupHidden: number;
+  imgFixed: number;
   sections: { title: string; n: number }[];
   committed: boolean;
   ms: number;
@@ -336,6 +338,33 @@ export async function runHomeRefresh(opts: { commit: boolean; injectNew: boolean
     log(`   신규 ${newImported}${opts.commit ? "" : "(예정)"}${newErrors ? ` · 실패 ${newErrors}` : ""}`);
   }
 
+  // ③.2 이미지 유실 복구 — 수집이 일시적으로 실패해 이미지가 0장으로 굳은 상품을 되살린다.
+  // (비아엘리떼에는 이미지가 있는데 우리 쪽만 비어 노출에서 빠지는 건들)
+  log("③.2 이미지 유실 복구…");
+  let imgFixed = 0;
+  {
+    const broken = await prisma.product.findMany({
+      where: { OR: [{ imagesJson: null }, { imagesJson: "[]" }] },
+      select: { id: true, goodsNo: true, stock: true },
+      take: 60, // 한 번에 몰아치면 원본 서버에서 차단당한다
+    });
+    for (const b of broken) {
+      if (!opts.commit) break;
+      try {
+        const s = await scrapeProduct(goodsViewUrl(b.goodsNo));
+        if (s.images.length > 0) {
+          await prisma.product.update({
+            where: { id: b.id },
+            data: { imagesJson: JSON.stringify(s.images), active: (b.stock ?? 0) > 0 },
+          });
+          imgFixed++;
+        }
+      } catch { /* 개별 실패는 다음 회차에 재시도 */ }
+      await new Promise((r) => setTimeout(r, 700));
+    }
+  }
+  log(`   복구 ${imgFixed}건`);
+
   // ③.5 동일 상품 정리 (브랜드+대표이미지 기준, 재고갱신 직후라 되살아난 중복도 재정리)
   log("③.5 동일 상품 정리…");
   const dedup = await dedupeActiveProducts(opts.commit);
@@ -346,7 +375,7 @@ export async function runHomeRefresh(opts: { commit: boolean; injectNew: boolean
   const sections = await refillSections(opts.commit, todaySeed(), log);
   log("   완료");
 
-  return { poolSize: pool.size, poolFailed, exactMatched, unpriced, delisted, stockUpdated, deactivated, reactivated, newImported, newErrors, dupHidden: dedup.hidden, sections, committed: opts.commit, ms: Date.now() - t0 };
+  return { poolSize: pool.size, poolFailed, exactMatched, unpriced, delisted, stockUpdated, deactivated, reactivated, newImported, newErrors, dupHidden: dedup.hidden, imgFixed, sections, committed: opts.commit, ms: Date.now() - t0 };
 }
 
 /** 결과 → 텔레그램 알림 텍스트 */
@@ -360,6 +389,7 @@ export function homeRefreshText(r: HomeRefreshResult): string {
     ...(r.poolFailed.length ? [`· ⚠️ 카탈로그 수집 실패: ${r.poolFailed.join(", ")}`] : []),
     `· 신규 등록 ${r.newImported}${r.newErrors ? ` (실패 ${r.newErrors})` : ""}`,
     `· 동일상품 정리 ${r.dupHidden}개 비활성`,
+    ...(r.imgFixed ? [`· 이미지 유실 복구 ${r.imgFixed}건`] : []),
     `· 섹션 재편성: ${secLine} (총 ${r.sections.reduce((a, s) => a + s.n, 0)}개)`,
   ].join("\n");
 }
