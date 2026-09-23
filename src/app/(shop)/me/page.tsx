@@ -80,6 +80,10 @@ export default async function MyPage() {
             <span className="rounded-full bg-green-100 px-2.5 py-1 text-xs font-bold text-green-700">✓ 정산 승인</span>
           ) : partner.settlementStatus === "submitted" ? (
             <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-700">정산 승인 대기중</span>
+          ) : partner.settlementStatus === "rejected" ? (
+            <a href="#settlement" className="rounded-full bg-red-100 px-2.5 py-1 text-xs font-bold text-red-700">
+              정산 서류 반려 · 다시 등록
+            </a>
           ) : null}
         </div>
         <p className="mt-1 text-sm text-ink/60">
@@ -175,7 +179,13 @@ export default async function MyPage() {
           </div>
 
           {/* 정산 정보 (2단계) */}
-          <div id="settlement"><SettlementForm status={partner.settlementStatus} minPayout={SETTLEMENT_POLICY.minPayout} /></div>
+          <div id="settlement">
+            <SettlementForm
+              status={partner.settlementStatus}
+              minPayout={SETTLEMENT_POLICY.minPayout}
+              rejectReason={partner.settlementRejectReason}
+            />
+          </div>
 
           {/* 리뷰·홍보 인증 → 20% 바우처 */}
           <RewardSubmitBox

@@ -42,6 +42,9 @@ export async function submitSettlement(input: {
       settlementStatus: "submitted",
       docsStatus: "submitted",
       settlementAgreedAt: new Date(),
+      // 반려 후 재등록이면 이전 반려 표시를 지운다
+      settlementRejectReason: null,
+      settlementRejectedAt: null,
     },
   });
 

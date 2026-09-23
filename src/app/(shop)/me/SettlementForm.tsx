@@ -153,9 +153,12 @@ function DocUpload({
 export default function SettlementForm({
   status,
   minPayout,
+  rejectReason,
 }: {
   status: string;
   minPayout: number;
+  /** 반려된 경우 관리자가 남긴 사유 — 그대로 보여주고 재등록을 받는다 */
+  rejectReason?: string | null;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -196,9 +199,18 @@ export default function SettlementForm({
 
   return (
     <div className="rounded-xl2 border border-line p-5">
+      {status === "rejected" && (
+        <div className="mb-4 rounded-xl2 border border-red-200 bg-red-50 p-4 text-sm">
+          <div className="font-bold text-red-600">정산 서류가 반려되었습니다</div>
+          {rejectReason && <p className="mt-1 whitespace-pre-line text-red-700">{rejectReason}</p>}
+          <p className="mt-2 text-xs text-red-700/80">
+            아래에서 서류를 다시 등록해주세요. 사진은 <b>JPG·PNG</b>로 올려주시면 확인이 빠릅니다.
+          </p>
+        </div>
+      )}
       <div className="flex items-start justify-between gap-3">
         <div>
-          <div className="text-sm font-bold">정산 정보 등록</div>
+          <div className="text-sm font-bold">{status === "rejected" ? "정산 정보 다시 등록" : "정산 정보 등록"}</div>
           <p className="mt-1 text-xs text-sub">
             수익금 지급을 위해 필요합니다. (최소 지급 금액 {minPayout.toLocaleString()}원)
             <br />
@@ -206,7 +218,7 @@ export default function SettlementForm({
           </p>
         </div>
         <button onClick={() => setOpen(!open)} className="btn-brand shrink-0 px-3 py-2 text-xs">
-          {open ? "닫기" : "등록하기"}
+          {open ? "닫기" : status === "rejected" ? "다시 등록" : "등록하기"}
         </button>
       </div>
 

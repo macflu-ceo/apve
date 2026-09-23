@@ -95,6 +95,7 @@ type Row = {
   accountHolder: string | null;
   idCardUrl: string | null;
   bankbookUrl: string | null;
+  settlementRejectReason: string | null;
 };
 
 const SORTERS: Record<string, (a: Row, b: Row) => number> = {
@@ -269,6 +270,7 @@ export default async function AdminPartners({ searchParams }: { searchParams: SP
       accountHolder: p.accountHolder,
       idCardUrl: p.idCardUrl,
       bankbookUrl: p.bankbookUrl,
+      settlementRejectReason: p.settlementRejectReason,
     };
   });
 
@@ -516,6 +518,7 @@ export default async function AdminPartners({ searchParams }: { searchParams: SP
                       holder={p.accountHolder}
                       idCardPath={p.idCardUrl}
                       bankbookPath={p.bankbookUrl}
+                      rejectReason={p.settlementRejectReason}
                     />
                   </td>
                   <td className="whitespace-nowrap text-sub">{fmtDate(p.createdAt)}</td>

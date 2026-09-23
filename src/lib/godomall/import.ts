@@ -60,8 +60,20 @@ export async function upsertFromUrl(url: string): Promise<{ goodsNo: string; nam
   }
   // 기존 DB 표기에 맞춰 통일 (Chloé/CHLOE', Dior/Christian Dior 재분화 방지)
   brand = await canonicalizeBrand(brand);
-  // 이미지가 하나도 없으면 게시하지 않는다 (신규는 비활성 등록, 기존은 비활성 처리)
-  const hasImage = s.images.length > 0;
+  const existing = await prisma.product.findUnique({
+    where: { goodsNo: s.goodsNo },
+    select: { id: true, imagesJson: true },
+  });
+  // 스크래핑이 일시적으로 실패하면(차단·타임아웃·부분 HTML) 이미지가 0장으로 내려온다.
+  // 그대로 저장하면 원래 이미지가 있던 상품이 영구히 '이미지 없음'으로 굳으므로,
+  // 빈 결과로는 기존 이미지를 덮어쓰지 않는다.
+  let existingImages: string[] = [];
+  try {
+    const p = JSON.parse(existing?.imagesJson ?? "[]");
+    if (Array.isArray(p)) existingImages = p.filter(Boolean);
+  } catch {}
+  const images = s.images.length > 0 ? s.images : existingImages;
+  const hasImage = images.length > 0;
 
   const common = {
     name: s.name ?? undefined,
@@ -75,12 +87,11 @@ export async function upsertFromUrl(url: string): Promise<{ goodsNo: string; nam
     sizesJson: JSON.stringify(sizes),
     sizeStockJson: JSON.stringify(sizeStock),
     material: s.material,
-    imagesJson: JSON.stringify(s.images),
+    imagesJson: JSON.stringify(images),
     detailHtml: s.detailHtml,
     sourceUrl: s.sourceUrl,
   };
 
-  const existing = await prisma.product.findUnique({ where: { goodsNo: s.goodsNo }, select: { id: true } });
   await prisma.product.upsert({
     where: { goodsNo: s.goodsNo },
     update: { ...common, ...(hasImage ? {} : { active: false }) },

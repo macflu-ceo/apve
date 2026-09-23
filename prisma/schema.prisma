@@ -86,8 +86,11 @@ model Partner {
   agreementsJson  String?
 
   /// ── 2단계: 정산 정보 (최소 지급액 도달 시 수집) ──
-  /// none | submitted | verified
+  /// none | submitted | verified | rejected
   settlementStatus String  @default("none")
+  /// 정산 서류 반려 사유 (회원 화면에 그대로 노출 — 재등록 안내용)
+  settlementRejectReason String?
+  settlementRejectedAt   DateTime?
   /// 주민등록번호 (AES-256-GCM 암호화 저장)
   residentNoEnc    String?
   address          String?

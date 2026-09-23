@@ -29,6 +29,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "이미지 또는 PDF만 업로드할 수 있습니다." }, { status: 400 });
     if (file.size > 10 * 1024 * 1024) return NextResponse.json({ error: "10MB 이하만 가능합니다." }, { status: 400 });
 
+    // 아이폰 HEIC 는 브라우저가 직접 렌더링하지 못해 어드민 확인 때 깨져 보인다.
+    // 저장은 허용하되(열람 시 서버에서 JPEG 변환) 확장자는 정확히 남긴다.
     const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
     const pathname = `docs/${partner.id}/${kind}-${crypto.randomUUID()}.${ext}`;
 

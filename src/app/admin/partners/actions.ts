@@ -92,10 +92,34 @@ export async function setPartnerGrade(id: string, gradeId: string | null) {
 export async function verifySettlement(id: string, verified: boolean) {
   await prisma.partner.update({
     where: { id },
-    data: { settlementStatus: verified ? "verified" : "submitted", docsStatus: verified ? "approved" : "submitted" },
+    data: {
+      settlementStatus: verified ? "verified" : "submitted",
+      docsStatus: verified ? "approved" : "submitted",
+      settlementRejectReason: null,
+      settlementRejectedAt: null,
+    },
   });
   revalidatePath("/admin/partners");
   revalidatePath("/me");
+}
+
+/** 정산 서류 반려 — 사유를 남기면 회원 정산정보 화면에 그대로 노출되고 재등록을 받는다.
+ * 실수로 확인완료한 건도 이 버튼으로 되돌릴 수 있다. */
+export async function rejectSettlement(id: string, reason: string) {
+  const r = reason.trim();
+  if (r.length < 2) return { ok: false, message: "반려 사유를 입력해주세요. (회원에게 그대로 안내됩니다)" };
+  await prisma.partner.update({
+    where: { id },
+    data: {
+      settlementStatus: "rejected",
+      docsStatus: "rejected",
+      settlementRejectReason: r,
+      settlementRejectedAt: new Date(),
+    },
+  });
+  revalidatePath("/admin/partners");
+  revalidatePath("/me");
+  return { ok: true, message: "반려 처리되었습니다." };
 }
 
 /** 파트너 활성/비활성 토글 */

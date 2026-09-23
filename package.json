@@ -16,8 +16,10 @@
   "dependencies": {
     "@portone/browser-sdk": "^0.1.9",
     "@prisma/client": "^5.22.0",
+    "@types/heic-convert": "^2.1.1",
     "@vercel/analytics": "^2.0.1",
     "@vercel/blob": "^2.6.1",
+    "heic-convert": "^2.1.0",
     "html2canvas": "^1.4.1",
     "next": "^14.2.35",
     "qrcode": "^1.5.4",
